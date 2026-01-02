@@ -1,0 +1,28 @@
+# repos.yaml - Define quais repos mapear
+repos:
+  - name: phantom-classifier
+    url: file:///path/to/phantom-classifier
+    priority: high
+
+  - name: spectre-sentiment
+    url: file:///path/to/spectre
+    priority: high
+
+  - name: oswaka-siem
+    url: file:///path/to/oswaka
+    priority: high
+
+  - name: nixos-config
+    url: file:///path/to/nixos-config
+    priority: critical # SUPER importante!
+
+  - name: mcp-servers
+    url: file:///path/to/mcp-servers
+    priority: high
+
+  # Pode adicionar repos públicos também
+  - name: nixpkgs
+    url: https://github.com/NixOS/nixpkgs
+    branch: nixos-unstable
+    priority: medium
+    shallow: true # clone shallow pra economizar

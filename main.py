@@ -1,34 +1,41 @@
 import os
 import sys
-from dotenv import load_dotenv
-from google.cloud import discoveryengine_v1 as discoveryengine
+from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.api_core.exceptions import GoogleAPICallError
 
-# Carrega as variáveis do arquivo .env
-load_dotenv()
+# Removido: from dotenv import load_dotenv
+# Removido: load_dotenv()
 
 def get_env_var(var_name):
+    # Pega direto do ambiente do sistema
     value = os.getenv(var_name)
-    if not value or value.startswith("seu-"):
-        print(f"ERRO: A variável '{var_name}' não está configurada corretamente no .env")
+    if not value or "SEU_ID" in value: # Checagem simples pra evitar rodar com placeholder
+        print(f"ERRO: A variável '{var_name}' não foi encontrada ou ainda é o placeholder.")
+        print("Dica: Verifique se você editou o 'flake.nix' e rodou 'nix develop' ou recarregou o direnv.")
         sys.exit(1)
     return value
 
 def run_grounded_search():
-    # Pega configurações
     project_id = get_env_var("GOOGLE_CLOUD_PROJECT_ID")
+    # As outras têm defaults caso o Nix não injete, mas o ideal é vir do flake
     location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
     model_id = os.getenv("GENAI_MODEL", "gemini-1.5-flash")
-    query_text = os.getenv("SEARCH_QUERY", "O que é computação quântica?")
+    query_text = os.getenv("SEARCH_QUERY", "Explique o que é Kubernetes.")
 
-    print(f"🚀 Iniciando busca com Grounding no Google Search...")
+    print(f"🚀 Iniciando busca...")
     print(f"   Projeto: {project_id}")
-    print(f"   Modelo: {model_id}")
-    print(f"   Pergunta: {query_text}\n")
+    print(f"   Query: {query_text}")
 
     try:
-        client = discoveryengine.GroundedGenerationServiceClient()
+        # Define o endpoint regional se necessário
+        client_options = None
+        if location != "global":
+            client_options = {"api_endpoint": f"{location}-discoveryengine.googleapis.com"}
+        
+        print(f"DEBUG: client_options={client_options}")
+        client = discoveryengine.GroundedGenerationServiceClient(client_options=client_options)
         location_path = client.common_location_path(project=project_id, location=location)
+        print(f"DEBUG: location_path={location_path}")
 
         request = discoveryengine.GenerateGroundedContentRequest(
             location=location_path,
@@ -52,27 +59,19 @@ def run_grounded_search():
 
         response = client.generate_grounded_content(request)
 
-        print("-" * 40)
-        print("RESULTADO GERADO:")
-        print("-" * 40)
-
-        full_text = ""
+        print("\n" + "="*40)
+        print("RESPOSTA (Via Vertex AI Grounding):")
+        print("="*40)
         for candidate in response.candidates:
             for part in candidate.content.parts:
                 print(part.text, end="")
-                full_text += part.text
-        print("\n" + "-" * 40)
-
-        # Mostra links de referência se houver
-        if response.candidates and response.candidates[0].grounding_metadata.search_entry_point:
-             print(f"\nVer mais no Google: {response.candidates[0].grounding_metadata.search_entry_point.rendered_content}")
+        print("\n" + "="*40)
 
     except GoogleAPICallError as e:
-        print(f"\n❌ Erro na API do Google: {e.message}")
-        if "PermissionDenied" in str(e):
-            print("Dica: Verifique se você ativou a 'Discovery Engine API' e se logou com 'gcloud auth application-default login'.")
+        print(f"\n❌ Erro na API: {e.message}")
+        print(f"Detalhes: Verifique se a API 'Discovery Engine' está ativada no projeto {project_id}")
     except Exception as e:
-        print(f"\n❌ Erro inesperado: {e}")
+        print(f"\n❌ Erro: {e}")
 
 if __name__ == "__main__":
     run_grounded_search()
