@@ -6,6 +6,54 @@ Version 2.0 - Unified framework for code intelligence and GCP credit consumption
 
 ---
 
+## 🔥 NEW: ROI Strategy Documentation
+
+**Goal:** Transform R$ 10k in GCP credits → R$ 500k+ in career value
+
+### 📚 Complete Documentation Suite
+
+| Document | Purpose | Start Here |
+|----------|---------|------------|
+| **[INDEX.md](INDEX.md)** | Navigation hub | ⭐ Overview |
+| **[EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md)** | Complete roadmap & strategy | ⭐⭐⭐ Read first |
+| **[HACKS_ROI.md](HACKS_ROI.md)** | High-ROI hacks & strategies | ⭐⭐⭐ Strategy |
+| **[HIGH_ROI_QUERIES.md](HIGH_ROI_QUERIES.md)** | 189 ready-to-use queries | ⭐⭐⭐ Execute |
+| **[AUTOMATION_SYSTEMS.md](AUTOMATION_SYSTEMS.md)** | Long-term automation systems | Scale |
+| **[README_SPEEDRUN.md](README_SPEEDRUN.md)** | Detailed execution guide | Reference |
+| **[QUICKSTART_KB.md](QUICKSTART_KB.md)** | Technical deep dive | Technical |
+| **[CHEATSHEET.md](CHEATSHEET.md)** | Quick reference | Daily use |
+
+### ⚡ Quick Start (3 comandos)
+
+```bash
+export ENGINE_ID=seu-discovery-engine-id
+./speedrun.sh setup      # Valida ambiente
+./speedrun.sh all        # Gera queries + queima créditos
+```
+
+**Read:** [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) for complete roadmap
+
+### 🔥 NEW: Arsenal de Scripts (Weaponized Intelligence)
+
+**8 scripts de alto ROI criados:**
+
+| Script | ROI | Quando Usar |
+|--------|-----|-------------|
+| **strategy_optimizer.py** | Meta | PRIMEIRO - te diz o que fazer |
+| **salary_intel.py** | 2000x | Negotiation → R$ 50k-200k |
+| **content_gold_miner.py** | ∞ | Mine outputs → Viral content |
+| **trend_predictor.py** | 50x | Early mover advantage |
+| **personal_moat_builder.py** | 200x | Niche expertise única |
+| **generate_queries.py** | 10x | Volume/broad knowledge |
+| **batch_burn.py** | - | Execute queries |
+| **monitor_credits.py** | - | Track spending |
+
+**Start here:** `python scripts/strategy_optimizer.py`
+
+**Full docs:** [scripts/README_ARSENAL.md](scripts/README_ARSENAL.md)
+
+---
+
 ## 🎯 What is Phantom?
 
 Phantom is a unified framework that combines:
