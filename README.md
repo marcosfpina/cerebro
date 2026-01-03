@@ -15,6 +15,7 @@ Version 2.0 - Unified framework for code intelligence and GCP credit consumption
 | Document | Purpose | Start Here |
 |----------|---------|------------|
 | **[INDEX.md](INDEX.md)** | Navigation hub | ⭐ Overview |
+| **[STACK_MASTERY.md](STACK_MASTERY.md)** | Complete stack guide | ⭐⭐⭐ Learn |
 | **[EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md)** | Complete roadmap & strategy | ⭐⭐⭐ Read first |
 | **[HACKS_ROI.md](HACKS_ROI.md)** | High-ROI hacks & strategies | ⭐⭐⭐ Strategy |
 | **[HIGH_ROI_QUERIES.md](HIGH_ROI_QUERIES.md)** | 189 ready-to-use queries | ⭐⭐⭐ Execute |
@@ -35,7 +36,7 @@ export ENGINE_ID=seu-discovery-engine-id
 
 ### 🔥 NEW: Arsenal de Scripts (Weaponized Intelligence)
 
-**8 scripts de alto ROI criados:**
+**10 scripts de alto ROI criados:**
 
 | Script | ROI | Quando Usar |
 |--------|-----|-------------|
@@ -47,6 +48,8 @@ export ENGINE_ID=seu-discovery-engine-id
 | **generate_queries.py** | 10x | Volume/broad knowledge |
 | **batch_burn.py** | - | Execute queries |
 | **monitor_credits.py** | - | Track spending |
+| **create_search_engine.py** | - | Setup: Create Discovery Engine |
+| **index_repository.py** | - | Setup: Index repo content |
 
 **Start here:** `python scripts/strategy_optimizer.py`
 
