@@ -56,7 +56,8 @@ def test_query_with_metrics_no_context(mock_vertex_embeddings, mock_vertex_ai, m
     result = engine.query_with_metrics("test query")
     
     assert result["answer"] == "No context found."
-    assert result["metrics"]["hit_rate"] == 0.0
+    assert result["metrics"]["avg_confidence"] == 0.0
+    assert result["metrics"]["hit_rate_k"] == "0%"
 
 def test_query_with_metrics_success(mock_vertex_embeddings, mock_vertex_ai, mock_chroma):
     engine = RigorousRAGEngine()
