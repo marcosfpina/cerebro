@@ -66,6 +66,16 @@ class HermeticAnalyzer:
     def run_hooks(
         self, stage: str, hooks_config: List[Dict], repo_path: Path
     ) -> Dict[str, str]:
+        """
+        Execute hooks with enhanced metadata support.
+
+        Supported hook metadata:
+        - description: Human-readable description of the hook
+        - command: Shell command to execute
+        - allow_failure: Continue execution if hook fails (default: False)
+        - timeout: Command timeout in seconds (default: 120)
+        - retry: Retry on failure (default: False)
+        """
         results = {}
         if not hooks_config:
             return results
@@ -75,27 +85,58 @@ class HermeticAnalyzer:
             cmd = hook.get("command")
             desc = hook.get("description", cmd)
             allow_fail = hook.get("allow_failure", False)
+            timeout = hook.get("timeout", 120)
+            retry_on_fail = hook.get("retry", False)
 
             if not cmd:
                 continue
 
             print(f"   ▶ {desc}")
-            try:
-                # Run in the repo directory
-                res = subprocess.run(
-                    cmd, shell=True, cwd=str(repo_path), capture_output=True, text=True
-                )
-                status = "✅" if res.returncode == 0 else "❌"
-                results[desc] = f"{status} (Exit: {res.returncode})"
+            attempts = 2 if retry_on_fail else 1
+            last_error = None
 
-                if res.returncode != 0 and not allow_fail:
-                    print(f"   ❌ Failed: {res.stderr.strip()}")
-                elif res.returncode == 0:
-                    print(f"   ✅ Success")
+            for attempt in range(attempts):
+                try:
+                    if attempt > 0:
+                        print(f"   🔄 Retry attempt {attempt + 1}/{attempts}")
 
-            except Exception as e:
-                results[desc] = f"❌ Error: {str(e)}"
-                print(f"   ❌ Exception: {e}")
+                    # Run in the repo directory with timeout
+                    res = subprocess.run(
+                        cmd,
+                        shell=True,
+                        cwd=str(repo_path),
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout
+                    )
+
+                    if res.returncode == 0:
+                        status = "✅"
+                        results[desc] = f"{status} (Exit: {res.returncode})"
+                        print(f"   ✅ Success")
+                        break
+                    else:
+                        status = "❌"
+                        last_error = res.stderr.strip()
+
+                        if not retry_on_fail or attempt == attempts - 1:
+                            results[desc] = f"{status} (Exit: {res.returncode})"
+                            if not allow_fail:
+                                print(f"   ❌ Failed: {last_error}")
+                            else:
+                                print(f"   ⚠️  Failed (allowed): {last_error}")
+                            break
+
+                except subprocess.TimeoutExpired:
+                    results[desc] = f"❌ Timeout after {timeout}s"
+                    print(f"   ⏱️  Timeout after {timeout}s")
+                    if not retry_on_fail or attempt == attempts - 1:
+                        break
+                except Exception as e:
+                    results[desc] = f"❌ Error: {str(e)}"
+                    print(f"   ❌ Exception: {e}")
+                    if not retry_on_fail or attempt == attempts - 1:
+                        break
 
         return results
 
