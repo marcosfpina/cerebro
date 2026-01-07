@@ -185,6 +185,7 @@ class HermeticAnalyzer:
         )
 
         # 2. Analisar Código
+        print(f"🔍 Scanning: {repo_path}")
         for file_path in repo_path.rglob("*"):
             # Check exclusions
             if any(
@@ -192,16 +193,24 @@ class HermeticAnalyzer:
                 for part in file_path.parts
                 for pat in excludes
             ):
+                # print(f"Skipped (exclude): {file_path}")
                 continue
 
-            if file_path.is_file() and not any(
-                part.startswith(".") for part in file_path.parts
-            ):
+            if file_path.is_file():
+                if any(part.startswith(".") for part in file_path.parts):
+                    # print(f"Skipped (hidden): {file_path}")
+                    continue
+
                 lang = self.detect_language(file_path)
+                if not lang:
+                    continue
+
+                # print(f"Analyzing: {file_path} ({lang})")
                 content = file_path.read_text(errors="ignore")
                 metrics.loc += len(content.splitlines())
 
-                if lang in self.parsers:
+                # Python uses AST, no need for TreeSitter
+                if lang == "python" or lang in self.parsers:
                     file_artifacts = self.analyze_file(file_path, lang, content)
                     artifacts.extend(file_artifacts)
 

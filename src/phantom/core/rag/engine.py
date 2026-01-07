@@ -13,7 +13,7 @@ class RigorousRAGEngine:
     def __init__(self, persist_directory: str = "./data/vector_db"):
         self.persist_directory = persist_directory
         self.embeddings = VertexAIEmbeddings(model="text-embedding-004")
-        self.llm = VertexAI(model="gemini-pro", temperature=0.0)
+        self.llm = VertexAI(model="gemini-1.5-flash-001", temperature=0.0)
         self.vector_db = None
 
     def ingest(self, jsonl_path: str) -> int:
@@ -50,13 +50,55 @@ class RigorousRAGEngine:
         texts = splitter.split_documents(documents)
 
         # Indexação Local (Chroma)
-        self.vector_db = Chroma.from_documents(
-            documents=texts,
-            embedding=self.embeddings,
-            persist_directory=self.persist_directory,
-        )
-        self.vector_db.persist()
-        return len(texts)
+        # BATCHING: Vertex AI has a hard limit of 250 instances per request.
+        # AND a token limit (approx 20k tokens/request).
+        # We use a safe batch size of 20 to respect both.
+        batch_size = 20
+        total_chunks = len(texts)
+        
+        from tqdm import tqdm
+        import time
+        
+        print(f"📦 Processing {total_chunks} chunks in batches of {batch_size}...")
+
+        for i in tqdm(range(0, total_chunks, batch_size), desc="Ingesting Batches"):
+            batch = texts[i : i + batch_size]
+            
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    if self.vector_db is None:
+                        # Initialize DB with first batch
+                        self.vector_db = Chroma.from_documents(
+                            documents=batch,
+                            embedding=self.embeddings,
+                            persist_directory=self.persist_directory,
+                        )
+                    else:
+                        # Add subsequent batches
+                        self.vector_db.add_documents(documents=batch)
+                    
+                    # Success - break retry loop
+                    time.sleep(1) # Gentle base delay
+                    break
+                    
+                except Exception as e:
+                    if "429" in str(e) or "Resource exhausted" in str(e):
+                        if attempt == max_retries - 1:
+                            print(f"\n❌ Batch failed after {max_retries} retries: {e}")
+                            raise e
+                        
+                        wait_time = (2 ** attempt) * 2  # 2, 4, 8, 16, 32s
+                        # print(f"⚠️ Quota hit. Backing off {wait_time}s...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"\n❌ Unexpected error at batch {i}: {e}")
+                        raise e
+
+        if self.vector_db:
+            self.vector_db.persist()
+        
+        return total_chunks
 
     def query_with_metrics(self, query: str, k: int = 4) -> Dict[str, Any]:
         """

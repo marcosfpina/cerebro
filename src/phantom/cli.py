@@ -265,6 +265,54 @@ def rag_query(question: str):
 
 
 # ================= OPS =================
+@ops_app.command("health")
+def health():
+    """
+    Verifica a saúde do sistema (Credenciais, Permissões, APIs).
+    """
+    from rich.status import Status
+    import time
+    
+    table = Table(title="System Health Check")
+    table.add_column("Check", style="cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("Details", style="dim")
+
+    with console.status("[bold green]Running diagnostics...") as status:
+        # 1. File System Check
+        try:
+            Path("./data").mkdir(exist_ok=True)
+            test_file = Path("./data/write_test")
+            test_file.touch()
+            test_file.unlink()
+            table.add_row("File System (Write)", "[green]OK[/green]", "./data is writable")
+        except Exception as e:
+            table.add_row("File System (Write)", "[red]FAIL[/red]", str(e))
+
+        # 2. Google Cloud Credentials
+        try:
+            import google.auth
+            creds, project = google.auth.default()
+            if creds and project:
+                 table.add_row("GCP Credentials", "[green]OK[/green]", f"Project: {project}")
+            else:
+                 table.add_row("GCP Credentials", "[yellow]WARN[/yellow]", "No default credentials found")
+        except Exception as e:
+            table.add_row("GCP Credentials", "[red]FAIL[/red]", str(e))
+
+        # 3. Vertex AI Connectivity (Ping)
+        try:
+            from langchain_google_vertexai import VertexAIEmbeddings
+            # Attempt a cheap operation
+            emb = VertexAIEmbeddings(model="text-embedding-004")
+            _ = emb.embed_query("ping")
+            table.add_row("Vertex AI API", "[green]OK[/green]", "Embedding API reachable")
+        except Exception as e:
+             table.add_row("Vertex AI API", "[red]FAIL[/red]", str(e))
+
+    console.print(table)
+
+
 @ops_app.command("status")
 def status():
     data = Path("./data/analyzed")
