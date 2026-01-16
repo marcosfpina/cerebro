@@ -11,7 +11,7 @@ import fnmatch
 import json
 import re
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -24,12 +24,12 @@ class RepoMetrics:
     loc: int = 0
     functions: int = 0
     classes: int = 0
-    dependencies: List[str] = None
+    dependencies: List[str] = field(default_factory=list)
     complexity_score: int = 0
-    security_hints: List[str] = None
-    performance_hints: List[str] = None
+    security_hints: List[str] = field(default_factory=list)
+    performance_hints: List[str] = field(default_factory=list)
     task_context: Optional[str] = None
-    hook_results: Dict[str, str] = None
+    hook_results: Dict[str, str] = field(default_factory=dict)
 
 
 def validate_repository_path(repo_path: Path):
@@ -156,10 +156,6 @@ class HermeticAnalyzer:
         artifacts = []
         metrics = RepoMetrics(
             name=repo_path.name,
-            dependencies=[],
-            security_hints=[],
-            performance_hints=[],
-            hook_results={},
         )
 
         # 0. Run Pre-Analyze Hooks

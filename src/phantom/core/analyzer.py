@@ -61,7 +61,7 @@ class RepoAnalyzer:
     def _is_binary(self, file_path: Path) -> bool:
         """Heurística simples para detectar binários"""
         try:
-            with open(file_path, "tr") as check_file:
+            with open(file_path, "rb") as check_file:
                 check_file.read(1024)
                 return False
         except:

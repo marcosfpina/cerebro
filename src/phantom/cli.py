@@ -290,6 +290,8 @@ def health():
     table.add_column("Status", style="bold")
     table.add_column("Details", style="dim")
 
+    final_project = None
+
     with console.status("[bold green]Running diagnostics...") as status:
         # 1. File System Check
         try:
