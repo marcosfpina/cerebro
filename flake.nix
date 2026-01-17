@@ -20,6 +20,36 @@
           config.allowUnfree = true; # For CUDA if needed
         };
 
+        # GitLab Duo Configuration
+        gitlabDuoConfig = {
+          enabled = true;
+          apiKey = builtins.getEnv "GITLAB_DUO_API_KEY";
+          endpoint = "https://gitlab.com/api/v4";
+          features = {
+            codeCompletion = true;
+            codeReview = true;
+            securityScanning = true;
+            documentationGeneration = true;
+          };
+          models = {
+            codeGeneration = "claude-3-5-sonnet";
+            codeReview = "claude-3-5-sonnet";
+            security = "claude-3-5-sonnet";
+          };
+          rateLimit = {
+            requestsPerMinute = 60;
+            tokensPerMinute = 90000;
+          };
+          cache = {
+            enabled = true;
+            ttl = 3600; # 1 hour
+          };
+          logging = {
+            level = "info";
+            format = "json";
+          };
+        };
+
         # Python environment with core dependencies
         pythonEnv = pkgs.python313.withPackages (
           ps: with ps; [
@@ -74,7 +104,29 @@
             }:$LD_LIBRARY_PATH"
 
             # Create necessary directories
-            mkdir -p ./data/analyzed ./data/vector_db ./data/reports
+            mkdir -p ./data/analyzed ./data/vector_db ./data/reports ./config/gitlab-duo
+
+            # GitLab Duo Configuration
+            export GITLAB_DUO_ENABLED=true
+            export GITLAB_DUO_ENDPOINT="https://gitlab.com/api/v4"
+            export GITLAB_DUO_FEATURES_CODE_COMPLETION=true
+            export GITLAB_DUO_FEATURES_CODE_REVIEW=true
+            export GITLAB_DUO_FEATURES_SECURITY_SCANNING=true
+            export GITLAB_DUO_FEATURES_DOCUMENTATION=true
+            export GITLAB_DUO_MODEL_CODE_GENERATION="claude-3-5-sonnet"
+            export GITLAB_DUO_MODEL_CODE_REVIEW="claude-3-5-sonnet"
+            export GITLAB_DUO_MODEL_SECURITY="claude-3-5-sonnet"
+            export GITLAB_DUO_RATE_LIMIT_RPM=60
+            export GITLAB_DUO_RATE_LIMIT_TPM=90000
+            export GITLAB_DUO_CACHE_ENABLED=true
+            export GITLAB_DUO_CACHE_TTL=3600
+            export GITLAB_DUO_LOG_LEVEL="info"
+            export GITLAB_DUO_LOG_FORMAT="json"
+
+            # Load API key from secure location if available
+            if [ -f ~/.config/gitlab-duo/api-key ]; then
+              export GITLAB_DUO_API_KEY=$(cat ~/.config/gitlab-duo/api-key)
+            fi
 
             # GCP configuration
             if [ -f ~/.config/gcloud/application_default_credentials.json ]; then

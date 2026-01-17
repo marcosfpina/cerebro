@@ -239,9 +239,21 @@ Hermetic development environments with zero global pollution:
 ### Current Deployment
 
 - **Environment:** Self-hosted NixOS + Cloud Run (optional)
-- **CI/CD:** GitHub Actions with Nix caching
+- **CI/CD:** GitLab CI/CD with Docker and Python runners
 - **Monitoring:** Health checks via `cerebro ops health`
 - **Security:** Secret Manager integration, VPC support (planned)
+
+### CI/CD Pipeline
+
+The project uses **GitLab CI/CD** for automated testing, linting, building, and deployment:
+
+- **Validate Stage:** Import and syntax checks
+- **Test Stage:** Unit tests, integration tests, linting, formatting
+- **Build Stage:** Docker image creation (manual trigger)
+- **Deploy Stage:** Cloud Run deployment (manual trigger)
+- **Monitor Stage:** Health checks and reporting
+
+See [docs/GITLAB_CI_CD.md](docs/GITLAB_CI_CD.md) for detailed pipeline documentation and [docs/GITLAB_CI_MIGRATION.md](docs/GITLAB_CI_MIGRATION.md) for migration guide from GitHub Actions.
 
 ### Known Limitations
 

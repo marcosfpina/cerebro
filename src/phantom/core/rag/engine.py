@@ -5,9 +5,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from google.cloud import storage
-from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.api_core import exceptions
-from phantom.core.gcp.search import VertexAISearch, GroundedResponse
+
+from phantom.interfaces.llm import LLMProvider
+from phantom.interfaces.vector_store import VectorStoreProvider
+from phantom.providers.gcp.vertex_ai_llm import VertexAILLMProvider
+from phantom.providers.chroma.chroma_vector_store import ChromaVectorStoreProvider
 
 
 class RigorousRAGEngine:
@@ -15,28 +18,49 @@ class RigorousRAGEngine:
     Motor RAG de Alta Precisão (CEREBRO).
     
     ALINHADO COM A LEI: Consumo programático de créditos GenAI App Builder via Discovery Engine.
+    
+    Now uses dependency injection with pluggable LLM and Vector Store providers.
     """
 
     def __init__(
-        self, 
+        self,
+        llm_provider: Optional[LLMProvider] = None,
+        vector_store_provider: Optional[VectorStoreProvider] = None,
         data_store_id: Optional[str] = None,
         location: str = "global",
         persist_directory: str = "./data/vector_db"
     ):
+        """
+        Initialize RigorousRAGEngine with pluggable providers.
+        
+        Args:
+            llm_provider: LLMProvider instance (defaults to VertexAILLMProvider)
+            vector_store_provider: VectorStoreProvider instance (defaults to ChromaVectorStoreProvider)
+            data_store_id: Discovery Engine data store ID
+            location: GCP location
+            persist_directory: Directory for vector store persistence
+        """
         self.project_id = os.getenv("GCP_PROJECT_ID")
         self.location = location
         self.data_store_id = data_store_id or os.getenv("DATA_STORE_ID")
         self.persist_directory = persist_directory
         
-        # Cliente Discovery Engine para Consumo de Créditos (A LEI)
-        if self.data_store_id:
-            self.cloud_search = VertexAISearch(
+        # Initialize providers with defaults if not provided
+        if llm_provider is None:
+            self.llm_provider = VertexAILLMProvider(
                 project_id=self.project_id,
                 location=self.location,
                 data_store_id=self.data_store_id
             )
         else:
-            self.cloud_search = None
+            self.llm_provider = llm_provider
+
+        if vector_store_provider is None:
+            self.vector_store_provider = ChromaVectorStoreProvider(
+                persist_directory=persist_directory
+            )
+        else:
+            self.vector_store_provider = vector_store_provider
 
     def ingest(self, jsonl_path: str) -> int:
         """
@@ -69,28 +93,11 @@ class RigorousRAGEngine:
         
         gcs_uri = f"gs://{bucket_name}/ingest/{path.name}"
 
-        # 2. Trigger ImportDocuments no Discovery Engine
-        client_options = None
-        if self.location != "global":
-            client_options = {"api_endpoint": f"{self.location}-discoveryengine.googleapis.com"}
-            
-        client = discoveryengine.DocumentServiceClient(client_options=client_options)
-        
-        parent = f"projects/{self.project_id}/locations/{self.location}/collections/default_collection/dataStores/{self.data_store_id}/branches/default_branch"
-        
-        request = discoveryengine.ImportDocumentsRequest(
-            parent=parent,
-            gcs_source=discoveryengine.GcsSource(
-                input_uris=[gcs_uri],
-                data_schema="document" # JSONL format optimized for Discovery Engine
-            ),
-            reconciliation_mode=discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL
-        )
-
+        # 2. Use LLM provider to import documents
         print(f"🔄 Solicitando importação no Data Store: {self.data_store_id}")
-        operation = client.import_documents(request=request)
+        operation_name = self.llm_provider.import_documents(gcs_uri)
         
-        print(f"⏳ Operação iniciada: {operation.operation.name}")
+        print(f"⏳ Operação iniciada: {operation_name}")
         print("✅ O Google está processando seus documentos em background usando seus créditos.")
         print("💡 Verifique o status no console: https://console.cloud.google.com/gen-app-builder/data-stores")
         
@@ -102,25 +109,23 @@ class RigorousRAGEngine:
         """
         Executa Grounded Generation via Discovery Engine (Consome Créditos GenAI).
         """
-        if not self.cloud_search:
-            return {
-                "answer": "❌ Erro: DATA_STORE_ID não configurado. Defina a variável de ambiente DATA_STORE_ID.",
-                "metrics": {"hit_rate_k": "0%", "avg_confidence": 0.0, "top_source": "N/A"},
-            }
-
         try:
-            # Executa Busca Aterrada (Grounded Generation) - SKU Elegível para Créditos
-            response: GroundedResponse = self.cloud_search.grounded_search(query, top_k=k)
+            # Use LLM provider for grounded generation
+            result = self.llm_provider.grounded_generate(
+                query=query,
+                context=[],  # Context comes from data store
+                top_k=k
+            )
 
             return {
-                "answer": response.summary or "Não foi possível gerar um sumário com os documentos encontrados.",
+                "answer": result.get("answer", "Não foi possível gerar um sumário com os documentos encontrados."),
                 "metrics": {
-                    "avg_confidence": 1.0, 
-                    "hit_rate_k": "100%" if response.results else "0%",
-                    "retrieved_docs": len(response.results),
-                    "top_source": response.results[0].title if response.results else "N/A",
-                    "citations": response.citations,
-                    "cost_estimate_usd": response.cost_estimate
+                    "avg_confidence": result.get("confidence", 0.0),
+                    "hit_rate_k": "100%" if result.get("citations") else "0%",
+                    "retrieved_docs": len(result.get("citations", [])),
+                    "top_source": result.get("citations", ["N/A"])[0] if result.get("citations") else "N/A",
+                    "citations": result.get("citations", []),
+                    "cost_estimate_usd": result.get("cost_estimate", 0.0)
                 },
             }
         except Exception as e:
