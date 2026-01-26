@@ -77,6 +77,42 @@ graph TB
 
 ---
 
+## 🎨 Intelligence Dashboard
+
+**NEW**: Modern React dashboard for real-time system monitoring and semantic intelligence search.
+
+![Dashboard Preview](dashboard/cerebro_dashboard.png)
+
+### Features
+- 📊 **Real-time Metrics**: System health, project status, and alerts
+- 🔍 **Semantic Search**: Natural language queries across ADR knowledge base
+- 📈 **Visual Analytics**: Health scores, dependency graphs, and trend analysis
+- 📋 **Executive Briefings**: AI-generated daily and executive summaries
+- ⚡ **Live Updates**: Auto-refresh with configurable intervals
+
+### Quick Start
+
+```bash
+# Terminal 1: Start dashboard
+cd dashboard/
+npm install
+npm run dev
+# → http://localhost:3000
+
+# Terminal 2: Start backend (coming soon)
+cd ..
+./start_api.sh
+# → http://localhost:8000
+```
+
+**Documentation**:
+- [Dashboard README](dashboard/README.md) - Setup & usage
+- [Integration Guide](DASHBOARD_INTEGRATION.md) - Backend API specs
+
+**Tech Stack**: React 18 · Vite · TypeScript · TailwindCSS · TanStack Query · Framer Motion
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
