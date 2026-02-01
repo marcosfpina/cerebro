@@ -30,6 +30,7 @@ result
 result-*
 .direnv/
 .nix-pip/
+.nix-installed
 .mcp.json
 
 
@@ -37,6 +38,7 @@ result-*
 data/
 cache/
 repos/
+.uv-cache/
 PROJECT_SUMMARY.txt
 *.jsonl
 *.json

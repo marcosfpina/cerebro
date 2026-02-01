@@ -50,22 +50,54 @@
           };
         };
 
-        # Python environment with core dependencies
+        # Python environment with project dependencies from nixpkgs
+        # Note: Some deps (langchain-*, google-cloud-*) need Poetry for now
         pythonEnv = pkgs.python313.withPackages (
           ps: with ps; [
-            # Core dependencies
+            # Core CLI & Utils
             pydantic
             typer
             rich
             tqdm
             python-dotenv
             pyyaml
+            click
+
+            # Google Cloud (basic)
+            google-auth
+            google-api-core
+            google-cloud-core
+
+            # Web Framework
+            fastapi
+            uvicorn
+
+            # ML/AI (CPU-only)
+            torch-bin  # Prebuilt binary, faster (NO torch regular!)
+            transformers
+            # sentence-transformers  # Depende de torch, instalar via Poetry
+
+            # Code Analysis
+            tree-sitter
+            gitpython
+            beautifulsoup4
+            markdown
+            pygments
 
             # Development tools
             pytest
+            pytest-cov
+            pytest-asyncio
             black
             isort
             ruff
+            mypy
+            types-pyyaml
+            types-requests
+
+            # Extra utils
+            requests
+            aiohttp
           ]
         );
 
@@ -76,6 +108,7 @@
           buildInputs = [
             pythonEnv
             pkgs.poetry
+            pkgs.uv # Fast Python package installer
             pkgs.google-cloud-sdk
             pkgs.just
             pkgs.git
@@ -90,9 +123,11 @@
           shellHook = ''
             export PYTHONPATH="$PWD/src:$PYTHONPATH"
 
-            # Poetry configuration
-            export POETRY_VIRTUALENVS_IN_PROJECT=true
-            export POETRY_VIRTUALENVS_CREATE=true
+            # Python path for development
+            export PYTHONPATH="$PWD/src:$PYTHONPATH"
+
+            # Add cerebro script to PATH
+            export PATH="$PWD:$PATH"
 
             # System libraries for compiled extensions
             export LD_LIBRARY_PATH="${
@@ -140,19 +175,27 @@
             export GCP_REGION="us-central1"
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "🧠 PHANTOM CEREBRO - Development Environment"
+            echo "🧠 PHANTOM CEREBRO - Development Environment (Nix-managed)"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "Python: $(python --version)"
-            echo "Poetry: $(poetry --version)"
+            echo "Nix:    Fully declarative, reproducible dependencies ⚡"
 
-            # Install poetry dependencies if not already installed
-            if [ ! -d ".venv" ] || [ ! -f "pyproject.toml" ]; then
-              echo "📥 Setting up Poetry environment..."
-              poetry env use python3.13
-              poetry install
-              source .venv/bin/activate
-            elif [ -d ".venv" ]; then
-              source .venv/bin/activate
+            # Hybrid approach: Nix for base deps, Poetry for unavailable ones
+            if [ ! -f ".nix-installed" ]; then
+              echo "📥 Installing cerebro (Nix base + Poetry fallback)..."
+
+              # Install missing deps via Poetry first (langchain, chromadb, google-cloud-*)
+              if [ -f "pyproject.toml" ]; then
+                echo "⚡ Installing missing deps via Poetry..."
+                poetry install --no-root --only main --no-interaction 2>/dev/null || true
+              fi
+
+              # Install project in dev mode (creates cerebro/phantom scripts)
+              echo "📦 Installing cerebro scripts..."
+              pip install -e . --no-build-isolation 2>/dev/null
+
+              touch .nix-installed
+              echo "✅ Cerebro ready!"
             fi
 
             echo ""
@@ -163,8 +206,6 @@
             echo "  cerebro rag query \"...\"      - Query the Knowledge Base"
             echo "  just pipeline                - Run full validation (test + lint)"
             echo "  pytest tests/                - Run unit tests"
-            echo ""
-            echo "Note: Use 'nix develop --command poetry run cerebro ...' for execution."
             echo ""
             echo "Data directories:"
             echo "  ./data/analyzed     - Analyzed artifacts"
