@@ -77,9 +77,54 @@ graph TB
 
 ---
 
+## 🖥️  Interactive TUI (Text User Interface)
+
+**NEW**: Full-featured terminal interface with 6 specialized screens, keyboard shortcuts, and real-time updates.
+
+### Launch the TUI
+
+```bash
+# Auto-detect best interface
+cerebro
+
+# Explicitly launch TUI
+cerebro tui
+
+# Or with poetry
+poetry run cerebro tui
+```
+
+### Features
+
+- 📊 **Dashboard** - System metrics, health scores, quick actions, auto-refresh
+- 📁 **Projects** - Sortable DataTable with 1000+ projects, search/filter, health visualization
+- 🔍 **Intelligence** - Natural language queries, semantic/exact modes, history tracking
+- ⚙️  **Scripts** - Launch all 24 CLI commands with live progress and output streaming
+- 💰 **GCP Credits** - Credit tracking, batch burn interface, real-time monitoring
+- 📋 **Logs** - Live log tail, level/module filtering, color-coding
+- ❓ **Help** - Complete keyboard shortcuts reference (press `?`)
+
+### Keyboard Shortcuts
+
+```
+Global:  d=Dashboard p=Projects i=Intelligence s=Scripts g=GCP l=Logs ?=Help q=Quit
+Common:  r=Refresh /=Search Esc=Back Tab=Next Enter=Submit
+```
+
+**Full keyboard reference:** [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md)
+
+### Performance
+
+- Startup: <2 seconds
+- Handles 1000+ projects
+- Real-time streaming updates
+- Memory efficient (~60MB)
+
+---
+
 ## 🎨 Intelligence Dashboard
 
-**NEW**: Modern React dashboard for real-time system monitoring and semantic intelligence search.
+**React Dashboard**: Modern web interface for real-time system monitoring and semantic intelligence search.
 
 ![Dashboard Preview](dashboard/cerebro_dashboard.png)
 
@@ -354,6 +399,26 @@ See [docs/GITLAB_CI_CD.md](docs/GITLAB_CI_CD.md) for detailed pipeline documenta
 - **[Data Flow Diagram](docs/ARCHITECTURE_DATA_FLOW.md)** - Pipeline visualization
 - **[API Reference](docs/CAPABILITIES.md)** - CLI commands and Python API
 - **[Coverage Gaps](docs/COVERAGE_GAP.md)** - Known issues and planned features
+
+### Architecture Decision Records (ADRs)
+- **[ADR Summary](docs/ADR_SUMMARY.md)** - Overview of all architectural decisions
+- **ADR-0019:** [Textual Framework para TUI](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0019.md) - TUI framework selection
+- **ADR-0020:** [Lazy Loading de Dependências Pesadas](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0020.md) - Performance optimization strategy
+- **ADR-0021:** [Stack Dupla Poetry + Nix](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0021.md) - Dependency management approach
+- **ADR-0022:** [Consolidação de Scripts para CLI Typer](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0022.md) - CLI unification
+- **ADR-0023:** [Arquitetura TUI com 6 Screens](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0023.md) - TUI screen design
+
+**Command-line access:**
+```bash
+# List all Cerebro ADRs
+cerebro adr list --project CEREBRO
+
+# View specific ADR
+cerebro adr show ADR-0019
+
+# Search ADRs
+cerebro adr search "TUI"
+```
 
 ### For Enterprise Teams
 - **[Migration Guide](docs/MIGRATION_COMPLETE.md)** - Local → Cloud transition
