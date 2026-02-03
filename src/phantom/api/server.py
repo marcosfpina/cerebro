@@ -29,6 +29,8 @@ from phantom.intelligence.analyzer import IntelligenceAnalyzer
 from phantom.intelligence.briefing import BriefingGenerator, BriefingType
 from phantom.registry.scanner import ProjectScanner
 from phantom.registry.indexer import KnowledgeIndexer
+from phantom.core.metrics_collector import MetricsCollector
+from phantom.core.watcher import RepoWatcher
 
 logger = logging.getLogger("cerebro.api")
 
@@ -38,9 +40,47 @@ scanner: Optional[ProjectScanner] = None
 indexer: Optional[KnowledgeIndexer] = None
 analyzer: Optional[IntelligenceAnalyzer] = None
 briefing_gen: Optional[BriefingGenerator] = None
+metrics_collector: Optional[MetricsCollector] = None
+repo_watcher: Optional[RepoWatcher] = None
 
-# WebSocket connections
+# WebSocket connections and subscriptions
 active_connections: List[WebSocket] = []
+
+
+class SubscriptionManager:
+    """Manages WebSocket subscriptions to different topics."""
+
+    def __init__(self):
+        self.subscriptions: Dict[WebSocket, set[str]] = {}
+
+    async def subscribe(self, ws: WebSocket, topic: str):
+        """Subscribe a WebSocket connection to a topic."""
+        if ws not in self.subscriptions:
+            self.subscriptions[ws] = set()
+        self.subscriptions[ws].add(topic)
+        logger.info(f"WebSocket subscribed to topic: {topic}")
+
+    async def unsubscribe(self, ws: WebSocket, topic: str):
+        """Unsubscribe from a topic."""
+        if ws in self.subscriptions:
+            self.subscriptions[ws].discard(topic)
+
+    def remove_connection(self, ws: WebSocket):
+        """Remove all subscriptions for a connection."""
+        if ws in self.subscriptions:
+            del self.subscriptions[ws]
+
+    async def broadcast_to_topic(self, topic: str, message: dict):
+        """Broadcast message to all subscribers of a topic."""
+        for ws, topics in list(self.subscriptions.items()):
+            if topic in topics:
+                try:
+                    await ws.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error broadcasting to WebSocket: {e}")
+
+
+subscription_manager = SubscriptionManager()
 
 
 # ==================== Pydantic Models ====================
@@ -103,7 +143,7 @@ class ScanRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
-    global cerebro, scanner, indexer, analyzer, briefing_gen
+    global cerebro, scanner, indexer, analyzer, briefing_gen, metrics_collector, repo_watcher
 
     # Configuration
     arch_path = os.getenv("CEREBRO_ARCH_PATH", "/home/kernelcore/arch")
@@ -126,9 +166,26 @@ async def lifespan(app: FastAPI):
 
     logger.info("Cerebro Intelligence System initialized")
 
+    # ---------- metrics collector + watcher ----------
+    metrics_collector = MetricsCollector(arch_path=arch_path)
+    if not metrics_collector.load_snapshot():
+        logger.info("No metrics snapshot — running initial scan in background")
+        asyncio.ensure_future(_initial_metrics_scan())
+    else:
+        logger.info("Loaded existing metrics snapshot")
+
+    async def _on_repo_change(data: dict):
+        await broadcast(data)
+        await subscription_manager.broadcast_to_topic("metrics", data)
+
+    repo_watcher = RepoWatcher(arch_path=arch_path, poll_interval=10, on_change=_on_repo_change)
+    await repo_watcher.start()
+
     yield
 
     # Cleanup
+    if repo_watcher:
+        await repo_watcher.stop()
     if cerebro:
         cerebro.shutdown()
     logger.info("Cerebro Intelligence System shutdown")
@@ -273,7 +330,7 @@ async def get_project(project_name: str):
 
 # ==================== Intelligence ====================
 
-@app.post("/query", response_model=QueryResponse)
+@app.post("/intelligence/query", response_model=QueryResponse)
 async def query_intelligence(request: QueryRequest):
     """Query the intelligence database."""
     if not cerebro or not indexer:
@@ -387,7 +444,7 @@ async def get_executive_briefing():
 
 # ==================== Scanning ====================
 
-@app.post("/scan")
+@app.post("/actions/scan")
 async def trigger_scan(request: ScanRequest):
     """Trigger an ecosystem scan."""
     if not scanner or not indexer:
@@ -409,6 +466,12 @@ async def trigger_scan(request: ScanRequest):
         "stats": stats,
     })
 
+    # Also broadcast to subscribers
+    await subscription_manager.broadcast_to_topic("projects", {
+        "type": "scan_complete",
+        "stats": stats,
+    })
+
     return stats
 
 
@@ -425,7 +488,7 @@ async def get_alerts():
 
 # ==================== Dependencies Graph ====================
 
-@app.get("/graph")
+@app.get("/graph/dependencies")
 async def get_dependency_graph():
     """Get project dependency graph."""
     if not analyzer:
@@ -468,15 +531,34 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             message = json.loads(data)
 
+            msg_type = message.get("type")
+
             # Handle different message types
-            if message.get("type") == "ping":
+            if msg_type == "ping":
                 await websocket.send_json({"type": "pong"})
-            elif message.get("type") == "subscribe":
-                # Handle subscriptions
-                pass
+
+            elif msg_type == "subscribe":
+                # Subscribe to topics: "alerts", "projects", "intelligence", "logs"
+                topic = message.get("topic")
+                if topic:
+                    await subscription_manager.subscribe(websocket, topic)
+                    await websocket.send_json({
+                        "type": "subscribed",
+                        "topic": topic
+                    })
+
+            elif msg_type == "unsubscribe":
+                topic = message.get("topic")
+                if topic:
+                    await subscription_manager.unsubscribe(websocket, topic)
+                    await websocket.send_json({
+                        "type": "unsubscribed",
+                        "topic": topic
+                    })
 
     except WebSocketDisconnect:
         active_connections.remove(websocket)
+        subscription_manager.remove_connection(websocket)
 
 
 async def broadcast(message: Dict[str, Any]):
@@ -526,6 +608,68 @@ async def summarize_project(project_name: str):
         summary["recommendations"].append("Consider improving documentation and test coverage")
 
     return summary
+
+
+# ==================== Metrics ====================
+
+
+async def _initial_metrics_scan():
+    """Background task: run first metrics scan without blocking startup."""
+    if metrics_collector:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, metrics_collector.collect_all)
+        logger.info("Initial metrics scan complete")
+
+
+@app.get("/metrics")
+async def get_all_metrics():
+    """Latest metrics snapshot (all repos)."""
+    if not metrics_collector:
+        raise HTTPException(status_code=503, detail="Metrics not initialised")
+    snap = metrics_collector.load_snapshot()
+    if not snap:
+        raise HTTPException(status_code=404, detail="No snapshot — POST /metrics/scan first")
+    return snap
+
+
+@app.get("/metrics/watcher")
+async def get_watcher_status():
+    """Real-time watcher status."""
+    if not repo_watcher:
+        return {"running": False, "tracked_repos": 0, "last_update": None, "changes_detected": 0, "poll_interval": 0}
+    return {
+        "running": repo_watcher.is_running,
+        "tracked_repos": repo_watcher.tracked_count,
+        "last_update": repo_watcher.last_update,
+        "changes_detected": repo_watcher.changes_detected,
+        "poll_interval": repo_watcher.poll_interval,
+    }
+
+
+@app.post("/metrics/scan")
+async def trigger_metrics_scan():
+    """Trigger a full zero-token metrics re-scan."""
+    if not metrics_collector:
+        raise HTTPException(status_code=503, detail="Metrics not initialised")
+    loop = asyncio.get_running_loop()
+    results = await loop.run_in_executor(None, metrics_collector.collect_all)
+    await broadcast({"type": "metrics_scan_complete", "repo_count": len(results), "timestamp": datetime.now(timezone.utc).isoformat()})
+    await subscription_manager.broadcast_to_topic("metrics", {"type": "metrics_scan_complete", "repo_count": len(results)})
+    return {"status": "complete", "repo_count": len(results)}
+
+
+@app.get("/metrics/{repo_name}")
+async def get_repo_metrics(repo_name: str):
+    """Metrics for a single repo."""
+    if not metrics_collector:
+        raise HTTPException(status_code=503, detail="Metrics not initialised")
+    snap = metrics_collector.load_snapshot()
+    if not snap:
+        raise HTTPException(status_code=404, detail="No snapshot")
+    for repo in snap.get("repos", []):
+        if repo["name"] == repo_name:
+            return repo
+    raise HTTPException(status_code=404, detail=f"Repo not found: {repo_name}")
 
 
 # ==================== Run Server ====================

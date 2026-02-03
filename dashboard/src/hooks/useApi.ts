@@ -13,6 +13,8 @@ export const queryKeys = {
   briefing: (type: string) => ['briefing', type] as const,
   alerts: ['alerts'] as const,
   graph: ['graph'] as const,
+  metrics: ['metrics'] as const,
+  watcherStatus: ['metrics', 'watcher'] as const,
 }
 
 // Status
@@ -128,5 +130,34 @@ export function useScanMutation() {
 export function useSummarizeProject() {
   return useMutation({
     mutationFn: api.summarizeProject,
+  })
+}
+
+// Metrics
+export function useMetrics() {
+  const { autoRefresh, refreshInterval } = useDashboardStore()
+  return useQuery({
+    queryKey: queryKeys.metrics,
+    queryFn: api.getMetrics,
+    refetchInterval: autoRefresh ? refreshInterval : false,
+  })
+}
+
+export function useWatcherStatus() {
+  const { autoRefresh, refreshInterval } = useDashboardStore()
+  return useQuery({
+    queryKey: queryKeys.watcherStatus,
+    queryFn: api.getWatcherStatus,
+    refetchInterval: autoRefresh ? refreshInterval : false,
+  })
+}
+
+export function useScanMetrics() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.triggerMetricsScan,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['metrics'] })
+    },
   })
 }

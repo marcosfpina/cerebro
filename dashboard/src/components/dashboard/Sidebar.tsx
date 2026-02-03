@@ -29,6 +29,11 @@ const navItems = [
     icon: FolderKanban,
   },
   {
+    title: 'Metrics',
+    href: '/metrics',
+    icon: BarChart3,
+  },
+  {
     title: 'Intelligence',
     href: '/intelligence',
     icon: Search,

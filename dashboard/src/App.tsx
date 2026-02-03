@@ -6,6 +6,7 @@ import { Projects } from '@/pages/Projects'
 import { Intelligence } from '@/pages/Intelligence'
 import { Briefing } from '@/pages/Briefing'
 import { Settings } from '@/pages/Settings'
+import { Metrics } from '@/pages/Metrics'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/projects/:projectName" element={<Projects />} />
           <Route path="/intelligence" element={<Intelligence />} />
           <Route path="/briefing" element={<Briefing />} />
+          <Route path="/metrics" element={<Metrics />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>

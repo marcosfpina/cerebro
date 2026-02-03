@@ -2,6 +2,7 @@
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
@@ -18,13 +19,47 @@ except ImportError:
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 console = Console()
 
+# Original command groups
 knowledge_app = typer.Typer(help="Análise e Auditoria")
 ops_app = typer.Typer(help="Status Operacional")
 rag_app = typer.Typer(help="RAG & Vetores (LangChain)")
 
+# New command groups (Phase 2) — guarded because some deps (google-auth) may be absent
+from phantom.commands.metrics import metrics_app
+
+try:
+    from phantom.commands.gcp import gcp_app
+except ImportError:
+    gcp_app = None  # type: ignore[assignment]
+
+try:
+    from phantom.commands.strategy import strategy_app
+except ImportError:
+    strategy_app = None  # type: ignore[assignment]
+
+try:
+    from phantom.commands.content import content_app
+except ImportError:
+    content_app = None  # type: ignore[assignment]
+
+try:
+    from phantom.commands.testing import testing_app
+except ImportError:
+    testing_app = None  # type: ignore[assignment]
+
+# Register all command groups
 app.add_typer(knowledge_app, name="knowledge")
 app.add_typer(ops_app, name="ops")
 app.add_typer(rag_app, name="rag")
+app.add_typer(metrics_app, name="metrics")
+if gcp_app:
+    app.add_typer(gcp_app, name="gcp")
+if strategy_app:
+    app.add_typer(strategy_app, name="strategy")
+if content_app:
+    app.add_typer(content_app, name="content")
+if testing_app:
+    app.add_typer(testing_app, name="test")
 
 
 def load_config(config_path: str):
@@ -75,6 +110,42 @@ def version():
     Exibe a versão atual.
     """
     console.print("Phantom CLI v0.1.0")
+
+
+@app.command("tui")
+def launch_tui():
+    """
+    Launch interactive Terminal User Interface (TUI).
+
+    Full-featured interface with:
+      • Dashboard with system metrics
+      • Project management and analysis
+      • Intelligence queries with history
+      • Script launcher with progress
+      • GCP credit monitoring
+      • Live log viewer
+
+    Keyboard shortcuts:
+      q - Quit
+      d - Dashboard
+      p - Projects
+      i - Intelligence
+      s - Scripts
+      g - GCP Credits
+      l - Logs
+    """
+    try:
+        from phantom.tui import get_app
+        CerebroApp = get_app()
+        app = CerebroApp()
+        app.run()
+    except ImportError as e:
+        console.print(f"[red]Error:[/red] TUI dependencies missing: {e}")
+        console.print("Install with: poetry install")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error launching TUI:[/red] {e}")
+        raise typer.Exit(1)
 
 
 # ================= KNOWLEDGE =================
@@ -205,6 +276,155 @@ def summarize(repo_name: str):
         report.append(f"- ⚠️ {h}")
     (path / "EXECUTIVE_REPORT.md").write_text("\n".join(report))
     console.print(f"[green]✅ Relatório: {path}/EXECUTIVE_REPORT.md[/green]")
+
+
+# ================= NEW KNOWLEDGE COMMANDS (Phase 2) =================
+
+@knowledge_app.command("generate-queries")
+def generate_queries(
+    topic: str = typer.Argument(..., help="Topic for query generation"),
+    count: int = typer.Option(50, "--count", help="Number of queries to generate"),
+    output: Path = typer.Option("queries.json", "--output", help="Output file"),
+):
+    """
+    Generate search queries for a topic.
+
+    Creates diverse, high-quality queries for testing and knowledge expansion.
+
+    Example:
+        cerebro knowledge generate-queries "NixOS configuration" -c 100
+
+    Migrated from: scripts/generate_queries.py
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+        from generate_queries import QueryGenerator
+
+        console.print(f"🔍 Generating {count} queries about: [cyan]{topic}[/cyan]")
+
+        generator = QueryGenerator()
+        queries = generator.generate(topic, count)
+
+        # Save to file
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with open(output, 'w') as f:
+            json.dump(queries, f, indent=2)
+
+        console.print(f"[green]✅ Generated {len(queries)} queries → {output}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+
+@knowledge_app.command("index-repo")
+def index_repository(
+    repo_path: str = typer.Argument(".", help="Repository path to index"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force re-indexing"),
+    output: Optional[str] = typer.Option(None, "--output", help="Output directory"),
+):
+    """
+    Index a code repository for knowledge base.
+
+    Extracts code structure, documentation, and metadata for indexing.
+
+    Example:
+        cerebro knowledge index-repo ~/projects/myapp --force
+
+    Migrated from: scripts/index_repository.py
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+        from index_repository import RepositoryIndexer
+
+        repo = Path(repo_path).expanduser().resolve()
+
+        if not repo.exists():
+            console.print(f"[red]❌ Repository not found: {repo}[/red]")
+            return
+
+        console.print(f"📚 Indexing repository: [cyan]{repo.name}[/cyan]")
+
+        indexer = RepositoryIndexer(output_dir=output)
+        result = indexer.index(repo, force=force)
+
+        console.print(f"[green]✅ Indexed {result['files']} files, {result['symbols']} symbols[/green]")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+
+@knowledge_app.command("etl")
+def etl_docs(
+    source: str = typer.Argument(..., help="Documentation source (URL or path)"),
+    destination: str = typer.Argument(..., help="ETL destination path"),
+    format: str = typer.Option("json", "--format", help="Output format: json, jsonl, markdown"),
+):
+    """
+    ETL pipeline for documentation processing.
+
+    Extracts, transforms, and loads documentation from various sources
+    into structured format for indexing.
+
+    Example:
+        cerebro knowledge etl https://docs.example.com ./data/docs
+
+    Migrated from: scripts/etl_docs.py
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+        from etl_docs import DocumentationETL
+
+        console.print(f"📄 ETL: [cyan]{source}[/cyan] → [green]{destination}[/green]")
+
+        etl = DocumentationETL(format=format)
+        result = etl.process(source, destination)
+
+        console.print(f"[green]✅ Processed {result['documents']} documents[/green]")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+
+@knowledge_app.command("docs")
+def generate_docs(
+    project: str = typer.Argument(".", help="Project path"),
+    output: str = typer.Option("docs/", "--output", help="Output directory"),
+    format: str = typer.Option("markdown", "--format", help="Documentation format"),
+):
+    """
+    Generate project documentation automatically.
+
+    Analyzes code and generates comprehensive documentation with
+    API references, guides, and examples.
+
+    Example:
+        cerebro knowledge docs ~/projects/myapp -o ./docs
+
+    Migrated from: scripts/generate_docs.py
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+        from generate_docs import DocumentationGenerator
+
+        project_path = Path(project).expanduser().resolve()
+
+        if not project_path.exists():
+            console.print(f"[red]❌ Project not found: {project_path}[/red]")
+            return
+
+        console.print(f"📖 Generating documentation for: [cyan]{project_path.name}[/cyan]")
+
+        generator = DocumentationGenerator(format=format)
+        result = generator.generate(project_path, output)
+
+        console.print(f"[green]✅ Generated {result['pages']} pages → {output}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
 
 
 # ================= RAG (Vertex AI Search) =================

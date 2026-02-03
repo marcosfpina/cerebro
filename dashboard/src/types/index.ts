@@ -96,6 +96,64 @@ export interface DependencyGraph {
   edges: Array<{ source: string; target: string }>
 }
 
+// Metrics Types
+export interface LanguageStats {
+  files: number
+  lines: number
+}
+
+export interface GitMetrics {
+  total_commits: number
+  commits_30d: number
+  commits_90d: number
+  contributors: number
+  branches: number
+  tags: number
+  last_commit_hash?: string
+  last_commit_author?: string
+  last_commit_date?: string
+  last_commit_message?: string
+  top_contributors?: Array<{ name: string; commits: number }>
+  error?: string
+}
+
+export interface RepoMetrics {
+  name: string
+  path: string
+  collected_at: string
+  total_files: number
+  total_loc: number
+  languages: Record<string, LanguageStats>
+  primary_language: string
+  git: GitMetrics
+  dependencies: string[]
+  dep_count: number
+  security_findings: Array<{ type: string; file: string; line: number }>
+  security_score: number
+  has_tests: boolean
+  test_files: number
+  has_ci: boolean
+  has_readme: boolean
+  has_docs: boolean
+  has_flake: boolean
+  health_score: number
+  status: string
+}
+
+export interface MetricsSnapshot {
+  generated_at: string
+  repo_count: number
+  repos: RepoMetrics[]
+}
+
+export interface WatcherStatus {
+  running: boolean
+  tracked_repos: number
+  last_update: string | null
+  changes_detected: number
+  poll_interval: number
+}
+
 // Store Types
 export interface DashboardState {
   timeRange: TimeRange
