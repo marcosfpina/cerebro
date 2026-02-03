@@ -27,15 +27,22 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Central intelligence overview for ~/arch ecosystem
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-1"
+      >
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          Dashboard
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Central intelligence overview for{' '}
+          <span className="font-mono text-primary">~/arch</span> ecosystem
         </p>
-      </div>
+      </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Projects"
           value={status?.total_projects || 0}
@@ -71,12 +78,20 @@ export function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Projects Needing Attention */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Projects Needing Attention</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <FolderKanban className="h-5 w-5 text-primary" />
+                Projects Needing Attention
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Focus areas requiring your review
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" asChild className="hover:bg-primary/10">
               <a href="/projects">View All</a>
             </Button>
           </CardHeader>
@@ -89,49 +104,73 @@ export function Dashboard() {
                   All projects are healthy!
                 </div>
               ) : (
-                topProjects.map((project) => (
+                topProjects.map((project, index) => (
                   <motion.div
                     key={project.name}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ x: 4, scale: 1.01 }}
+                    className="group relative flex items-center justify-between rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm p-4 hover:border-primary/30 hover:bg-card/80 transition-all duration-200 cursor-pointer"
                   >
-                    <div className="flex-1">
+                    {/* Left accent bar */}
+                    <div
+                      className={cn(
+                        'absolute left-0 top-0 bottom-0 w-1 rounded-l-lg transition-all duration-300',
+                        project.health_score >= 70
+                          ? 'bg-green-500 group-hover:w-1.5'
+                          : project.health_score >= 50
+                          ? 'bg-yellow-500 group-hover:w-1.5'
+                          : 'bg-red-500 group-hover:w-1.5'
+                      )}
+                    />
+
+                    <div className="flex-1 ml-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{project.name}</span>
-                        <Badge variant={project.status as any}>
+                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {project.name}
+                        </span>
+                        <Badge variant={project.status as any} className="shadow-sm">
                           {project.status}
                         </Badge>
                       </div>
-                      <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{project.languages.slice(0, 2).join(', ')}</span>
-                        <span>
+                      <div className="mt-1.5 flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          {project.languages.slice(0, 2).join(', ')}
+                        </span>
+                        <span className="flex items-center gap-1">
                           {formatRelativeTime(project.last_commit)}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div
                           className={cn(
-                            'text-lg font-semibold',
+                            'text-2xl font-bold tabular-nums tracking-tight',
                             getHealthColor(project.health_score)
                           )}
                         >
-                          {project.health_score.toFixed(0)}%
+                          {project.health_score.toFixed(0)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                          Health
                         </div>
                       </div>
-                      <Progress
-                        value={project.health_score}
-                        className="w-20"
-                        indicatorClassName={
-                          project.health_score >= 70
-                            ? 'bg-green-500'
-                            : project.health_score >= 50
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }
-                      />
+                      <div className="w-24">
+                        <Progress
+                          value={project.health_score}
+                          className="h-2"
+                          indicatorClassName={cn(
+                            'transition-all duration-300',
+                            project.health_score >= 70
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                              : project.health_score >= 50
+                              ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                              : 'bg-gradient-to-r from-red-500 to-rose-500'
+                          )}
+                        />
+                      </div>
                     </div>
                   </motion.div>
                 ))
@@ -141,10 +180,20 @@ export function Dashboard() {
         </Card>
 
         {/* Recent Alerts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Alerts</CardTitle>
-            <Badge variant="outline">{alerts?.length || 0} total</Badge>
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                Recent Alerts
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                System notifications and warnings
+              </p>
+            </div>
+            <Badge variant="outline" className="shadow-sm">
+              {alerts?.length || 0} total
+            </Badge>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -156,17 +205,24 @@ export function Dashboard() {
                 recentAlerts.map((alert, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-3"
+                    initial={{ opacity: 0, x: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ delay: i * 0.05, type: "spring", stiffness: 200 }}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    className="group relative flex items-start gap-3 rounded-lg border border-red-500/20 bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent p-4 hover:border-red-500/30 transition-all duration-200"
                   >
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                    {/* Pulse indicator */}
+                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+
+                    <div className="rounded-lg bg-red-500/10 p-2 group-hover:bg-red-500/20 transition-colors">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                    </div>
                     <div className="flex-1 text-sm">
-                      <p>{alert.message}</p>
+                      <p className="font-medium text-foreground">{alert.message}</p>
                       {alert.project && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Project: {alert.project}
+                        <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="text-red-500">•</span>
+                          Project: <span className="font-medium">{alert.project}</span>
                         </p>
                       )}
                     </div>
@@ -178,10 +234,18 @@ export function Dashboard() {
         </Card>
 
         {/* Daily Briefing Summary */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Daily Briefing</CardTitle>
-            <Button variant="outline" size="sm" asChild>
+        <Card className="lg:col-span-2 border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Daily Briefing
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Today's key insights and developments
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10">
               <a href="/briefing">Full Briefing</a>
             </Button>
           </CardHeader>
@@ -221,33 +285,54 @@ export function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" asChild>
-              <a href="/intelligence">
-                <Search className="mr-2 h-4 w-4" />
-                Search Intelligence
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/briefing">
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Executive Summary
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/projects">
-                <FolderKanban className="mr-2 h-4 w-4" />
-                Browse Projects
-              </a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              Quick Actions
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Common tasks and navigation shortcuts
+            </p>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
+                  <a href="/intelligence" className="flex flex-col items-center gap-2">
+                    <Search className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="font-semibold">Search Intelligence</span>
+                    <span className="text-xs text-muted-foreground">Query knowledge base</span>
+                  </a>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
+                  <a href="/briefing" className="flex flex-col items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="font-semibold">Executive Summary</span>
+                    <span className="text-xs text-muted-foreground">View insights</span>
+                  </a>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
+                  <a href="/projects" className="flex flex-col items-center gap-2">
+                    <FolderKanban className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="font-semibold">Browse Projects</span>
+                    <span className="text-xs text-muted-foreground">Explore ecosystem</span>
+                  </a>
+                </Button>
+              </motion.div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }
@@ -271,21 +356,37 @@ function StatCard({
   valueClassName,
 }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className={cn('text-3xl font-bold', valueClassName)}>
-              {loading ? '...' : value}
-            </p>
-            <p className="text-xs text-muted-foreground">{description}</p>
+    <motion.div
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-shadow duration-300">
+        {/* Gradient background accent */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+
+        <CardContent className="p-6 relative">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                {title}
+              </p>
+              <p className={cn('text-4xl font-bold tracking-tight', valueClassName)}>
+                {loading ? (
+                  <span className="inline-block animate-pulse">...</span>
+                ) : value}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            </div>
+            <motion.div
+              className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4"
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Icon className="h-7 w-7 text-primary" />
+            </motion.div>
           </div>
-          <div className="rounded-full bg-muted p-3">
-            <Icon className="h-6 w-6 text-muted-foreground" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

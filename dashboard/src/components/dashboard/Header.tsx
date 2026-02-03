@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Mic,
   Settings,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +27,8 @@ export function Header() {
     setTimeRange,
     autoRefresh,
     setAutoRefresh,
+    theme,
+    setTheme,
   } = useDashboardStore()
   const { setQuery } = useQueryStore()
   const { data: alerts } = useAlerts()
@@ -46,7 +50,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 flex h-14 sm:h-16 items-center justify-between border-b bg-background/95 px-3 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Left Section */}
       <div className="flex items-center gap-4">
         <Button
@@ -59,11 +63,11 @@ export function Header() {
         </Button>
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="relative hidden md:block">
+        <form onSubmit={handleSearch} className="relative hidden lg:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search intelligence..."
-            className="w-80 pl-10 pr-10"
+            className="w-64 xl:w-80 pl-10 pr-10"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
@@ -77,12 +81,17 @@ export function Header() {
             <Mic className="h-4 w-4 text-muted-foreground" />
           </Button>
         </form>
+
+        {/* Mobile Search Button */}
+        <Button variant="ghost" size="icon" className="lg:hidden">
+          <Search className="h-5 w-5" />
+        </Button>
       </div>
 
       {/* Right Section - Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Time Range Picker */}
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <Button
             variant="outline"
             size="sm"
@@ -125,7 +134,7 @@ export function Header() {
         <Button
           variant={autoRefresh ? 'default' : 'outline'}
           size="sm"
-          className="gap-2"
+          className="gap-2 hidden md:flex"
           onClick={() => setAutoRefresh(!autoRefresh)}
         >
           <RefreshCw
@@ -135,7 +144,9 @@ export function Header() {
               scanMutation.isPending && 'animate-spin'
             )}
           />
-          {autoRefresh ? 'Auto' : 'Manual'}
+          <span className="hidden lg:inline">
+            {autoRefresh ? 'Auto' : 'Manual'}
+          </span>
         </Button>
 
         {/* Scan Button */}
@@ -144,8 +155,12 @@ export function Header() {
           size="sm"
           onClick={handleScan}
           disabled={scanMutation.isPending}
+          className="hidden sm:inline-flex"
         >
-          {scanMutation.isPending ? 'Scanning...' : 'Scan'}
+          <span className="hidden md:inline">
+            {scanMutation.isPending ? 'Scanning...' : 'Scan'}
+          </span>
+          <RefreshCw className={cn('h-4 w-4 md:hidden', scanMutation.isPending && 'animate-spin')} />
         </Button>
 
         {/* Alerts */}
@@ -159,6 +174,38 @@ export function Header() {
               {alerts.length}
             </Badge>
           )}
+        </Button>
+
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="relative overflow-hidden group"
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          <motion.div
+            initial={false}
+            animate={{
+              rotate: theme === 'dark' ? 0 : 180,
+              scale: theme === 'dark' ? 1 : 0,
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            <Moon className="h-5 w-5" />
+          </motion.div>
+          <motion.div
+            initial={false}
+            animate={{
+              rotate: theme === 'dark' ? 180 : 0,
+              scale: theme === 'dark' ? 0 : 1,
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            <Sun className="h-5 w-5" />
+          </motion.div>
         </Button>
 
         {/* Settings */}
