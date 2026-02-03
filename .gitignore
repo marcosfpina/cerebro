@@ -1,63 +1,58 @@
-# PHANTOM - Git Ignore Pattern
+# ============================================================
+# Cerebro / Phantom .gitignore
+# ============================================================
 
-# Python
+# ── Python ────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
+.eggs/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.venv/
+venv/
 
-# Nix
+# ── Build / dist ──────────────────────────────────────────
+build/
+dist/
+wheels/
+
+# ── Nix ───────────────────────────────────────────────────
 result
 result-*
 .direnv/
 .nix-pip/
 .nix-installed
-.mcp.json
 
+# ── Node (dashboard) ──────────────────────────────────────
+dashboard/node_modules/
 
-# Project Specific Data & Cache
+# ── Runtime data & cache (scoped — not blanket extensions) ─
 data/
 cache/
 repos/
 .uv-cache/
 PROJECT_SUMMARY.txt
-*.jsonl
-*.json
-*.log
-*.txt
-*.csv
 
-# Environment & Secrets
+# ── Secrets & env ─────────────────────────────────────────
 .env
 .env.*
-.billing_export.env
 secrets/
 *.key
 *.pem
 application_default_credentials.json
 
-
-# IDEs & OS
+# ── Claude / IDE / OS ─────────────────────────────────────
+.claude/
+**/.mcp.json
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
