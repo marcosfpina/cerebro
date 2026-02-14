@@ -1,8 +1,22 @@
+"""Tests for the RAG engine (RigorousRAGEngine).
+
+All GCP/chromadb imports are mocked to allow running locally.
+"""
 
 import json
 import pytest
 from unittest.mock import MagicMock, patch, mock_open
-from phantom.core.rag.engine import RigorousRAGEngine
+
+# Mock heavy dependencies at import time so the module loads cleanly
+with patch.dict("sys.modules", {
+    "google.cloud": MagicMock(),
+    "google.cloud.storage": MagicMock(),
+    "google.api_core": MagicMock(),
+    "google.api_core.exceptions": MagicMock(),
+}):
+    from phantom.core.rag import engine as _rag_engine_mod
+    RigorousRAGEngine = _rag_engine_mod.RigorousRAGEngine
+
 from phantom.interfaces.llm import LLMProvider
 from phantom.interfaces.vector_store import VectorStoreProvider
 
@@ -38,12 +52,10 @@ def test_initialization(mock_llm_provider, mock_vector_store_provider):
 
 def test_initialization_with_defaults():
     """Test RAG engine initialization with default providers."""
-    # This will use real providers, so we patch them
-    with patch("phantom.providers.gcp.vertex_ai_llm.VertexAILLMProvider") as mock_vertex:
-        with patch("phantom.providers.chroma.chroma_vector_store.ChromaVectorStoreProvider") as mock_chroma:
+    with patch.object(_rag_engine_mod, "VertexAILLMProvider") as mock_vertex:
+        with patch.object(_rag_engine_mod, "ChromaVectorStoreProvider") as mock_chroma:
             engine = RigorousRAGEngine(persist_directory="./test_db")
             assert engine.persist_directory == "./test_db"
-            # Verify default providers were instantiated
             mock_vertex.assert_called_once()
             mock_chroma.assert_called_once()
 
@@ -52,54 +64,57 @@ def test_ingest_file_not_found(mock_llm_provider, mock_vector_store_provider):
     """Test ingest with non-existent file."""
     engine = RigorousRAGEngine(
         llm_provider=mock_llm_provider,
-        vector_store_provider=mock_vector_store_provider
+        vector_store_provider=mock_vector_store_provider,
+        data_store_id="test-store",
     )
+    engine.project_id = "test-project"
     with pytest.raises(FileNotFoundError):
         engine.ingest("non_existent_file.jsonl")
 
 
 @patch("builtins.open", new_callable=mock_open, read_data='{"jsonData": "{\\"title\\": \\"test\\", \\"content\\": \\"code content\\", \\"repo\\": \\"repo1\\"}"}\n')
-@patch("phantom.core.rag.engine.Path.exists", return_value=True)
-@patch("phantom.core.rag.engine.storage.Client")
-def test_ingest_success(mock_storage, mock_exists, mock_file, mock_llm_provider, mock_vector_store_provider):
+@patch.object(_rag_engine_mod, "Path")
+@patch.object(_rag_engine_mod, "storage")
+def test_ingest_success(mock_storage_mod, mock_path_cls, mock_file):
     """Test successful ingestion with mocked providers."""
-    # Mock GCS storage
+    mock_path_cls.return_value.exists.return_value = True
     mock_bucket = MagicMock()
-    mock_storage.return_value.get_bucket.return_value = mock_bucket
-    
-    # Mock LLM provider import
-    mock_llm_provider.import_documents.return_value = "operation-123"
-    
+    mock_storage_mod.Client.return_value.get_bucket.return_value = mock_bucket
+
+    # Use a plain MagicMock (no spec) since import_documents isn't on LLMProvider ABC
+    llm = MagicMock()
+    llm.import_documents.return_value = "operation-123"
+    vs = MagicMock()
+
     engine = RigorousRAGEngine(
-        llm_provider=mock_llm_provider,
-        vector_store_provider=mock_vector_store_provider,
+        llm_provider=llm,
+        vector_store_provider=vs,
         data_store_id="test-store"
     )
     engine.project_id = "test-project"
-    
+
     count = engine.ingest("test.jsonl")
-    
+
     assert count > 0
-    mock_llm_provider.import_documents.assert_called_once()
+    llm.import_documents.assert_called_once()
 
 
 def test_query_with_metrics_no_data(mock_llm_provider, mock_vector_store_provider):
     """Test query when no data is available."""
-    # Mock empty grounded generation response
     mock_llm_provider.grounded_generate.return_value = {
         "answer": "No answer could be generated from the available context.",
         "citations": [],
         "confidence": 0.0,
         "cost_estimate": 0.0,
     }
-    
+
     engine = RigorousRAGEngine(
         llm_provider=mock_llm_provider,
         vector_store_provider=mock_vector_store_provider
     )
-    
+
     result = engine.query_with_metrics("test query")
-    
+
     assert "No answer" in result["answer"]
     assert result["metrics"]["avg_confidence"] == 0.0
     assert result["metrics"]["hit_rate_k"] == "0%"
@@ -107,21 +122,20 @@ def test_query_with_metrics_no_data(mock_llm_provider, mock_vector_store_provide
 
 def test_query_with_metrics_success(mock_llm_provider, mock_vector_store_provider):
     """Test successful query with grounded generation."""
-    # Mock successful grounded generation response
     mock_llm_provider.grounded_generate.return_value = {
         "answer": "The hello function prints world.",
         "citations": ["repo/file.py"],
         "confidence": 0.95,
         "cost_estimate": 0.004,
     }
-    
+
     engine = RigorousRAGEngine(
         llm_provider=mock_llm_provider,
         vector_store_provider=mock_vector_store_provider
     )
-    
+
     result = engine.query_with_metrics("What does hello do?")
-    
+
     assert "hello" in result["answer"]
     assert result["metrics"]["avg_confidence"] == 0.95
     assert result["metrics"]["hit_rate_k"] == "100%"

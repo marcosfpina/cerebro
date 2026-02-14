@@ -306,7 +306,7 @@ class TestScan:
         text_file.write_text("text content\n")
         
         binary_file = tmp_path / "image.bin"
-        binary_file.write_bytes(b'\x89PNG\r\n\x1a\n')
+        binary_file.write_bytes(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR')
         
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
