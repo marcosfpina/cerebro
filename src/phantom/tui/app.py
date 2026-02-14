@@ -4,6 +4,8 @@ Cerebro TUI - Interactive Terminal User Interface
 Main Textual application with screen navigation and command integration.
 """
 
+import os
+
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Vertical, Horizontal, VerticalScroll
@@ -316,7 +318,6 @@ class ProjectsScreen(Screen):
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row selection to show project details."""
-        table = self.query_one("#projects-table", DataTable)
         row_index = event.cursor_row
 
         if 0 <= row_index < len(self.all_projects):
@@ -508,8 +509,6 @@ class IntelligenceScreen(Screen):
         results_widget.update("[dim]Searching...[/dim]")
 
         try:
-            results_list = []
-
             async for update in self.router.run_intelligence_query(
                 query=query_text,
                 limit=limit,
@@ -520,7 +519,6 @@ class IntelligenceScreen(Screen):
 
                 if status == "complete":
                     results = update.get("results", [])
-                    results_list = results
 
                     if not results:
                         results_widget.update("[dim]No results found.[/dim]")
@@ -548,13 +546,13 @@ class IntelligenceScreen(Screen):
 
                 elif status == "error":
                     results_widget.update(f"[red]✗ Error: {message}[/red]")
-                    status_widget.update(f"[red]✗ Query failed[/red]")
+                    status_widget.update("[red]✗ Query failed[/red]")
                 else:
                     status_widget.update(f"[yellow]🔄 {message}[/yellow]")
 
         except Exception as e:
             results_widget.update(f"[red]✗ Error executing query: {str(e)}[/red]")
-            status_widget.update(f"[red]✗ Error[/red]")
+            status_widget.update("[red]✗ Error[/red]")
 
     def format_results(self, results: list) -> str:
         """Format query results for display."""
@@ -614,8 +612,7 @@ class ScriptsScreen(Screen):
         self.selected_command = None
 
     def compose(self) -> ComposeResult:
-        from textual.widgets import SelectionList, ProgressBar
-        from textual.widgets.selection_list import Selection
+        from textual.widgets import ProgressBar
 
         yield Header()
         yield VerticalScroll(
@@ -819,14 +816,14 @@ class ScriptsScreen(Screen):
                 # Update status
                 if status_val == "complete":
                     result = update.get("result", {})
-                    status.update(f"[green]✓ Complete[/green]")
+                    status.update("[green]✓ Complete[/green]")
                     output_lines.append(f"\n[green]✓ Result: {result}[/green]")
                     output.update("\n".join(output_lines))
                 elif status_val == "error":
-                    status.update(f"[red]✗ Error[/red]")
+                    status.update("[red]✗ Error[/red]")
 
         except Exception as e:
-            status.update(f"[red]✗ Execution failed[/red]")
+            status.update("[red]✗ Execution failed[/red]")
             output.update(f"[red]✗ Error: {str(e)}[/red]")
 
     async def _simple_command(self, coro):
@@ -851,7 +848,7 @@ class ScriptsScreen(Screen):
 
 
 class GCPCreditsScreen(Screen):
-    """GCP credit monitoring and batch burn interface."""
+    """GCP Credit Management & Batch Execution."""
 
     BINDINGS = [
         Binding("escape", "app.pop_screen", "Back"),
@@ -876,9 +873,9 @@ class GCPCreditsScreen(Screen):
                 classes="credits-panel"
             ),
 
-            # Batch Burn Controls
+            # Batch Execution Controls
             Container(
-                Static("[bold]Batch Burn[/bold]", classes="panel-header"),
+                Static("[bold]Batch Execution[/bold]", classes="panel-header"),
                 Horizontal(
                     Container(
                         Label("Queries:", classes="burn-label"),
@@ -893,7 +890,7 @@ class GCPCreditsScreen(Screen):
                     classes="burn-inputs"
                 ),
                 Horizontal(
-                    Button("🔥 Start Burn", id="btn-start-burn", variant="primary"),
+                    Button("▶️  Execute Batch", id="btn-start-burn", variant="primary"),
                     Button("⏹️  Stop", id="btn-stop-burn", variant="error"),
                     Button("🔄 Refresh", id="btn-refresh"),
                     classes="burn-buttons"
@@ -908,11 +905,11 @@ class GCPCreditsScreen(Screen):
                 classes="burn-progress-panel"
             ),
 
-            # Burn Results/History
+            # Execution Results/History
             Container(
-                Static("[bold]Burn History[/bold]", classes="panel-header"),
+                Static("[bold]Execution History[/bold]", classes="panel-header"),
                 VerticalScroll(
-                    Static("No burn operations yet", id="burn-history"),
+                    Static("No batch operations yet", id="burn-history"),
                     id="history-scroll",
                     classes="history-scroll"
                 ),
@@ -983,7 +980,7 @@ class GCPCreditsScreen(Screen):
             self.action_refresh()
 
     async def action_start_burn(self) -> None:
-        """Start batch burn operation."""
+        """Start batch execution operation."""
         if not self.router:
             return
 
@@ -1000,12 +997,12 @@ class GCPCreditsScreen(Screen):
 
         # Confirm large burns
         if queries > 1000:
-            self.notify("Large burn requested. Confirm in status bar.", severity="warning")
+            self.notify("Large batch requested. Confirm in status bar.", severity="warning")
             # In production, show a confirmation dialog
 
         # Update status
         status = self.query_one("#burn-status", Static)
-        status.update(f"[yellow]🔥 Burning {queries} queries with {workers} workers...[/yellow]")
+        status.update(f"[yellow]Executing {queries} queries with {workers} workers...[/yellow]")
 
         # Clear history and prepare for new entry
         history = self.query_one("#burn-history", Static)
@@ -1021,14 +1018,14 @@ class GCPCreditsScreen(Screen):
 
                 # Update progress
                 progress_bar.update(progress=prog)
-                status.update(f"[yellow]🔥 {message}[/yellow]")
+                status.update(f"[yellow]{message}[/yellow]")
 
                 if status_val == "complete":
                     result = update.get("result", {})
                     queries_processed = result.get("queries_processed", 0)
 
                     # Update status
-                    status.update(f"[green]✓ Burn complete: {queries_processed} queries[/green]")
+                    status.update(f"[green]✓ Batch complete: {queries_processed} queries[/green]")
 
                     # Add to history
                     import datetime
@@ -1041,13 +1038,13 @@ class GCPCreditsScreen(Screen):
                     await self.load_credits()
 
                 elif status_val == "error":
-                    status.update(f"[red]✗ Burn failed: {message}[/red]")
+                    status.update(f"[red]✗ Execution failed: {message}[/red]")
 
         except Exception as e:
             status.update(f"[red]✗ Error: {str(e)}[/red]")
 
     def action_stop_burn(self) -> None:
-        """Stop current burn operation."""
+        """Stop current batch operation."""
         self.notify("Stop functionality coming soon", severity="information")
 
     async def action_refresh(self) -> None:
@@ -1057,13 +1054,20 @@ class GCPCreditsScreen(Screen):
 
 
 class LogsScreen(Screen):
-    """Live log viewer with filtering."""
+    """Live log viewer with filtering.
+
+    Set the CEREBRO_DEMO_MODE env var to "0" (or any falsy value) to connect
+    to the real Python logging system instead of generating simulated logs.
+    """
 
     BINDINGS = [
         Binding("escape", "app.pop_screen", "Back"),
         Binding("p", "toggle_pause", "Pause"),
         Binding("c", "clear_logs", "Clear"),
     ]
+
+    # True by default; set CEREBRO_DEMO_MODE=0 to disable
+    DEMO_MODE: bool = os.getenv("CEREBRO_DEMO_MODE", "1").strip() not in ("0", "false", "")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1126,13 +1130,14 @@ class LogsScreen(Screen):
 
     async def on_mount(self) -> None:
         """Initialize the logs screen."""
-        # Start simulated log generation
-        self.set_interval(2.0, self.add_simulated_log)
-
-        # Add some initial logs
         self.add_log("INFO", "cerebro.core", "Cerebro TUI initialized")
         self.add_log("INFO", "cerebro.router", "Command router ready")
         self.add_log("INFO", "cerebro.intelligence", "Intelligence engine loaded")
+
+        if self.DEMO_MODE:
+            self.set_interval(2.0, self.add_simulated_log)
+        else:
+            self._attach_real_logging()
 
     def add_log(self, level: str, module: str, message: str) -> None:
         """Add a log entry to the buffer."""
@@ -1200,6 +1205,24 @@ class LogsScreen(Screen):
 
         self.add_log(level, module, message)
 
+    def _attach_real_logging(self) -> None:
+        """Install a logging handler that routes Python log records into the TUI."""
+        import logging
+
+        screen = self  # capture for the closure
+
+        class _TUIHandler(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                try:
+                    screen.add_log(record.levelname, record.name, record.getMessage())
+                except Exception:
+                    pass
+
+        handler = _TUIHandler()
+        handler.setLevel(logging.DEBUG)
+        # Attach to the root "cerebro" logger so all sub-loggers are captured
+        logging.getLogger("cerebro").addHandler(handler)
+
     def update_logs_display(self) -> None:
         """Update the logs display widget."""
         logs_display = self.query_one("#logs-display", Static)
@@ -1251,7 +1274,7 @@ class LogsScreen(Screen):
             try:
                 button = self.query_one(f"#{button_id}", Button)
                 button.variant = "primary" if level == self.filter_level else "default"
-            except:
+            except Exception:
                 pass
 
     def refilter_logs(self) -> None:
@@ -1377,9 +1400,9 @@ class HelpScreen(Screen):
 [yellow]GCP Credits:[/yellow]
   • Credit balance tracking
   • Usage percentage visualization
-  • Batch burn interface
+  • Batch execution interface
   • Real-time progress monitoring
-  • Burn history log
+  • Execution history log
   • Cost estimates
 
 [yellow]Logs:[/yellow]
@@ -1404,7 +1427,7 @@ class HelpScreen(Screen):
 • Projects screen: Type / then search term for instant filtering
 • Intelligence: Toggle Semantic mode for better results
 • Scripts: Monitor progress in real-time
-• GCP Credits: Watch burn progress live
+• GCP Credits: Watch execution progress live
 • Logs: Pause before searching to prevent auto-scroll
 • All screens: Press r to manually refresh data
 • Use Tab key to navigate between input fields

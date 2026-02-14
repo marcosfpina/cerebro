@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CEREBRO Embedding Server - GCP Vertex AI Edition
-Queima créditos com estilo usando text-embedding-004!
+Embedding server using Vertex AI text-embedding-004.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -20,7 +20,7 @@ app = FastAPI(title="CEREBRO Embeddings API", version="1.0.0")
 
 class EmbeddingRequest(BaseModel):
     content: str
-    task_type: str = "RETRIEVAL_DOCUMENT"  # ou RETRIEVAL_QUERY
+    task_type: str = "RETRIEVAL_DOCUMENT"  # or RETRIEVAL_QUERY
 
 class EmbeddingResponse(BaseModel):
     embedding: List[float]
@@ -62,7 +62,7 @@ async def startup():
     # Load embedding model
     embedding_model = TextEmbeddingModel.from_pretrained("text-embedding-004")
 
-    logger.info("✅ CEREBRO Embedding Server ready! Burn those credits 🔥💰")
+    logger.info("✅ CEREBRO Embedding Server ready!")
 
 @app.post("/embedding", response_model=EmbeddingResponse)
 async def generate_embedding(request: EmbeddingRequest):
@@ -76,7 +76,7 @@ async def generate_embedding(request: EmbeddingRequest):
     try:
         start = time.time()
 
-        # Generate embedding via Vertex AI (QUEIMANDO CRÉDITOS 🔥)
+        # Generate embedding via Vertex AI
         embeddings = embedding_model.get_embeddings([request.content])
 
         latency = time.time() - start
@@ -147,7 +147,7 @@ async def health():
         "provider": "Google Cloud Vertex AI",
         "project_id": project_id,
         "location": location,
-        "credits_remaining": "$6000 🔥"
+        "credits_remaining": "check GCP console"
     }
 
 @app.get("/stats")
@@ -165,7 +165,7 @@ async def stats():
             "CLUSTERING"
         ],
         "cost_per_1k_chars": "$0.00001 (estimate)",
-        "message": "QUEIMANDO CRÉDITOS COM ESTILO 🔥💰"
+        "message": "Cerebro Embedding Server operational"
     }
 
 if __name__ == "__main__":

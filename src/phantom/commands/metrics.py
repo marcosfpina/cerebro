@@ -7,8 +7,7 @@ Metrics CLI Commands
 """
 
 import time
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import datetime
 
 import typer
 from rich import box
@@ -17,7 +16,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-metrics_app = typer.Typer(help="Métricas & Rastreamento (Zero Tokens)")
+metrics_app = typer.Typer(help="Metrics & Tracking (Zero Tokens)")
 console = Console()
 
 
@@ -106,7 +105,10 @@ def scan(
         hc = "green" if r.health_score >= 70 else "yellow" if r.health_score >= 40 else "red"
         sc = status_color.get(r.status, "white")
         commits = r.git.get("total_commits", 0)
-        t_loc += r.total_loc; t_files += r.total_files; t_commits += commits; t_deps += r.dep_count
+        t_loc += r.total_loc
+        t_files += r.total_files
+        t_commits += commits
+        t_deps += r.dep_count
         sec_c = "green" if r.security_score >= 70 else "yellow" if r.security_score >= 40 else "red"
         table.add_row(
             r.name,
@@ -168,11 +170,11 @@ def watch(
                     head_cache[repo.name] = current
                     changes += 1
                     try:
-                        s = collector.collect_repo(repo)
+                        snapshot = collector.collect_repo(repo)
                         console.print(
                             f"[{datetime.now().strftime('%H:%M:%S')}] "
                             f"[green]⚡ CHANGE[/green] [cyan]{repo.name}[/cyan] "
-                            f"→ {current[:12]}  health={s.health_score}%  LoC={s.total_loc:,}"
+                            f"→ {current[:12]}  health={snapshot.health_score}%  LoC={snapshot.total_loc:,}"
                         )
                     except Exception as e:
                         console.print(f"  [red]✗ {repo.name}: {e}[/red]")
@@ -221,7 +223,8 @@ def report(
 
     # --- code ---
     t = Table(title="Code", box=box.SIMPLE)
-    t.add_column("Metric", style="cyan"); t.add_column("Value", style="bold")
+    t.add_column("Metric", style="cyan")
+    t.add_column("Value", style="bold")
     t.add_row("Total LoC", f"{repo_data['total_loc']:,}")
     t.add_row("Total Files", f"{repo_data['total_files']:,}")
     t.add_row("Primary Language", repo_data.get("primary_language") or "—")
@@ -244,7 +247,8 @@ def report(
     git = repo_data.get("git", {})
     if git and "error" not in git:
         gt = Table(title="Git", box=box.SIMPLE)
-        gt.add_column("Metric", style="cyan"); gt.add_column("Value", style="bold")
+        gt.add_column("Metric", style="cyan")
+        gt.add_column("Value", style="bold")
         gt.add_row("Total Commits", f"{git.get('total_commits', 0):,}")
         gt.add_row("Commits (30 d)", str(git.get("commits_30d", 0)))
         gt.add_row("Commits (90 d)", str(git.get("commits_90d", 0)))

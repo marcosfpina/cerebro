@@ -5,22 +5,20 @@ Google Cloud Platform credit management and search engine utilities.
 Migrated from: scripts/batch_burn.py, monitor_credits.py, create_search_engine.py
 """
 
-import os
 import time
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
 from rich.table import Table
 from rich.panel import Panel
 from rich.live import Live
 
 # GCP imports (conditional to avoid breaking if not available)
 try:
-    from google.cloud import discoveryengine_v1beta as discoveryengine
-    from google.cloud import bigquery
+    from google.cloud import discoveryengine_v1beta as discoveryengine  # noqa: F401
+    from google.cloud import bigquery  # noqa: F401
     GCP_AVAILABLE = True
 except ImportError:
     GCP_AVAILABLE = False
@@ -29,7 +27,6 @@ gcp_app = typer.Typer(help="GCP Credits & Search Engine Management")
 console = Console()
 
 
-# ==================== BATCH BURN ====================
 
 @gcp_app.command("burn")
 def batch_burn(
@@ -42,10 +39,11 @@ def batch_burn(
     output: Optional[Path] = typer.Option(None, "--output", help="Output JSON file for results"),
 ):
     """
-    Execute batch query burn for GCP credit consumption.
+    Execute batch queries for load testing and credit utilization.
 
-    This command runs parallel queries against Discovery Engine to consume
-    GCP credits efficiently. Useful for testing and credit burn scenarios.
+    This command runs parallel queries against Discovery Engine for
+    load testing and GCP credit utilization. Useful for testing and
+    batch execution scenarios.
 
     Example:
         cerebro gcp burn -q 500 -w 20 -p my-project -e my-engine
@@ -63,7 +61,7 @@ def batch_burn(
         from batch_burn import BatchBurner, generate_questions
 
         console.print(Panel.fit(
-            f"🔥 [bold cyan]Batch Query Burner[/bold cyan]\n\n"
+            f"[bold cyan]Batch Query Execution[/bold cyan]\n\n"
             f"Project: {project_id}\n"
             f"Engine: {engine_id}\n"
             f"Queries: {queries}\n"
@@ -99,14 +97,13 @@ def batch_burn(
                 json.dump([vars(r) for r in results], f, indent=2, default=str)
             console.print(f"\n💾 Results saved to: {output}")
 
-        console.print("\n[green]✓[/green] Batch burn completed successfully!")
+        console.print("\n[green]✓[/green] Batch execution completed successfully!")
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
 
-# ==================== MONITOR CREDITS ====================
 
 @gcp_app.command("monitor")
 def monitor_credits(
@@ -198,7 +195,6 @@ def monitor_credits(
         raise typer.Exit(1)
 
 
-# ==================== CREATE SEARCH ENGINE ====================
 
 @gcp_app.command("create-engine")
 def create_search_engine(
@@ -260,7 +256,7 @@ def create_search_engine(
             **config_data
         )
 
-        console.print(f"\n[green]✓[/green] Search engine created successfully!")
+        console.print("\n[green]✓[/green] Search engine created successfully!")
         console.print(f"\nEngine ID: {result.name}")
 
     except Exception as e:
@@ -268,7 +264,6 @@ def create_search_engine(
         raise typer.Exit(1)
 
 
-# ==================== HELPER ====================
 
 @gcp_app.command("status")
 def gcp_status():
@@ -288,7 +283,7 @@ def gcp_status():
     try:
         from google.auth import default
         credentials, project = default()
-        console.print(f"[green]✓[/green] Authenticated")
+        console.print("[green]✓[/green] Authenticated")
         if project:
             console.print(f"  Default project: {project}")
     except Exception as e:

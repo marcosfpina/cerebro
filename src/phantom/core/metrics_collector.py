@@ -11,6 +11,7 @@ Zero LLM tokens consumed.
 """
 
 import json
+import os
 import re
 import subprocess
 import tomllib
@@ -71,6 +72,34 @@ SECURITY_PATTERNS: Dict[str, re.Pattern] = {
     "debug_left": re.compile(r'\b(pdb\.set_trace|breakpoint\(\)|debugger)\b'),
 }
 
+# ---------------------------------------------------------------------------
+# Health-score weights (must sum to 1.0)
+# ---------------------------------------------------------------------------
+WEIGHT_ACTIVITY: float = 0.30     # recent git activity
+WEIGHT_DOCS: float = 0.20         # README + docs presence
+WEIGHT_TESTING: float = 0.20      # test files present
+WEIGHT_CI: float = 0.15           # CI/CD pipeline present
+WEIGHT_SECURITY: float = 0.15     # security scan score
+
+# Activity score building-blocks (activity = commits * MULTIPLIER + BASELINE, capped at 100)
+ACTIVITY_30D_MULTIPLIER: int = 5
+ACTIVITY_30D_BASELINE: int = 20
+ACTIVITY_90D_MULTIPLIER: int = 2
+ACTIVITY_90D_BASELINE: int = 10
+
+# Documentation sub-scores
+DOC_README_POINTS: float = 40.0
+DOC_DOCS_DIR_POINTS: float = 40.0
+DOC_LOC_THRESHOLD: int = 100      # minimum LoC to earn doc bonus
+DOC_LOC_POINTS: float = 20.0
+
+# Testing sub-score thresholds
+TEST_FILES_HIGH: int = 20         # score 100
+TEST_FILES_MID: int = 5           # score 80
+TEST_SCORE_HIGH: float = 100.0
+TEST_SCORE_MID: float = 80.0
+TEST_SCORE_LOW: float = 60.0
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -122,8 +151,8 @@ class RepoMetricsSnapshot:
 class MetricsCollector:
     """Zero-token metrics collector.  git + fs + regex, no LLM."""
 
-    def __init__(self, arch_path: str = "/home/kernelcore/arch"):
-        self.arch_path = Path(arch_path)
+    def __init__(self, arch_path: str | None = None):
+        self.arch_path = Path(arch_path or os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "arch")))
         self.metrics_dir = self.arch_path / "cerebro" / "data" / "metrics"
         self.metrics_dir.mkdir(parents=True, exist_ok=True)
 
@@ -190,29 +219,29 @@ class MetricsCollector:
         return results
 
     def collect_repo(self, repo_path: Path) -> RepoMetricsSnapshot:
-        s = RepoMetricsSnapshot(
+        snapshot = RepoMetricsSnapshot(
             name=repo_path.name,
             path=str(repo_path),
             collected_at=datetime.now(timezone.utc).isoformat(),
         )
-        self._collect_code_metrics(repo_path, s)
-        self._collect_git_metrics(repo_path, s)
-        self._collect_dependencies(repo_path, s)
-        self._collect_security(repo_path, s)
-        self._collect_quality(repo_path, s)
-        s.health_score = self._calculate_health(s)
-        s.status = self._determine_status(s)
-        return s
+        self._collect_code_metrics(repo_path, snapshot)
+        self._collect_git_metrics(repo_path, snapshot)
+        self._collect_dependencies(repo_path, snapshot)
+        self._collect_security(repo_path, snapshot)
+        self._collect_quality(repo_path, snapshot)
+        snapshot.health_score = self._calculate_health(snapshot)
+        snapshot.status = self._determine_status(snapshot)
+        return snapshot
 
     # ------------------------------------------------------------------
     # Code metrics (filesystem)
     # ------------------------------------------------------------------
-    def _collect_code_metrics(self, repo_path: Path, s: RepoMetricsSnapshot) -> None:
+    def _collect_code_metrics(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
         lang_stats: Dict[str, Dict[str, int]] = defaultdict(lambda: {"files": 0, "lines": 0})
         for file_path in self._iter_files(repo_path):
-            if s.total_files >= MAX_FILES_PER_REPO:
+            if snapshot.total_files >= MAX_FILES_PER_REPO:
                 break
-            s.total_files += 1
+            snapshot.total_files += 1
             ext = file_path.suffix.lower()
             if ext not in EXT_TO_LANG:
                 continue
@@ -221,13 +250,13 @@ class MetricsCollector:
             try:
                 lines = len(file_path.read_text(errors="ignore").splitlines())
                 lang_stats[lang]["lines"] += lines
-                s.total_loc += lines
+                snapshot.total_loc += lines
             except (OSError, UnicodeDecodeError):
                 pass
 
-        s.languages = dict(lang_stats)
+        snapshot.languages = dict(lang_stats)
         if lang_stats:
-            s.primary_language = max(lang_stats, key=lambda k: lang_stats[k]["lines"])
+            snapshot.primary_language = max(lang_stats, key=lambda k: lang_stats[k]["lines"])
 
     def _iter_files(self, path: Path, depth: int = 0) -> Iterator[Path]:
         if depth > 7:
@@ -250,9 +279,9 @@ class MetricsCollector:
     # ------------------------------------------------------------------
     # Git metrics
     # ------------------------------------------------------------------
-    def _collect_git_metrics(self, repo_path: Path, s: RepoMetricsSnapshot) -> None:
+    def _collect_git_metrics(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
         if not (repo_path / ".git").exists():
-            s.git = {"error": "not a git repo"}
+            snapshot.git = {"error": "not a git repo"}
             return
 
         git: Dict[str, Any] = {}
@@ -285,12 +314,12 @@ class MetricsCollector:
             if m:
                 git["top_contributors"].append({"name": m.group(2).strip(), "commits": int(m.group(1))})
 
-        s.git = git
+        snapshot.git = git
 
     # ------------------------------------------------------------------
     # Dependencies
     # ------------------------------------------------------------------
-    def _collect_dependencies(self, repo_path: Path, s: RepoMetricsSnapshot) -> None:
+    def _collect_dependencies(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
         deps: List[str] = []
 
         # pyproject.toml (Poetry)
@@ -356,13 +385,13 @@ class MetricsCollector:
             except Exception:
                 pass
 
-        s.dependencies = deps
-        s.dep_count = len(deps)
+        snapshot.dependencies = deps
+        snapshot.dep_count = len(deps)
 
     # ------------------------------------------------------------------
     # Security scan
     # ------------------------------------------------------------------
-    def _collect_security(self, repo_path: Path, s: RepoMetricsSnapshot) -> None:
+    def _collect_security(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
         findings: List[Dict[str, Any]] = []
         code_exts = set(EXT_TO_LANG.keys()) - {".json", ".yaml", ".yml", ".toml", ".md"}
         scanned = 0
@@ -391,17 +420,17 @@ class MetricsCollector:
             except (OSError, UnicodeDecodeError):
                 continue
 
-        s.security_findings = findings
-        s.security_score = max(0.0, 100.0 - len(findings) * 10)
+        snapshot.security_findings = findings
+        snapshot.security_score = max(0.0, 100.0 - len(findings) * 10)
 
     # ------------------------------------------------------------------
     # Quality indicators
     # ------------------------------------------------------------------
-    def _collect_quality(self, repo_path: Path, s: RepoMetricsSnapshot) -> None:
-        s.has_readme = any((repo_path / f).exists() for f in ["README.md", "README.rst", "README"])
-        s.has_docs = (repo_path / "docs").exists()
-        s.has_flake = (repo_path / "flake.nix").exists()
-        s.has_ci = (
+    def _collect_quality(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
+        snapshot.has_readme = any((repo_path / f).exists() for f in ["README.md", "README.rst", "README"])
+        snapshot.has_docs = (repo_path / "docs").exists()
+        snapshot.has_flake = (repo_path / "flake.nix").exists()
+        snapshot.has_ci = (
             (repo_path / ".github" / "workflows").exists()
             or (repo_path / ".gitlab-ci.yml").exists()
             or (repo_path / "Jenkinsfile").exists()
@@ -413,7 +442,7 @@ class MetricsCollector:
         elif (repo_path / "test").exists():
             tests_dir = repo_path / "test"
 
-        s.has_tests = tests_dir is not None
+        snapshot.has_tests = tests_dir is not None
         if tests_dir:
             count = 0
             for f in tests_dir.rglob("*"):
@@ -421,53 +450,60 @@ class MetricsCollector:
                     count += 1
                     if count >= 5000:
                         break
-            s.test_files = count
+            snapshot.test_files = count
 
     # ------------------------------------------------------------------
     # Health / status
     # ------------------------------------------------------------------
-    def _calculate_health(self, s: RepoMetricsSnapshot) -> float:
-        # Activity 30 %
-        c30 = s.git.get("commits_30d", 0)
-        c90 = s.git.get("commits_90d", 0)
+    def _calculate_health(self, snapshot: RepoMetricsSnapshot) -> float:
+        # Activity (WEIGHT_ACTIVITY)
+        c30 = snapshot.git.get("commits_30d", 0)
+        c90 = snapshot.git.get("commits_90d", 0)
         if c30 > 0:
-            activity = min(100.0, c30 * 5 + 20)
+            activity = min(100.0, c30 * ACTIVITY_30D_MULTIPLIER + ACTIVITY_30D_BASELINE)
         elif c90 > 0:
-            activity = min(100.0, c90 * 2 + 10)
+            activity = min(100.0, c90 * ACTIVITY_90D_MULTIPLIER + ACTIVITY_90D_BASELINE)
         else:
             activity = 0.0
 
-        # Documentation 20 %
+        # Documentation (WEIGHT_DOCS)
         doc = 0.0
-        if s.has_readme:
-            doc += 40
-        if s.has_docs:
-            doc += 40
-        if s.total_loc > 100:
-            doc += 20
+        if snapshot.has_readme:
+            doc += DOC_README_POINTS
+        if snapshot.has_docs:
+            doc += DOC_DOCS_DIR_POINTS
+        if snapshot.total_loc > DOC_LOC_THRESHOLD:
+            doc += DOC_LOC_POINTS
         doc = min(100.0, doc)
 
-        # Testing 20 %
-        if not s.has_tests:
+        # Testing (WEIGHT_TESTING)
+        if not snapshot.has_tests:
             test_score = 0.0
-        elif s.test_files > 20:
-            test_score = 100.0
-        elif s.test_files > 5:
-            test_score = 80.0
+        elif snapshot.test_files > TEST_FILES_HIGH:
+            test_score = TEST_SCORE_HIGH
+        elif snapshot.test_files > TEST_FILES_MID:
+            test_score = TEST_SCORE_MID
         else:
-            test_score = 60.0
+            test_score = TEST_SCORE_LOW
 
-        ci_score = 100.0 if s.has_ci else 0.0
-        return round(activity * 0.30 + doc * 0.20 + test_score * 0.20 + ci_score * 0.15 + s.security_score * 0.15, 1)
+        ci_score = 100.0 if snapshot.has_ci else 0.0
+        return round(
+            activity * WEIGHT_ACTIVITY
+            + doc * WEIGHT_DOCS
+            + test_score * WEIGHT_TESTING
+            + ci_score * WEIGHT_CI
+            + snapshot.security_score * WEIGHT_SECURITY,
+            1,
+        )
 
     @staticmethod
-    def _determine_status(s: RepoMetricsSnapshot) -> str:
-        total = s.git.get("total_commits", 0)
+    def _determine_status(snapshot: RepoMetricsSnapshot) -> str:
+        total = snapshot.git.get("total_commits", 0)
         if total == 0:
             return "empty"
-        if s.git.get("commits_30d", 0) > 0:
+        if snapshot.git.get("commits_30d", 0) > 0:
             return "active"
-        if s.git.get("commits_90d", 0) > 0:
+        if snapshot.git.get("commits_90d", 0) > 0:
             return "maintenance"
         return "archived"
 
@@ -502,7 +538,7 @@ class MetricsCollector:
         data = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "repo_count": len(snapshots),
-            "repos": [s.to_dict() for s in snapshots],
+            "repos": [snap.to_dict() for snap in snapshots],
         }
         (self.metrics_dir / "metrics_snapshot.json").write_text(json.dumps(data, indent=2))
         logger.info("Saved metrics snapshot: %d repos", len(snapshots))

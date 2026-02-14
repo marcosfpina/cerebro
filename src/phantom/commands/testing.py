@@ -6,7 +6,7 @@ Migrated from: grounded_search.py, grounded_generation_test.py, verify_grounded_
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 import json
 
 import typer
@@ -17,7 +17,7 @@ from rich.syntax import Syntax
 
 # GCP imports (conditional)
 try:
-    from google.cloud import discoveryengine_v1beta as discoveryengine
+    from google.cloud import discoveryengine_v1beta as discoveryengine  # noqa: F401
     GCP_AVAILABLE = True
 except ImportError:
     GCP_AVAILABLE = False
@@ -26,7 +26,6 @@ testing_app = typer.Typer(help="API Testing & Validation", name="test")
 console = Console()
 
 
-# ==================== GROUNDED SEARCH ====================
 
 @testing_app.command("grounded-search")
 def test_grounded_search(
@@ -100,7 +99,6 @@ def test_grounded_search(
         raise typer.Exit(1)
 
 
-# ==================== GROUNDED GENERATION ====================
 
 @testing_app.command("grounded-gen")
 def test_grounded_generation(
@@ -176,7 +174,6 @@ def test_grounded_generation(
         raise typer.Exit(1)
 
 
-# ==================== VERIFY API ====================
 
 @testing_app.command("verify-api")
 def verify_api(
@@ -198,7 +195,6 @@ def verify_api(
     Migrated from: scripts/verify_grounded_api.py
     """
     try:
-        import requests
 
         # Import the original verify function
         import sys
@@ -248,7 +244,7 @@ def verify_api(
                 )
                 console.print(syntax)
         else:
-            console.print(f"[red]✗[/red] API verification failed")
+            console.print("[red]✗[/red] API verification failed")
             console.print(f"\nStatus Code: [red]{result['status_code']}[/red]")
             console.print(f"Error: {result.get('error', 'Unknown error')}")
 
@@ -257,9 +253,8 @@ def verify_api(
         raise typer.Exit(1)
 
 
-# ==================== BATCH VERIFY ====================
 
-@testing_app.command("batch-verify")
+@testing_app.command("batch-verify", hidden=True)
 def batch_verify(
     config: Path = typer.Argument(..., help="YAML config file with endpoints to test"),
     output: Optional[Path] = typer.Option(None, "--output", help="Save results to file"),

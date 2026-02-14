@@ -70,7 +70,7 @@ def launch_gui():
     # Start the backend API server
     print("📡 Starting backend API server...")
     backend_process = subprocess.Popen(
-        ["poetry", "run", "uvicorn", "phantom.api.server:app", "--host", "0.0.0.0", "--port", "8000"],
+        ["uvicorn", "phantom.api.server:app", "--host", "0.0.0.0", "--port", "8000"],
         cwd=Path(__file__).parent.parent.parent,
     )
 

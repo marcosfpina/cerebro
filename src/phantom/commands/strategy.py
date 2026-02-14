@@ -16,11 +16,10 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.tree import Tree
 
-strategy_app = typer.Typer(help="Career Strategy & Intelligence")
+strategy_app = typer.Typer(help="Technology Strategy & Market Intelligence")
 console = Console()
 
 
-# ==================== OPTIMIZE ====================
 
 @strategy_app.command("optimize")
 def optimize_strategy(
@@ -93,7 +92,7 @@ def optimize_strategy(
             console.print(table)
 
             # Execution plan
-            console.print(f"\n📋 [bold]Execution Plan:[/bold]")
+            console.print("\n📋 [bold]Execution Plan:[/bold]")
             console.print(f"  {strategy['execution']}")
 
             # Save to file if requested
@@ -125,7 +124,6 @@ def optimize_strategy(
         raise typer.Exit(1)
 
 
-# ==================== SALARY INTELLIGENCE ====================
 
 @strategy_app.command("salary")
 def salary_intelligence(
@@ -141,8 +139,6 @@ def salary_intelligence(
 
     Provides market data, negotiation tactics, and common mistakes
     based on real data from levels.fyi, Glassdoor, and Blind.
-
-    ROI: One good negotiation = R$ 50k-200k/year more.
 
     Example:
         cerebro strategy salary -r "Senior Engineer" -c Google -l L4
@@ -216,7 +212,6 @@ def salary_intelligence(
         raise typer.Exit(1)
 
 
-# ==================== PERSONAL MOAT ====================
 
 @strategy_app.command("moat")
 def build_moat(
@@ -230,8 +225,6 @@ def build_moat(
 
     Analyzes your skills and identifies unique combinations that create
     defensible expertise and premium positioning in the market.
-
-    ROI: Unique expertise = R$ 200k-500k salary premium.
 
     Example:
         cerebro strategy moat -s "Rust,WebAssembly,Distributed Systems" -n "Edge Computing"
@@ -282,7 +275,6 @@ def build_moat(
         raise typer.Exit(1)
 
 
-# ==================== TREND PREDICTOR ====================
 
 @strategy_app.command("trends")
 def predict_trends(

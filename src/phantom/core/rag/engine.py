@@ -15,11 +15,11 @@ from phantom.providers.chroma.chroma_vector_store import ChromaVectorStoreProvid
 
 class RigorousRAGEngine:
     """
-    Motor RAG de Alta Precisão (CEREBRO).
-    
-    ALINHADO COM A LEI: Consumo programático de créditos GenAI App Builder via Discovery Engine.
-    
-    Now uses dependency injection with pluggable LLM and Vector Store providers.
+    High-Precision RAG Engine (CEREBRO).
+
+    Programmatic GenAI App Builder credit utilization via Discovery Engine.
+
+    Uses dependency injection with pluggable LLM and Vector Store providers.
     """
 
     def __init__(
@@ -64,50 +64,50 @@ class RigorousRAGEngine:
 
     def ingest(self, jsonl_path: str) -> int:
         """
-        Ingestão via Discovery Engine (Consome Créditos GenAI App Builder).
-        
-        Fluxo: Local JSONL -> GCS -> Discovery Engine Import
+        Ingest via Discovery Engine (consumes GenAI App Builder credits).
+
+        Flow: Local JSONL -> GCS -> Discovery Engine Import
         """
         if not self.project_id or not self.data_store_id:
-            raise ValueError("GCP_PROJECT_ID e DATA_STORE_ID devem estar configurados.")
+            raise ValueError("GCP_PROJECT_ID and DATA_STORE_ID must be configured.")
 
         path = Path(jsonl_path)
         if not path.exists():
-            raise FileNotFoundError(f"Artefatos não encontrados: {jsonl_path}")
+            raise FileNotFoundError(f"Artifacts not found: {jsonl_path}")
 
-        print("\n🚀 Iniciando Ingestão Programática (A LEI)...")
-        
-        # 1. Upload para GCS (Stage)
+        print("\n🚀 Starting programmatic ingestion...")
+
+        # 1. Upload to GCS (Staging)
         bucket_name = f"{self.project_id}-phantom-ingest"
         storage_client = storage.Client(project=self.project_id)
-        
+
         try:
             bucket = storage_client.get_bucket(bucket_name)
         except exceptions.NotFound:
-            print(f"🔨 Criando bucket de staging: gs://{bucket_name}")
+            print(f"🔨 Creating staging bucket: gs://{bucket_name}")
             bucket = storage_client.create_bucket(bucket_name)
 
         blob = bucket.blob(f"ingest/{path.name}")
-        print(f"📤 Fazendo upload de {path.name} para gs://{bucket_name}/ingest/...")
+        print(f"📤 Uploading {path.name} to gs://{bucket_name}/ingest/...")
         blob.upload_from_filename(str(path))
-        
+
         gcs_uri = f"gs://{bucket_name}/ingest/{path.name}"
 
         # 2. Use LLM provider to import documents
-        print(f"🔄 Solicitando importação no Data Store: {self.data_store_id}")
+        print(f"🔄 Requesting import to Data Store: {self.data_store_id}")
         operation_name = self.llm_provider.import_documents(gcs_uri)
-        
-        print(f"⏳ Operação iniciada: {operation_name}")
-        print("✅ O Google está processando seus documentos em background usando seus créditos.")
-        print("💡 Verifique o status no console: https://console.cloud.google.com/gen-app-builder/data-stores")
-        
-        # Retorna um valor simbólico (número de linhas no arquivo)
+
+        print(f"⏳ Operation started: {operation_name}")
+        print("✅ Google is processing your documents in the background.")
+        print("💡 Check status at: https://console.cloud.google.com/gen-app-builder/data-stores")
+
+        # Returns the number of lines in the file
         with open(path, 'r') as f:
             return sum(1 for _ in f)
 
     def query_with_metrics(self, query: str, k: int = 5) -> Dict[str, Any]:
         """
-        Executa Grounded Generation via Discovery Engine (Consome Créditos GenAI).
+        Execute Grounded Generation via Discovery Engine (consumes GenAI credits).
         """
         try:
             # Use LLM provider for grounded generation
@@ -118,7 +118,7 @@ class RigorousRAGEngine:
             )
 
             return {
-                "answer": result.get("answer", "Não foi possível gerar um sumário com os documentos encontrados."),
+                "answer": result.get("answer", "Could not generate a summary from the retrieved documents."),
                 "metrics": {
                     "avg_confidence": result.get("confidence", 0.0),
                     "hit_rate_k": "100%" if result.get("citations") else "0%",
@@ -130,6 +130,6 @@ class RigorousRAGEngine:
             }
         except Exception as e:
             return {
-                "answer": f"❌ Erro na consulta ao Discovery Engine: {str(e)}",
+                "answer": f"❌ Error querying Discovery Engine: {str(e)}",
                 "metrics": {"hit_rate_k": "ERR", "avg_confidence": 0.0, "top_source": "N/A"},
             }

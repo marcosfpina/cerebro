@@ -6,7 +6,7 @@ Migrated from: scripts/content_gold_miner.py
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -31,8 +31,6 @@ def mine_content(
 
     Analyzes content to extract key insights, trends, and actionable intelligence.
     Supports URLs, local files, and multiple content types.
-
-    ROI: Visibility → inbound offers (100x multiplier).
 
     Examples:
         cerebro content mine -s "blog.com,medium.com/@user" -d 3

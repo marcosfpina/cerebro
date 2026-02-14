@@ -20,12 +20,15 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 console = Console()
 
 # Original command groups
-knowledge_app = typer.Typer(help="Análise e Auditoria")
-ops_app = typer.Typer(help="Status Operacional")
-rag_app = typer.Typer(help="RAG & Vetores (LangChain)")
+knowledge_app = typer.Typer(help="Analysis & Auditing")
+ops_app = typer.Typer(help="Operational Status")
+rag_app = typer.Typer(help="RAG & Vectors (LangChain)")
 
 # New command groups (Phase 2) — guarded because some deps (google-auth) may be absent
-from phantom.commands.metrics import metrics_app
+try:
+    from phantom.commands.metrics import metrics_app
+except ImportError:
+    metrics_app = None  # type: ignore[assignment]
 
 try:
     from phantom.commands.gcp import gcp_app
@@ -51,7 +54,8 @@ except ImportError:
 app.add_typer(knowledge_app, name="knowledge")
 app.add_typer(ops_app, name="ops")
 app.add_typer(rag_app, name="rag")
-app.add_typer(metrics_app, name="metrics")
+if metrics_app:
+    app.add_typer(metrics_app, name="metrics")
 if gcp_app:
     app.add_typer(gcp_app, name="gcp")
 if strategy_app:
@@ -70,17 +74,16 @@ def load_config(config_path: str):
         return yaml.safe_load(f) or {}
 
 
-# ================= GLOBAL COMMANDS =================
 @app.command("info")
 def info():
     """
-    Exibe informações sobre o ambiente Phantom.
+    Display Cerebro environment information.
     """
     import importlib.util
 
-    console.print(
-        Panel("👻 [bold]PHANTOM Framework[/bold] - v0.1.0", border_style="cyan")
-    )
+    from phantom import __version__
+    title = f"[bold]CEREBRO[/bold] - Enterprise Knowledge Platform v{__version__}"
+    console.print(Panel(title, border_style="cyan"))
 
     # Check dependencies
     deps = {"GCP Integration": False, "LangChain/RAG": False, "Code Analysis": False}
@@ -107,9 +110,10 @@ def info():
 @app.command("version")
 def version():
     """
-    Exibe a versão atual.
+    Display the current version.
     """
-    console.print("Phantom CLI v0.1.0")
+    from phantom import __version__
+    console.print(f"Cerebro CLI v{__version__}")
 
 
 @app.command("tui")
@@ -148,7 +152,6 @@ def launch_tui():
         raise typer.Exit(1)
 
 
-# ================= KNOWLEDGE =================
 @knowledge_app.command("analyze")
 def analyze(
     repo_path: str,
@@ -156,8 +159,8 @@ def analyze(
     config_file: str = "./config/repos.yaml",
 ):
     """
-    Extrai AST e gera JSONL.
-    Uso: phantom knowledge analyze ./repo "Contexto"
+    Extract AST and generate JSONL.
+    Usage: cerebro knowledge analyze ./repo "Context"
     """
     # Lazy imports
     from phantom.core.extraction.analyze_code import (
@@ -181,12 +184,12 @@ def analyze(
 
     if repo_config:
         console.print(
-            f"📖 Configuração encontrada para: [cyan]{repo_config.get('name')}[/cyan]"
+            f"📖 Configuration found for: [cyan]{repo_config.get('name')}[/cyan]"
         )
         if "context" in repo_config:
             task_context = repo_config["context"]
 
-    console.print(f"🔬 Analisando: [bold]{target.name}[/bold]")
+    console.print(f"🔬 Analyzing: [bold]{target.name}[/bold]")
     analyzer = HermeticAnalyzer(config)
 
     # Pass hooks to analyzer
@@ -220,24 +223,24 @@ def analyze(
             }
             f.write(json.dumps(doc) + "\n")
 
-    console.print(f"[green]✅ Extraído: {len(result['artifacts'])} artefatos.[/green]")
+    console.print(f"[green]✅ Extracted: {len(result['artifacts'])} artifacts.[/green]")
 
 
 @knowledge_app.command("batch-analyze")
 def batch_analyze(config_file: str = "./config/repos.yaml"):
     """
-    Processa todos os repositórios definidos no arquivo de configuração.
+    Process all repositories defined in the configuration file.
     """
     config = load_config(config_file)
     repos = config.get("repos", [])
 
     if not repos:
         console.print(
-            "[yellow]⚠️  Nenhum repositório encontrado na configuração.[/yellow]"
+            "[yellow]⚠️  No repositories found in configuration.[/yellow]"
         )
         return
 
-    console.print(f"🚀 Iniciando análise em lote de {len(repos)} repositórios...")
+    console.print(f"🚀 Starting batch analysis of {len(repos)} repositories...")
 
     for repo in repos:
         path = repo.get("path")
@@ -248,13 +251,13 @@ def batch_analyze(config_file: str = "./config/repos.yaml"):
             continue
 
         console.print(
-            f"\n[bold magenta]📦 Processando: {name} ({priority})[/bold magenta]"
+            f"\n[bold magenta]📦 Processing: {name} ({priority})[/bold magenta]"
         )
 
         try:
             analyze(path, config_file=config_file)
         except Exception as e:
-            console.print(f"[red]❌ Falha ao processar {name}: {e}[/red]")
+            console.print(f"[red]❌ Failed to process {name}: {e}[/red]")
 
     console.print("\n[green]✨ Batch Analysis Complete![/green]")
 
@@ -275,10 +278,8 @@ def summarize(repo_name: str):
     for h in set(m.get("security_hints", []) + m.get("performance_hints", [])):
         report.append(f"- ⚠️ {h}")
     (path / "EXECUTIVE_REPORT.md").write_text("\n".join(report))
-    console.print(f"[green]✅ Relatório: {path}/EXECUTIVE_REPORT.md[/green]")
+    console.print(f"[green]✅ Report: {path}/EXECUTIVE_REPORT.md[/green]")
 
-
-# ================= NEW KNOWLEDGE COMMANDS (Phase 2) =================
 
 @knowledge_app.command("generate-queries")
 def generate_queries(
@@ -315,6 +316,7 @@ def generate_queries(
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @knowledge_app.command("index-repo")
@@ -353,6 +355,7 @@ def index_repository(
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @knowledge_app.command("etl")
@@ -427,44 +430,43 @@ def generate_docs(
         console.print(f"[red]❌ Error: {e}[/red]")
 
 
-# ================= RAG (Vertex AI Search) =================
 @rag_app.command("ingest")
 def rag_ingest(source_file: str = "./data/analyzed/all_artifacts.jsonl"):
     """
-    Ingestão Cloud-Native (Discovery Engine) - CONSOME CRÉDITOS GENAI.
+    Cloud-native ingestion (Discovery Engine) - consumes GenAI credits.
     """
     try:
         from phantom.core.rag.engine import RigorousRAGEngine
     except ImportError:
-        console.print("[red]❌ Dependências GCP/DiscoveryEngine ausentes.[/red]")
+        console.print("[red]❌ GCP/DiscoveryEngine dependencies missing.[/red]")
         return
 
     engine = RigorousRAGEngine()
-    console.print("🧠 [bold]Ingerindo artefatos no Discovery Engine (A LEI)...[/bold]")
+    console.print("🧠 [bold]Ingesting artifacts into Discovery Engine...[/bold]")
     try:
         count = engine.ingest(source_file)
-        console.print(f"[green]✅ Processamento iniciado para {count} artefatos.[/green]")
-        console.print("[yellow]ℹ️  A indexação ocorre de forma assíncrona no Google Cloud.[/yellow]")
-        console.print("💡 Monitore aqui: [link]https://console.cloud.google.com/gen-app-builder/data-stores[/link]")
+        console.print(f"[green]✅ Processing started for {count} artifacts.[/green]")
+        console.print("[yellow]ℹ️  Indexing runs asynchronously on Google Cloud.[/yellow]")
+        console.print("💡 Monitor at: [link]https://console.cloud.google.com/gen-app-builder/data-stores[/link]")
     except Exception as e:
-        console.print(f"[red]❌ Erro: {e}[/red]")
+        console.print(f"[red]❌ Error: {e}[/red]")
 
 
 @rag_app.command("query")
 def rag_query(question: str):
     """
-    Consulta o RAG Cloud (Discovery Engine) com Grounded Generation.
+    Query the Cloud RAG (Discovery Engine) with Grounded Generation.
     """
     try:
         from phantom.core.rag.engine import RigorousRAGEngine
     except ImportError:
         console.print(
-            "[red]❌ Dependências GCP ausentes. Instale: poetry install[/red]"
+            "[red]❌ GCP dependencies missing. Install with: poetry install[/red]"
         )
         return
 
     engine = RigorousRAGEngine()
-    console.print(f"🔎 Buscando na Nuvem: [italic]{question}[/italic]...")
+    console.print(f"🔎 Searching cloud: [italic]{question}[/italic]...")
 
     result = engine.query_with_metrics(question)
 
@@ -472,12 +474,12 @@ def rag_query(question: str):
         console.print(result["answer"])
         return
 
-    # Exibir Resposta
+    # Display Answer
     console.print(
         Panel(result["answer"], title="🤖 CEREBRO (Grounded Answer)", border_style="green")
     )
 
-    # Exibir Métricas de Nuvem
+    # Display Cloud Metrics
     metrics = result["metrics"]
     table = Table(title="Cloud RAG Metrics (GenAI App Builder Credits)")
     table.add_column("Metric", style="cyan")
@@ -491,18 +493,16 @@ def rag_query(question: str):
     console.print(table)
 
     if metrics.get("citations"):
-        console.print("\n[bold]📚 Fontes Citadas:[/bold]")
+        console.print("\n[bold]📚 Cited Sources:[/bold]")
         for c in metrics["citations"]:
             console.print(f"  • {c}")
 
 
-# ================= OPS =================
 @ops_app.command("health")
 def health():
     """
-    Verifica a saúde do sistema (Credenciais, Permissões, APIs, Data Stores).
+    Check system health (Credentials, Permissions, APIs, Data Stores).
     """
-    from rich.status import Status
     import os
     
     table = Table(title="CEREBRO System Health Check")
@@ -512,7 +512,7 @@ def health():
 
     final_project = None
 
-    with console.status("[bold green]Running diagnostics...") as status:
+    with console.status("[bold green]Running diagnostics..."):
         # 1. File System Check
         try:
             Path("./data").mkdir(exist_ok=True)
@@ -555,10 +555,10 @@ def health():
     console.print(table)
     
     if not ds_id or not final_project:
-        console.print("\n[bold red]⚠️  ATENÇÃO: CONFIGURAÇÃO INCOMPLETA[/bold red]")
-        console.print("Para consumir os R$ 10k em créditos, você PRECISA configurar:")
-        console.print(f"  export GCP_PROJECT_ID='gen-lang-client-0530325234'")
-        console.print("  export DATA_STORE_ID='seu-data-store-id'")
+        console.print("\n[bold red]⚠️  WARNING: INCOMPLETE CONFIGURATION[/bold red]")
+        console.print("To use GCP features, configure the following environment variables:")
+        console.print("  export GCP_PROJECT_ID='<your-gcp-project-id>'")
+        console.print("  export DATA_STORE_ID='<your-data-store-id>'")
 
 
 @ops_app.command("status")

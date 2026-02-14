@@ -1,10 +1,9 @@
 """
-PHANTOM Framework
-Knowledge Extraction & Cloud Credit Management
+Cerebro - Enterprise Knowledge Extraction Platform
 """
 
 __version__ = "2.0.0"
-__author__ = "Phantom Framework Team"
+__author__ = "Cerebro Team"
 
 # Package metadata
 __all__ = ["core", "modules"]

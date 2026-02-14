@@ -1,15 +1,6 @@
 """
 Cerebro TUI Screens
 
-Each screen represents a different section of the TUI interface.
+All screen classes live in phantom.tui.app for now.
+This package is a placeholder for future per-screen modules.
 """
-
-__all__ = [
-    "MainMenuScreen",
-    "DashboardScreen",
-    "ProjectsScreen",
-    "IntelligenceScreen",
-    "ScriptsScreen",
-    "GCPCreditsScreen",
-    "LogsScreen",
-]
