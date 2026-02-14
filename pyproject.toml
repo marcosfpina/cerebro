@@ -1,10 +1,10 @@
 [project]
-name = "phantom-cli"
+name = "cerebro-cli"
 version = "0.1.0"
-description = "Phantom - Unified Framework for Code Analysis and RAG"
+description = "Cerebro - Enterprise Knowledge Extraction Platform"
 authors = [{ name = "Kernel Core", email = "kernel@example.com" }]
 readme = "README.md"
-requires-python = "^3.13"
+requires-python = ">=3.13"
 
 [project.scripts]
 phantom = "phantom.launcher:main"
@@ -76,7 +76,7 @@ addopts = "--strict-markers"
 line-length = 100
 target-version = "py313"
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "PIE", "PT", "RUF"]
-ignore = ["E501", "W503"]
+ignore = ["E501"]
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]

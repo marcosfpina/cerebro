@@ -75,6 +75,22 @@ test-cli:
     poetry run cerebro ops status
 
 # ============================================================================
+# DASHBOARD
+# ============================================================================
+
+# Lint the React dashboard
+dashboard-lint:
+    cd dashboard && npm run lint
+
+# Build the React dashboard
+dashboard-build:
+    cd dashboard && npm run build
+
+# Type-check the React dashboard
+dashboard-type-check:
+    cd dashboard && npm run type-check
+
+# ============================================================================
 # DOCKER
 # ============================================================================
 
@@ -97,7 +113,7 @@ deploy-cloud-run:
         --region us-central1 \
         --platform managed \
         --allow-unauthenticated \
-        --set-env-vars "GCP_PROJECT_ID=gen-lang-client-0530325234"
+        --set-env-vars "GCP_PROJECT_ID=${GCP_PROJECT_ID}"
 
 # ============================================================================
 # UTILITIES
@@ -115,7 +131,7 @@ health:
 analyze path context="General Review":
     poetry run cerebro knowledge analyze {{path}} "{{context}}"
 
-# Sincroniza dados com o GCS (Staging para Ingestão)
+# Sync data with GCS (Staging for Ingestion)
 sync local_dir="./data/analyzed":
     ./scripts/sync_data.sh {{local_dir}}
 

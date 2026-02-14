@@ -4,6 +4,7 @@ import {
   Brain,
   LayoutDashboard,
   FolderKanban,
+  BarChart3,
   Search,
   FileText,
   Settings,
