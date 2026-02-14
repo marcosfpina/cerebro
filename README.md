@@ -111,7 +111,7 @@ Global:  d=Dashboard p=Projects i=Intelligence s=Scripts g=GCP l=Logs ?=Help q=Q
 Common:  r=Refresh /=Search Esc=Back Tab=Next Enter=Submit
 ```
 
-**Full keyboard reference:** [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md)
+**Full keyboard reference:** [docs/guides/KEYBOARD_SHORTCUTS.md](docs/guides/KEYBOARD_SHORTCUTS.md)
 
 ### Performance
 
@@ -152,7 +152,7 @@ cd ..
 
 **Documentation**:
 - [Dashboard README](dashboard/README.md) - Setup & usage
-- [Integration Guide](DASHBOARD_INTEGRATION.md) - Backend API specs
+- [Integration Guide](docs/guides/DASHBOARD_INTEGRATION.md) - Backend API specs
 
 **Tech Stack**: React 18 · Vite · TypeScript · TailwindCSS · TanStack Query · Framer Motion
 
@@ -334,7 +334,7 @@ The project uses **GitLab CI/CD** for automated testing, linting, building, and 
 - **Deploy Stage:** Cloud Run deployment (manual trigger)
 - **Monitor Stage:** Health checks and reporting
 
-See [docs/GITLAB_CI_CD.md](docs/GITLAB_CI_CD.md) for detailed pipeline documentation and [docs/GITLAB_CI_MIGRATION.md](docs/GITLAB_CI_MIGRATION.md) for migration guide from GitHub Actions.
+See [docs/guides/GITLAB_CI_CD.md](docs/guides/GITLAB_CI_CD.md) for detailed pipeline documentation and [docs/guides/GITLAB_CI_MIGRATION.md](docs/guides/GITLAB_CI_MIGRATION.md) for migration guide from GitHub Actions.
 
 ### Known Limitations
 
@@ -390,18 +390,18 @@ See [docs/GITLAB_CI_CD.md](docs/GITLAB_CI_CD.md) for detailed pipeline documenta
 ## 📖 Documentation
 
 ### For Users
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in 5 minutes
-- **[ROI Strategy Guide](docs/HACKS_ROI.md)** - Maximize value from GCP credits
-- **[High-Value Queries](docs/HIGH_ROI_QUERIES.md)** - Pre-built query sets
+- **[Quick Start Guide](docs/guides/QUICK_START.md)** - Get running in 5 minutes
+- **[ROI Strategy Guide](docs/features/strategy/HACKS_ROI.md)** - Maximize value from GCP credits
+- **[High-Value Queries](docs/features/gcp-credits/HIGH_ROI_QUERIES.md)** - Pre-built query sets
 
 ### For Developers
-- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design and patterns
-- **[Data Flow Diagram](docs/ARCHITECTURE_DATA_FLOW.md)** - Pipeline visualization
-- **[API Reference](docs/CAPABILITIES.md)** - CLI commands and Python API
-- **[Coverage Gaps](docs/COVERAGE_GAP.md)** - Known issues and planned features
+- **[Architecture Overview](docs/architecture/ARCHITECTURE.md)** - System design and patterns
+- **[Data Flow Diagram](docs/architecture/ARCHITECTURE_DATA_FLOW.md)** - Pipeline visualization
+- **[API Reference](docs/features/intelligence/CAPABILITIES.md)** - CLI commands and Python API
+- **[Coverage Gaps](docs/project/COVERAGE_GAP.md)** - Known issues and planned features
 
 ### Architecture Decision Records (ADRs)
-- **[ADR Summary](docs/ADR_SUMMARY.md)** - Overview of all architectural decisions
+- **[ADR Summary](docs/architecture/ADR_SUMMARY.md)** - Overview of all architectural decisions
 - **ADR-0019:** [Textual Framework para TUI](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0019.md) - TUI framework selection
 - **ADR-0020:** [Lazy Loading de Dependências Pesadas](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0020.md) - Performance optimization strategy
 - **ADR-0021:** [Stack Dupla Poetry + Nix](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0021.md) - Dependency management approach
@@ -421,9 +421,9 @@ cerebro adr search "TUI"
 ```
 
 ### For Enterprise Teams
-- **[Migration Guide](docs/MIGRATION_COMPLETE.md)** - Local → Cloud transition
-- **[Next Steps](NEXT-STEPS.md)** - Evolution from MVP to Enterprise
-- **[Surgical Repair Plan](TODO_PLAN.md)** - Active development roadmap
+- **[Migration Guide](docs/project/MIGRATION_COMPLETE.md)** - Local → Cloud transition
+- **[Next Steps](docs/phases/NEXT-STEPS.md)** - Evolution from MVP to Enterprise
+- **[Surgical Repair Plan](docs/project/TODO_PLAN.md)** - Active development roadmap
 
 ---
 
@@ -446,7 +446,7 @@ just test-ci       # CI validation suite
 
 **Current Test Coverage:** Core RAG engine (85%), GCP integrations (70%), CLI (60%)
 
-See [TODO_PLAN.md](TODO_PLAN.md) for testing roadmap.
+See [docs/project/TODO_PLAN.md](docs/project/TODO_PLAN.md) for testing roadmap.
 
 ---
 
@@ -468,7 +468,7 @@ This project follows enterprise contribution standards:
    - Report privately via GitHub Security Advisory
    - Do not open public issues for vulnerabilities
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING_DOCS.md) for detailed guidelines.
+See [CONTRIBUTING.md](docs/guides/CONTRIBUTING_DOCS.md) for detailed guidelines.
 
 ---
 
