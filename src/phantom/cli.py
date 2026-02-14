@@ -20,9 +20,9 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 console = Console()
 
 # Original command groups
-knowledge_app = typer.Typer(help="Analysis & Auditing")
-ops_app = typer.Typer(help="Operational Status")
-rag_app = typer.Typer(help="RAG & Vectors (LangChain)")
+knowledge_app = typer.Typer(help="Analysis & Auditing", no_args_is_help=True)
+ops_app = typer.Typer(help="Operational Status", no_args_is_help=True)
+rag_app = typer.Typer(help="RAG & Vectors (LangChain)", no_args_is_help=True)
 
 # New command groups (Phase 2) — guarded because some deps (google-auth) may be absent
 try:

@@ -22,7 +22,7 @@ try:
 except ImportError:
     GCP_AVAILABLE = False
 
-testing_app = typer.Typer(help="API Testing & Validation", name="test")
+testing_app = typer.Typer(help="API Testing & Validation", name="test", no_args_is_help=True)
 console = Console()
 
 

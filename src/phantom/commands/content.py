@@ -14,7 +14,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-content_app = typer.Typer(help="Content Mining & Analysis")
+content_app = typer.Typer(help="Content Mining & Analysis", no_args_is_help=True)
 console = Console()
 
 

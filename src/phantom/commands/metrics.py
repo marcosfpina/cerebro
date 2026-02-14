@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-metrics_app = typer.Typer(help="Metrics & Tracking (Zero Tokens)")
+metrics_app = typer.Typer(help="Metrics & Tracking (Zero Tokens)", no_args_is_help=True)
 console = Console()
 
 

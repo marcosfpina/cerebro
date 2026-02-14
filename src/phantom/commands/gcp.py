@@ -23,7 +23,7 @@ try:
 except ImportError:
     GCP_AVAILABLE = False
 
-gcp_app = typer.Typer(help="GCP Credits & Search Engine Management")
+gcp_app = typer.Typer(help="GCP Credits & Search Engine Management", no_args_is_help=True)
 console = Console()
 
 

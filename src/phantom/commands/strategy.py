@@ -16,7 +16,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.tree import Tree
 
-strategy_app = typer.Typer(help="Technology Strategy & Market Intelligence")
+strategy_app = typer.Typer(help="Technology Strategy & Market Intelligence", no_args_is_help=True)
 console = Console()
 
 
