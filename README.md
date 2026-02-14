@@ -1,560 +1,388 @@
-# 🧠 Cerebro
+# Cerebro
 
-[![CI Status](https://img.shields.io/github/actions/workflow/status/kernelcore/cerebro/ci.yml?branch=main&style=for-the-badge&logo=github&label=Build)](https://github.com/kernelcore/cerebro/actions)
 [![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Nix](https://img.shields.io/badge/Nix-Reproducible-5277C3?style=for-the-badge&logo=nixos&logoColor=white)](https://nixos.org/)
 [![Google Cloud](https://img.shields.io/badge/GCP-Vertex_AI-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/vertex-ai)
+[![Tests](https://img.shields.io/badge/Tests-112_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**Enterprise-grade knowledge extraction platform for codebase intelligence. Combines static analysis (AST/Tree-Sitter) with Retrieval-Augmented Generation using Google Vertex AI. Built for teams that need reproducible, auditable, and scalable code understanding.**
+**Enterprise Knowledge Extraction Platform** — static analysis, RAG pipelines, repository intelligence, and GCP integration. 61 modules, 3 interfaces, 112 tests. Built on Nix for reproducibility.
 
 ---
 
-## 🎯 What Problem Does This Solve?
-
-**Real-world scenario:** Your engineering team maintains 500K+ lines of legacy code. New engineers take 3-6 months to become productive. Critical business logic lives in undocumented functions. Security audits are manual and error-prone.
-
-**Cerebro's solution:**
+## Quick Start
 
 ```bash
-# 1. Extract structured knowledge from any codebase
-cerebro knowledge analyze ./legacy-monolith --format json
+git clone https://github.com/marcosfpina/cerebro.git && cd cerebro
 
-# 2. Index into queryable vector database
-cerebro rag ingest ./artifacts --backend vertex-ai
-
-# 3. Ask questions in natural language with grounded answers
-cerebro rag query "Where do we validate credit card numbers?" --grounded
-```
-
-**Business outcomes:**
-- 🚀 **50% reduction in onboarding time** (semantic code search vs. grep)
-- 🔒 **Automated security audits** (detect hardcoded secrets, unsafe patterns)
-- 💰 **Optimized GCP spend** (batch processing, circuit breakers for API limits)
-
----
-
-## 🏗️ Architecture: Local Development → Enterprise Production
-
-Cerebro is designed as a **hybrid platform** that scales from local experimentation to cloud-native production:
-
-```mermaid
-graph TB
-    subgraph "Development (Local)"
-        A1[Source Code] --> B1[Tree-Sitter AST]
-        B1 --> C1[ChromaDB Local]
-        C1 --> D1[CLI Queries]
-    end
-
-    subgraph "Production (GCP)"
-        A2[Git Repos] --> B2[Cloud Run Jobs]
-        B2 --> C2[GCS Data Lake]
-        C2 --> D2[Vertex AI Vector Search]
-        D2 --> E2[Gemini 1.5 Grounded]
-        E2 --> F2[REST API / MCP Server]
-    end
-
-    subgraph "Observability"
-        G1[Health Checks] --> H1[Cloud Logging]
-        H1 --> I1[BigQuery Analytics]
-    end
-
-    style A1 fill:#e1f5ff
-    style D2 fill:#fff4e1
-    style E2 fill:#ffe1f5
-```
-
-### Current Implementation Status
-
-| Component | Local (MVP) | Enterprise (Roadmap) | Status |
-|-----------|-------------|----------------------|--------|
-| **Code Analysis** | Tree-Sitter + Python AST | + Language Server Protocol | ✅ Production |
-| **Vector Store** | ChromaDB (SQLite) | Vertex AI Vector Search | ✅ Both Supported |
-| **LLM Interface** | Gemini via LangChain | Gemini + Circuit Breakers | ✅ Production |
-| **Orchestration** | Bash Scripts | Cloud Composer (Airflow) | 🔄 In Progress |
-| **Observability** | Rich CLI Output | Cloud Logging + OpenTelemetry | 🔄 In Progress |
-| **Infrastructure** | Nix Dev Shell | Terraform + Cloud Run | 📋 Planned |
-
----
-
-## 🖥️  Interactive TUI (Text User Interface)
-
-**NEW**: Full-featured terminal interface with 6 specialized screens, keyboard shortcuts, and real-time updates.
-
-### Launch the TUI
-
-```bash
-# Auto-detect best interface
-cerebro
-
-# Explicitly launch TUI
-cerebro tui
-
-# Or with poetry
-poetry run cerebro tui
-```
-
-### Features
-
-- 📊 **Dashboard** - System metrics, health scores, quick actions, auto-refresh
-- 📁 **Projects** - Sortable DataTable with 1000+ projects, search/filter, health visualization
-- 🔍 **Intelligence** - Natural language queries, semantic/exact modes, history tracking
-- ⚙️  **Scripts** - Launch all 24 CLI commands with live progress and output streaming
-- 💰 **GCP Credits** - Credit tracking, batch burn interface, real-time monitoring
-- 📋 **Logs** - Live log tail, level/module filtering, color-coding
-- ❓ **Help** - Complete keyboard shortcuts reference (press `?`)
-
-### Keyboard Shortcuts
-
-```
-Global:  d=Dashboard p=Projects i=Intelligence s=Scripts g=GCP l=Logs ?=Help q=Quit
-Common:  r=Refresh /=Search Esc=Back Tab=Next Enter=Submit
-```
-
-**Full keyboard reference:** [docs/guides/KEYBOARD_SHORTCUTS.md](docs/guides/KEYBOARD_SHORTCUTS.md)
-
-### Performance
-
-- Startup: <2 seconds
-- Handles 1000+ projects
-- Real-time streaming updates
-- Memory efficient (~60MB)
-
----
-
-## 🎨 Intelligence Dashboard
-
-**React Dashboard**: Modern web interface for real-time system monitoring and semantic intelligence search.
-
-![Dashboard Preview](dashboard/cerebro_dashboard.png)
-
-### Features
-- 📊 **Real-time Metrics**: System health, project status, and alerts
-- 🔍 **Semantic Search**: Natural language queries across ADR knowledge base
-- 📈 **Visual Analytics**: Health scores, dependency graphs, and trend analysis
-- 📋 **Executive Briefings**: AI-generated daily and executive summaries
-- ⚡ **Live Updates**: Auto-refresh with configurable intervals
-
-### Quick Start
-
-```bash
-# Terminal 1: Start dashboard
-cd dashboard/
-npm install
-npm run dev
-# → http://localhost:3000
-
-# Terminal 2: Start backend (coming soon)
-cd ..
-./start_api.sh
-# → http://localhost:8000
-```
-
-**Documentation**:
-- [Dashboard README](dashboard/README.md) - Setup & usage
-- [Integration Guide](docs/guides/DASHBOARD_INTEGRATION.md) - Backend API specs
-
-**Tech Stack**: React 18 · Vite · TypeScript · TailwindCSS · TanStack Query · Framer Motion
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Local Development:** Nix (recommended) or Python 3.13+
-- **Production Features:** Google Cloud account with Vertex AI API enabled
-
-### Installation
-
-#### Option 1: Nix (Zero-Config, Reproducible)
-
-```bash
-git clone https://github.com/yourusername/cerebro.git
-cd cerebro
-
-# Enter hermetic dev environment (auto-installs all dependencies)
+# Enter hermetic dev environment (all dependencies resolved automatically)
 nix develop
 
-# Verify installation
+# Verify
 cerebro info
+cerebro version          # → Cerebro CLI v2.0.0
 ```
 
-#### Option 2: Poetry (Standard Python Workflow)
+No Nix? Use `poetry install && poetry shell && cerebro info`.
+
+---
+
+## What Cerebro Does
 
 ```bash
-poetry install
-poetry shell
-phantom info  # 'phantom' is an alias for 'cerebro'
-```
+# 1. Analyze any codebase — extract functions, classes, security issues (zero cloud cost)
+cerebro knowledge analyze ./your-project --format json
 
-### First Run: Analyze Your Codebase
+# 2. Scan repository health — LOC, languages, dependencies, git activity, security
+cerebro metrics scan
 
-```bash
-# 1. Analyze a repository (local, no cloud APIs)
-cerebro knowledge analyze ./your-project \
-  --output ./data/analyzed/your-project.json \
-  --format json
+# 3. Index into vector database for semantic search
+cerebro rag ingest ./data/analyzed --backend vertex-ai
 
-# 2. Inspect results
-cat ./data/analyzed/your-project.json | jq '.functions | length'
-
-# 3. Check for security issues
-jq '.security_issues' ./data/analyzed/your-project.json
-```
-
-### RAG Pipeline Setup (GCP Integration)
-
-```bash
-# Configure GCP credentials
-export GOOGLE_CLOUD_PROJECT="your-project-id"
-export DATA_STORE_ID="cerebro-vector-store"
-
-# Ingest analyzed code into vector database
-cerebro rag ingest ./data/analyzed \
-  --backend vertex-ai \
-  --batch-size 20
-
-# Query with grounded generation (hallucination prevention)
-cerebro rag query "Explain the authentication middleware" \
-  --grounded \
-  --citations
+# 4. Ask natural-language questions with grounded, cited answers
+cerebro rag query "Where is credit card validation handled?" --grounded --citations
 ```
 
 ---
 
-## 🔧 Core Capabilities
+## Architecture
 
-### 1. Polyglot Static Analysis
-
-Extract structured artifacts from multiple languages:
-
-**Supported Languages:**
-- ✅ Python (full AST + imports + docstrings)
-- ✅ JavaScript/TypeScript (Tree-Sitter)
-- ✅ Rust (Tree-Sitter)
-- ✅ Go (Tree-Sitter)
-- ✅ C/C++ (Tree-Sitter)
-
-**Example Output:**
-
-```json
-{
-  "functions": [
-    {
-      "name": "validate_payment",
-      "signature": "validate_payment(card: CreditCard, amount: Decimal) -> Result",
-      "docstring": "Validates card and processes payment through Stripe API",
-      "complexity": 8,
-      "security_notes": ["Uses secrets.STRIPE_KEY", "Input validation present"]
-    }
-  ],
-  "security_issues": [
-    {
-      "severity": "HIGH",
-      "type": "hardcoded_secret",
-      "location": "payment_processor.py:47",
-      "pattern": "STRIPE_KEY = 'sk_live_...'"
-    }
-  ]
-}
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              CEREBRO v2.0.0                  │
+                    │     Enterprise Knowledge Extraction          │
+                    └──────────────────┬──────────────────────────┘
+                                       │
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+      ┌───────▼───────┐      ┌────────▼────────┐     ┌────────▼────────┐
+      │   CLI (Typer)  │      │   TUI (Textual) │     │ Dashboard (React)│
+      │  8 cmd groups  │      │  6 screens + KB  │     │ 17 TSX components│
+      │  30+ commands  │      │  shortcuts + live │     │ FastAPI backend  │
+      └───────┬───────┘      └────────┬────────┘     └────────┬────────┘
+              │                        │                        │
+              └────────────────────────┼────────────────────────┘
+                                       │
+        ┌──────────────────────────────┼──────────────────────────────┐
+        │                              │                              │
+ ┌──────▼──────┐             ┌─────────▼─────────┐          ┌───────▼───────┐
+ │  Analysis    │             │   RAG Engine       │          │  Intelligence  │
+ │  Tree-Sitter │             │   Vertex AI +      │          │  Metrics +     │
+ │  AST + Security│           │   ChromaDB + Gemini│          │  Health Scores │
+ └──────┬──────┘             └─────────┬─────────┘          └───────┬───────┘
+        │                              │                              │
+        └──────────────────────────────┼──────────────────────────────┘
+                                       │
+                    ┌──────────────────▼──────────────────┐
+                    │         Infrastructure               │
+                    │   Nix Flake · GCP · FastAPI · Git    │
+                    └─────────────────────────────────────┘
 ```
 
-### 2. Enterprise RAG Engine
+### Component Status
+
+| Component | Local | Cloud | Status |
+|-----------|-------|-------|--------|
+| **Code Analysis** | Tree-Sitter + Python AST | — | Production |
+| **Repository Metrics** | Git + filesystem scan | — | Production |
+| **Vector Store** | ChromaDB (SQLite) | Vertex AI Vector Search | Both supported |
+| **LLM Interface** | Local (Mistral-7B) | Gemini via Vertex AI | Both supported |
+| **Security Scanner** | Regex + AST patterns | — | Production |
+| **Dashboard** | Vite dev server | — | Production |
+| **TUI** | Textual framework | — | Production |
+| **CI/CD** | pytest + ruff | GitLab CI + GitHub Actions | Production |
+
+---
+
+## Three Interfaces
+
+### CLI
+
+8 command groups, 30+ commands:
+
+```
+cerebro knowledge   analyze · batch-analyze · summarize
+cerebro rag         ingest · query
+cerebro metrics     scan · watch · report
+cerebro ops         health · status
+cerebro gcp         burn · monitor · create-engine · status
+cerebro strategy    optimize · salary · moat · trends
+cerebro content     mine · analyze
+cerebro test        grounded-search · grounded-gen · verify-api
+```
+
+### TUI (Terminal User Interface)
+
+```bash
+cerebro tui
+```
+
+6 screens: Dashboard, Projects, Intelligence, Scripts, GCP Credits, Logs. Full keyboard navigation (`d` `p` `i` `s` `g` `l` `?` for help). Real-time updates, handles 1000+ projects.
+
+Full shortcut reference: [docs/guides/KEYBOARD_SHORTCUTS.md](docs/guides/KEYBOARD_SHORTCUTS.md)
+
+### Web Dashboard
+
+```bash
+cd dashboard && npm install && npm run dev    # → http://localhost:5173
+cerebro dashboard                              # Start FastAPI backend
+```
+
+React 18 + Vite + TypeScript + TailwindCSS + TanStack Query. Real-time metrics, semantic search, health scores, executive briefings, visual analytics.
+
+Setup: [docs/guides/DASHBOARD_INTEGRATION.md](docs/guides/DASHBOARD_INTEGRATION.md)
+
+---
+
+## Core Capabilities
+
+### Static Analysis
+
+Extract structured artifacts from multiple languages via Tree-Sitter and Python AST:
+
+- **Python** — full AST, imports, docstrings, complexity metrics
+- **JavaScript/TypeScript** — Tree-Sitter parsing
+- **Rust, Go, C/C++, Nix, Bash** — Tree-Sitter parsing
+
+### Repository Intelligence (Zero-Token)
+
+Scan repositories without any API calls or cloud costs:
+
+```bash
+cerebro metrics scan        # Scan all repos: LOC, languages, deps, git, security
+cerebro metrics report .    # Detailed report for current repo
+cerebro metrics watch       # Real-time file watcher
+```
+
+Produces: language distribution, dependency graph, security findings, health scores, git activity metrics, test coverage indicators.
+
+### Enterprise RAG Engine
 
 Production-ready vector search with cost controls:
 
-**Features:**
-- 🔄 Automatic batching (respects Vertex AI 250-doc limit)
-- 🛡️ Circuit breakers for rate limits (429 errors)
-- 📊 Cost tracking and quotas
-- 🔒 VPC-compatible (for enterprise deployments)
+- Automatic batching (respects Vertex AI 250-doc limit)
+- Circuit breakers for rate limits
+- Pluggable providers (Vertex AI, ChromaDB, local LLMs)
+- Grounded generation with citations (hallucination prevention)
 
-**Performance:**
-- Ingestion: ~20 docs/second (batch optimized)
-- Query latency: p95 < 800ms
-- Cost: ~$0.002 per query (Gemini Flash)
+### Security Scanner
 
-### 3. GCP Credit Optimizationhttp://127.0.0.1:35237/webview/agentic-duo-chat?mode=flow-mode&_csrf=1RygAGfP-1Gbe-qigH3ykaeMpzi4Ufm1mdW6iZoN043nKYidv-aE#
+Built into every analysis pass:
 
-Suite of scripts for maximizing trial credit ROI:
+- Secret detection (API keys, passwords, tokens)
+- Unsafe code patterns (`eval()`, `exec()`, `pickle.loads()`)
+- Dependency auditing (`pyproject.toml`, `package.json`, `Cargo.toml`)
+- Per-repository security score (0-100)
 
-```bash
-# Monitor credit consumption in real-time
-python scripts/monitor_credits.py --project my-project
-
-# Batch process queries with cost ceiling
-python scripts/batch_burn.py \
-  --queries salary_intel_queries.txt \
-  --max-cost-usd 100 \
-  --parallel 5
-
-# Generate domain-specific query sets
-python scripts/generate_queries.py \
-  --domain "system design patterns" \
-  --count 1000
-```
-
-### 4. Reproducible Infrastructure (NixOS)
-
-Hermetic development environments with zero global pollution:
-
-```nix
-# flake.nix provides:
-# - Python 3.13 + poetry2nix
-# - GCP SDK (gcloud, gsutil)
-# - Tree-sitter language grammars
-# - Pre-configured environment variables
-# - Automatic dependency pinning
-```
-
-**Why this matters for enterprise:**
-- ✅ Onboard new developers in < 5 minutes
-- ✅ Eliminate "works on my machine" issues
-- ✅ Audit exact dependency graph for security compliance
-
----
-
-## 📊 Production Readiness
-
-### Current Deployment
-
-- **Environment:** Self-hosted NixOS + Cloud Run (optional)
-- **CI/CD:** GitLab CI/CD with Docker and Python runners
-- **Monitoring:** Health checks via `cerebro ops health`
-- **Security:** Secret Manager integration, VPC support (planned)
-
-### CI/CD Pipeline
-
-The project uses **GitLab CI/CD** for automated testing, linting, building, and deployment:
-
-- **Validate Stage:** Import and syntax checks
-- **Test Stage:** Unit tests, integration tests, linting, formatting
-- **Build Stage:** Docker image creation (manual trigger)
-- **Deploy Stage:** Cloud Run deployment (manual trigger)
-- **Monitor Stage:** Health checks and reporting
-
-See [docs/guides/GITLAB_CI_CD.md](docs/guides/GITLAB_CI_CD.md) for detailed pipeline documentation and [docs/guides/GITLAB_CI_MIGRATION.md](docs/guides/GITLAB_CI_MIGRATION.md) for migration guide from GitHub Actions.
-
-### Known Limitations
-
-| Issue | Impact | Mitigation | Status |
-|-------|--------|------------|--------|
-| ChromaDB not HA | Single-point failure | Migrate to Vertex AI Vector Search | 📋 Planned |
-| Manual scaling | ETL bottleneck on large repos | Cloud Run Jobs with parallel processing | 🔄 In Progress |
-| Limited observability | Hard to debug production issues | OpenTelemetry + Cloud Logging | 📋 Planned |
-
-### Performance Benchmarks
-
-**Code Analysis (Tree-Sitter):**
-- 10K LOC: ~3 seconds
-- 100K LOC: ~30 seconds
-- 1M LOC: ~5 minutes (streaming mode)
-
-**RAG Ingestion (Vertex AI):**
-- 1K documents: ~2 minutes
-- 10K documents: ~15 minutes (batched)
-- 100K documents: Not tested (use Cloud Run Jobs)
-
----
-
-## 🛡️ Security & Compliance
-
-### Built-in Security Features
-
-1. **Secret Detection Engine**
-   - Regex patterns for API keys, passwords, tokens
-   - Supports `.env` file scanning
-   - Custom pattern injection via config
-
-2. **Unsafe Code Detection**
-   - Flags `eval()`, `exec()`, `__import__()` usage
-   - Detects `pickle.loads()` (deserialization risks)
-   - SQL injection pattern matching
-
-3. **Dependency Auditing**
-   - Parses `requirements.txt`, `poetry.lock`, `package-lock.json`
-   - Cross-references with CVE databases (planned)
-
-### Enterprise Requirements
-
-**For production deployment, ensure:**
-
-- [ ] VPC Service Controls configured (prevent data exfiltration)
-- [ ] Workload Identity Federation (no service account keys)
-- [ ] Cloud Logging enabled for audit trails
-- [ ] Data residency compliance (configure GCS bucket regions)
-
----
-
-## 📖 Documentation
-
-### For Users
-- **[Quick Start Guide](docs/guides/QUICK_START.md)** - Get running in 5 minutes
-- **[ROI Strategy Guide](docs/features/strategy/HACKS_ROI.md)** - Maximize value from GCP credits
-- **[High-Value Queries](docs/features/gcp-credits/HIGH_ROI_QUERIES.md)** - Pre-built query sets
-
-### For Developers
-- **[Architecture Overview](docs/architecture/ARCHITECTURE.md)** - System design and patterns
-- **[Data Flow Diagram](docs/architecture/ARCHITECTURE_DATA_FLOW.md)** - Pipeline visualization
-- **[API Reference](docs/features/intelligence/CAPABILITIES.md)** - CLI commands and Python API
-- **[Coverage Gaps](docs/project/COVERAGE_GAP.md)** - Known issues and planned features
-
-### Architecture Decision Records (ADRs)
-- **[ADR Summary](docs/architecture/ADR_SUMMARY.md)** - Overview of all architectural decisions
-- **ADR-0019:** [Textual Framework para TUI](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0019.md) - TUI framework selection
-- **ADR-0020:** [Lazy Loading de Dependências Pesadas](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0020.md) - Performance optimization strategy
-- **ADR-0021:** [Stack Dupla Poetry + Nix](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0021.md) - Dependency management approach
-- **ADR-0022:** [Consolidação de Scripts para CLI Typer](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0022.md) - CLI unification
-- **ADR-0023:** [Arquitetura TUI com 6 Screens](https://github.com/kernelcore/adr-ledger/tree/main/adr/accepted/ADR-0023.md) - TUI screen design
-
-**Command-line access:**
-```bash
-# List all Cerebro ADRs
-cerebro adr list --project CEREBRO
-
-# View specific ADR
-cerebro adr show ADR-0019
-
-# Search ADRs
-cerebro adr search "TUI"
-```
-
-### For Enterprise Teams
-- **[Migration Guide](docs/project/MIGRATION_COMPLETE.md)** - Local → Cloud transition
-- **[Next Steps](docs/phases/NEXT-STEPS.md)** - Evolution from MVP to Enterprise
-- **[Surgical Repair Plan](docs/project/TODO_PLAN.md)** - Active development roadmap
-
----
-
-## 🧪 Testing & Quality
+### GCP Integration
 
 ```bash
-# Run full test suite
-pytest tests/ -v --cov=src/phantom
+cerebro gcp status          # Check SDK + auth
+cerebro gcp create-engine   # Provision Discovery Engine
+cerebro gcp burn            # Batch queries with cost ceiling
+cerebro gcp monitor         # Real-time credit usage
+```
+
+---
+
+## Documentation
+
+All documentation lives under [`docs/`](docs/) in structured subdirectories.
+
+### Getting Started
+
+| Document | Description |
+|----------|-------------|
+| [Quick Start](docs/guides/QUICK_START.md) | Get running in 5 minutes |
+| [Cheatsheet](docs/guides/CHEATSHEET.md) | Daily reference — one-liners and shortcuts |
+| [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md) | TUI navigation reference |
+| [Dashboard Integration](docs/guides/DASHBOARD_INTEGRATION.md) | Web dashboard setup |
+
+### Architecture
+
+| Document | Description |
+|----------|-------------|
+| [Architecture Overview](docs/architecture/ARCHITECTURE.md) | System design and component interaction |
+| [Data Flow Diagram](docs/architecture/ARCHITECTURE_DATA_FLOW.md) | Pipeline visualization |
+| [ADR Summary](docs/architecture/ADR_SUMMARY.md) | All architectural decisions |
+| [Phoenix Report](docs/architecture/PHOENIX_ARCHITECTURE_REPORT.md) | Migration and restructuring analysis |
+
+### Features
+
+| Area | Documents |
+|------|-----------|
+| **Intelligence** | [Capabilities](docs/features/intelligence/CAPABILITIES.md) · [Sources](docs/features/intelligence/INTEL_SOURCES.md) · [Query Mastery](docs/features/intelligence/QUERY_MASTERY.md) · [Stack Mastery](docs/features/intelligence/STACK_MASTERY.md) |
+| **GCP Credits** | [Overview](docs/features/gcp-credits/README.md) · [Automation](docs/features/gcp-credits/AUTOMATION_SYSTEMS.md) · [High-ROI Queries](docs/features/gcp-credits/HIGH_ROI_QUERIES.md) |
+| **Strategy** | [Executive Summary](docs/features/strategy/EXECUTIVE_SUMMARY.md) · [ROI Analysis](docs/features/strategy/HACKS_ROI.md) |
+
+### CLI Commands
+
+Full command reference with examples: [docs/commands/](docs/commands/README.md)
+
+### Project Status
+
+| Document | Description |
+|----------|-------------|
+| [Master Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) | Active development roadmap |
+| [Status](docs/project/STATUS.md) | Current project status |
+| [Coverage Gaps](docs/project/COVERAGE_GAP.md) | Known gaps and planned features |
+| [Portfolio Audit](docs/project/PORTFOLIO_AUDIT.md) | Full project audit |
+
+---
+
+## Roadmap
+
+### Completed (Q4 2025 — Q1 2026)
+
+| Milestone | Details | Docs |
+|-----------|---------|------|
+| Nix-based reproducible builds | Flake with poetry2nix, hermetic dev shell | [Setup Guide](docs/guides/SETUP_COMPLETE.md) |
+| Tree-Sitter polyglot analysis | Python, JS/TS, Rust, Go, C/C++, Nix, Bash | [Capabilities](docs/features/intelligence/CAPABILITIES.md) |
+| Vertex AI RAG engine | Batching, circuit breakers, grounded generation | [Architecture](docs/architecture/ARCHITECTURE.md) |
+| CLI unification (Typer) | 8 command groups, 30+ commands | [Commands](docs/commands/README.md) |
+| TUI with 6 screens | Textual framework, keyboard shortcuts, live data | [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md) |
+| React Intelligence Dashboard | 17 components, FastAPI backend, real-time metrics | [Dashboard Guide](docs/guides/DASHBOARD_INTEGRATION.md) |
+| Zero-token metrics engine | Repository scanning without API costs | [Phase 4](docs/phases/PHASE4_COMPLETE.md) |
+| Enterprise repositioning (ADR-0030) | Rebrand from Phantom to Cerebro | [ADR Summary](docs/architecture/ADR_SUMMARY.md) |
+| Production readiness audit | 112 tests, import fallbacks, i18n cleanup | [Phase History](docs/phases/) |
+| GitLab CI/CD pipeline | Validate, test, build, deploy, monitor stages | [CI/CD Guide](docs/guides/GITLAB_CI_CD.md) |
+
+### In Progress (Q1-Q2 2026)
+
+| Milestone | Details | Tracking |
+|-----------|---------|----------|
+| OpenTelemetry observability | Structured logging, trace context | [Next Steps](docs/project/NEXT_STEPS.md) |
+| REST API + OpenAPI docs | Public HTTP API for integrations | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| Terraform infrastructure-as-code | GCP provisioning, Cloud Run | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+
+### Planned (Q2-Q3 2026)
+
+| Milestone | Details | Tracking |
+|-----------|---------|----------|
+| Vertex AI Vector Search migration | Replace local ChromaDB for enterprise scale | [Coverage Gaps](docs/project/COVERAGE_GAP.md) |
+| Cloud Run production deployment | Containerized, auto-scaling | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| MCP (Model Context Protocol) server | IDE integration for code intelligence | [Next Steps](docs/project/NEXT_STEPS.md) |
+| Multi-tenant architecture | Team/org isolation, RBAC | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+
+### Phase History
+
+Full implementation history is tracked in [`docs/phases/`](docs/phases/):
+
+| Phase | Document |
+|-------|----------|
+| Phase 1 — Core extraction | [Implementation](docs/phases/PHASE1_IMPLEMENTATION.md) · [Validation](docs/phases/PHASE1_VALIDATION.md) |
+| Phase 2 — RAG pipeline | [Complete](docs/phases/PHASE2_COMPLETE.md) · [Roadmap](docs/phases/PHASE2_ROADMAP.md) |
+| Phase 3 — TUI + commands | [Complete](docs/phases/PHASE3_IMPLEMENTATION_COMPLETE.md) · [Status](docs/phases/PHASE3_STATUS.md) |
+| Phase 4 — Metrics + dashboard | [Complete](docs/phases/PHASE4_COMPLETE.md) · [Performance](docs/phases/PERFORMANCE_REPORT.md) |
+
+---
+
+## Testing
+
+```bash
+# Full test suite (112 tests)
+nix develop --command pytest tests/ --ignore=tests/integration
+
+# With coverage
+nix develop --command pytest tests/ --ignore=tests/integration --cov=src/phantom
 
 # Integration tests (requires GCP credentials)
-pytest tests/integration/ -v -m integration
+pytest tests/integration/ -m integration
 
 # Quick smoke test
 cerebro ops health
-
-# Justfile automation
-just test          # Unit tests
-just test-ci       # CI validation suite
 ```
 
-**Current Test Coverage:** Core RAG engine (85%), GCP integrations (70%), CLI (60%)
+### Test Coverage
 
-See [docs/project/TODO_PLAN.md](docs/project/TODO_PLAN.md) for testing roadmap.
-
----
-
-## 🤝 Contributing
-
-This project follows enterprise contribution standards:
-
-1. **All code changes require:**
-   - Passing tests (`pytest tests/`)
-   - Type hints (enforced by `mypy`)
-   - Docstrings (Google style)
-
-2. **For new features:**
-   - Open an issue first (discuss design)
-   - Reference issue in PR
-   - Include integration test
-
-3. **Security disclosures:**
-   - Report privately via GitHub Security Advisory
-   - Do not open public issues for vulnerabilities
-
-See [CONTRIBUTING.md](docs/guides/CONTRIBUTING_DOCS.md) for detailed guidelines.
+| Module | Tests | File |
+|--------|-------|------|
+| CLI commands | 11 | `tests/test_cli.py` |
+| Code analyzer | 15 | `tests/test_analyzer.py` |
+| Metrics collector | 28 | `tests/test_metrics_collector.py` |
+| Intelligence core | 24 | `tests/test_intelligence.py` |
+| Dashboard server | 22 | `tests/test_dashboard_server.py` |
+| Launcher | 9 | `tests/test_launcher.py` |
+| RAG engine | 6 | `tests/test_rag.py` |
 
 ---
 
-## 🗺️ Roadmap
+## Project Structure
 
-### Q1 2026 (Current)
-- ✅ Nix-based reproducible builds
-- ✅ Vertex AI RAG engine with batching
-- ✅ Tree-Sitter polyglot analysis
-- 🔄 Health check system
+```
+src/phantom/                  # Python package (internal name, kept for backward compat)
+  cli.py                      # CLI entrypoint (Typer, 8 command groups)
+  launcher.py                 # Auto-detect CLI / TUI / Dashboard
+  dashboard_server.py         # FastAPI backend for React dashboard
+  tui/                        # Terminal UI (Textual, 6 screens)
+  core/
+    analyzer.py               # Tree-Sitter + AST code analysis
+    metrics_collector.py      # Zero-token repository scanner
+    watcher.py                # Real-time file system watcher
+    rag/                      # RAG engine + local LLM server
+    extraction/               # Code extraction + embeddings
+    gcp/                      # GCP service integrations
+  intelligence/               # Ecosystem intelligence system
+  commands/                   # CLI command group implementations
+  interfaces/                 # Provider ABCs (LLM, VectorStore)
+  providers/                  # Concrete provider implementations
+  registry/                   # Project registry + scanner
 
-### Q2 2026 (Next)
-- 📋 Terraform infrastructure-as-code
-- 📋 Cloud Run production deployment
-- 📋 OpenTelemetry observability
-- 📋 REST API + Swagger docs
-
-### Q3 2026 (Future)
-- 📋 Vertex AI Vector Search migration
-- 📋 Cloud Composer orchestration
-- 📋 Multi-tenant architecture
-- 📋 MCP (Model Context Protocol) server
-
----
-
-## 💼 Use Cases
-
-### 1. Onboarding Acceleration
-**Problem:** New engineers lost in 500K LOC codebase
-**Solution:** `cerebro rag query "How does authentication work?"` → Get grounded answer in seconds
-**ROI:** 3-6 months → 2-4 weeks onboarding time
-
-### 2. Security Audit Automation
-**Problem:** Manual code reviews miss hardcoded secrets
-**Solution:** `cerebro knowledge analyze --security-only`
-**ROI:** Prevent credential leaks, reduce audit costs by 70%
-
-### 3. Technical Debt Mapping
-**Problem:** Unknown legacy code dependencies
-**Solution:** Generate dependency graphs + complexity metrics
-**ROI:** Prioritize refactoring with data-driven insights
-
-### 4. AI-Assisted Code Review
-**Problem:** PR reviews bottleneck team velocity
-**Solution:** Index codebase → Ask "Does this PR follow our patterns?"
-**ROI:** Reduce review time by 40%, improve consistency
+dashboard/                    # React web dashboard (Vite + TailwindCSS)
+tests/                        # 112 unit tests
+docs/
+  architecture/               # System design, ADRs
+  commands/                   # CLI command reference
+  features/                   # Feature docs (intelligence, gcp-credits, strategy)
+  guides/                     # Setup, keyboard shortcuts, CI/CD
+  phases/                     # Phase implementation history
+  project/                    # Status, roadmaps, audits
+  i18n/                       # Translations
+```
 
 ---
 
-## 📜 License
+## Configuration
 
-MIT License - see [LICENSE](LICENSE) file.
+### Environment Variables
 
-**Commercial use permitted.** Attribution appreciated but not required.
+```bash
+# GCP (never hardcode project IDs)
+export GCP_PROJECT_ID="<your-gcp-project-id>"
+export DATA_STORE_ID="<your-data-store-id>"
+
+# Cerebro paths
+export CEREBRO_ARCH_PATH="$HOME/master/cerebro"    # Repository scan root
+export CEREBRO_DATA_DIR="$HOME/master/cerebro/data/intelligence"
+
+# Dashboard
+export CEREBRO_CORS_ORIGINS="http://localhost:5173" # Comma-separated origins
+
+# RAG server
+export CEREBRO_MODEL="TheBloke/Mistral-7B-Instruct-v0.2-GPTQ"
+export CEREBRO_DB="./data/vector_db"
+```
 
 ---
 
-## 🙏 Acknowledgments
+## Contributing
 
-Built with:
-- [LangChain](https://github.com/langchain-ai/langchain) - LLM orchestration
-- [Tree-Sitter](https://tree-sitter.github.io/) - Polyglot parsing
-- [NixOS](https://nixos.org/) - Reproducible infrastructure
-- [Google Vertex AI](https://cloud.google.com/vertex-ai) - Enterprise LLM platform
+1. All changes require passing tests (`nix develop --command pytest tests/ --ignore=tests/integration`)
+2. All user-facing strings must be in English (see [CLAUDE.md](CLAUDE.md))
+3. Never hardcode GCP project IDs — use `os.getenv("GCP_PROJECT_ID")`
+4. Open an issue before starting work on new features
 
-Inspired by:
-- [Sourcegraph](https://sourcegraph.com/) - Code intelligence at scale
-- [GitHub Copilot](https://github.com/features/copilot) - AI-assisted development
-- [Databricks Dolly](https://www.databricks.com/product/machine-learning/large-language-models-oss-dolly) - Open LLM applications
+See [Contributing Guide](docs/guides/CONTRIBUTING_DOCS.md) for details.
 
 ---
 
-## 📬 Contact & Support
+## License
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/cerebro/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/cerebro/discussions)
-- **Enterprise Inquiries:** Open an issue with `[Enterprise]` tag
-- **Security:** Use GitHub Security Advisory for vulnerabilities
+MIT License — see [LICENSE](LICENSE).
 
 ---
 
 <p align="center">
-  <strong>From local experiments to enterprise production.</strong><br>
-  <sub>Built for teams that value reproducibility, observability, and ROI.</sub>
-</p>
-
-<p align="center">
-  <sub>⭐ Star this repo if you believe code intelligence should be open and accessible.</sub>
+  <strong>Cerebro v2.0.0</strong> — 61 Python modules · 22 React components · 112 tests · 14K LoC<br>
+  <sub>From local analysis to enterprise production.</sub>
 </p>
