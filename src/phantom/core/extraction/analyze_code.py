@@ -15,7 +15,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from tree_sitter_languages import get_language, get_parser
+try:
+    from tree_sitter_languages import get_language, get_parser
+    TREESITTER_AVAILABLE = True
+except ImportError:
+    TREESITTER_AVAILABLE = False
 
 
 @dataclass
@@ -33,7 +37,7 @@ class RepoMetrics:
 
 
 def validate_repository_path(repo_path: Path):
-    """Garante que o caminho existe e é um diretório."""
+    """Validate that the path exists and is a directory."""
     if not repo_path.exists():
         raise ValueError(f"Repository path does not exist: {repo_path}")
     if not repo_path.is_dir():
@@ -57,11 +61,12 @@ class HermeticAnalyzer:
     def __init__(self, config: Dict = None):
         self.config = config or {}
         self.parsers = {}
-        for lang in ["python", "nix", "rust", "bash", "typescript", "javascript"]:
-            try:
-                self.parsers[lang] = get_parser(lang)
-            except Exception:
-                pass
+        if TREESITTER_AVAILABLE:
+            for lang in ["python", "nix", "rust", "bash", "typescript", "javascript"]:
+                try:
+                    self.parsers[lang] = get_parser(lang)
+                except Exception:
+                    pass
 
     def run_hooks(
         self, stage: str, hooks_config: List[Dict], repo_path: Path
@@ -152,7 +157,7 @@ class HermeticAnalyzer:
         return mapping.get(file_path.suffix.lower())
 
     def analyze_repo(self, repo_path: Path, hooks: Optional[Dict] = None) -> Dict:
-        """Realiza análise profunda de um repositório completo"""
+        """Perform deep analysis of a complete repository."""
         artifacts = []
         metrics = RepoMetrics(
             name=repo_path.name,
@@ -163,7 +168,7 @@ class HermeticAnalyzer:
             pre_results = self.run_hooks("pre_analyze", hooks["pre_analyze"], repo_path)
             metrics.hook_results.update(pre_results)
 
-        # 1. Analisar Dependências (Filesystem Scan)
+        # 1. Analyze Dependencies (Filesystem Scan)
         metrics.dependencies = self.extract_external_deps(repo_path)
 
         # Global excludes
@@ -180,7 +185,7 @@ class HermeticAnalyzer:
             ]
         )
 
-        # 2. Analisar Código
+        # 2. Analyze Code
         print(f"🔍 Scanning: {repo_path}")
         for file_path in repo_path.rglob("*"):
             # Check exclusions
@@ -210,7 +215,7 @@ class HermeticAnalyzer:
                     file_artifacts = self.analyze_file(file_path, lang, content)
                     artifacts.extend(file_artifacts)
 
-                    # Atualizar métricas de contagem
+                    # Update count metrics
                     metrics.functions += sum(
                         1 for a in file_artifacts if a.artifact_type == "function"
                     )
@@ -218,7 +223,7 @@ class HermeticAnalyzer:
                         1 for a in file_artifacts if a.artifact_type == "class"
                     )
 
-                    # Heurísticas de Segurança e Performance
+                    # Security and Performance Heuristics
                     self.check_heuristics(content, metrics)
 
         # 3. Run Post-Analyze Hooks
@@ -247,7 +252,7 @@ class HermeticAnalyzer:
         return list(set(deps))
 
     def check_heuristics(self, content: str, metrics: RepoMetrics):
-        # Segurança
+        # Security
         sec_patterns = {
             "hardcoded_key": r'(?i)(key|secret|password|token)\s*=\s*["\"][a-zA-Z0-9]{10,}',
             "unsafe_exec": r"(os\.system|subprocess\.run|eval|exec)\(",

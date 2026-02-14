@@ -10,6 +10,7 @@ Design: HEAD-hash polling only — no inotify / watchdog dependency.
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Dict, List, Optional
@@ -22,7 +23,7 @@ logger = logging.getLogger("cerebro.watcher")
 class RepoWatcher:
     def __init__(
         self,
-        arch_path: str = "/home/kernelcore/arch",
+        arch_path: str = os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "arch")),
         poll_interval: int = 10,
         on_change: Optional[Callable[[Dict[str, Any]], Coroutine]] = None,
     ):

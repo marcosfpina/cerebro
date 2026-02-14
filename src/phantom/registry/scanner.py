@@ -75,7 +75,7 @@ class ProjectScanner:
     def __init__(
         self,
         cerebro: CerebroIntelligence,
-        arch_path: str = "/home/kernelcore/arch",
+        arch_path: str = os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "arch")),
     ):
         self.cerebro = cerebro
         self.arch_path = Path(arch_path)

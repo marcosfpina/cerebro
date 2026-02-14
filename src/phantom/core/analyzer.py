@@ -13,7 +13,7 @@ class RepoAnalyzer:
         self.max_file_size = max_file_size_kb * 1024
         self.ignore_spec = self._load_gitignore()
 
-        # Padrões padrão para ignorar caso não tenha gitignore ou para reforçar
+        # Default patterns to ignore if no gitignore exists or to reinforce
         self.default_ignores = [
             ".git",
             "__pycache__",
@@ -42,14 +42,18 @@ class RepoAnalyzer:
         return None
 
     def _is_ignored(self, file_path: Path) -> bool:
-        # Caminho relativo para check
+        # Dotfiles are meta-config (.gitignore, .editorconfig, …) — not code artifacts.
+        # Consistent with MetricsCollector._iter_files which also skips dotfiles.
+        if file_path.name.startswith("."):
+            return True
+
         rel_path = file_path.relative_to(self.root_path).as_posix()
 
-        # Check 1: Padrões hardcoded
+        # Check 1: Hardcoded patterns
         for pattern in self.default_ignores:
-            if pattern in rel_path.split("/"):  # Check diretórios exatos
+            if pattern in rel_path.split("/"):  # Check exact directories
                 return True
-            if rel_path.endswith(pattern.replace("*", "")):  # Check extensões simples
+            if rel_path.endswith(pattern.replace("*", "")):  # Check simple extensions
                 return True
 
         # Check 2: .gitignore
@@ -59,12 +63,12 @@ class RepoAnalyzer:
         return False
 
     def _is_binary(self, file_path: Path) -> bool:
-        """Heurística simples para detectar binários"""
+        """Detect binary files by checking for null bytes in the first 1 KB."""
         try:
             with open(file_path, "rb") as check_file:
-                check_file.read(1024)
-                return False
-        except:
+                chunk = check_file.read(1024)
+                return b"\x00" in chunk
+        except (OSError, PermissionError):
             return True
 
     def scan(self) -> List[Dict]:
@@ -72,10 +76,10 @@ class RepoAnalyzer:
 
         print(f"🔍 Scanning: {self.root_path}")
 
-        # Coleta todos os arquivos primeiro para a barra de progresso
+        # Collect all files first for the progress bar
         all_files = []
         for root, dirs, files in os.walk(self.root_path):
-            # Filtrar diretórios in-place para não descer neles
+            # Filter directories in-place to skip descending into them
             dirs[:] = [d for d in dirs if not self._is_ignored(Path(root) / d)]
 
             for file in files:
@@ -83,7 +87,7 @@ class RepoAnalyzer:
                 if not self._is_ignored(file_path):
                     all_files.append(file_path)
 
-        # Processa arquivos
+        # Process files
         for file_path in track(all_files, description="Parsing files..."):
             if file_path.stat().st_size > self.max_file_size:
                 continue

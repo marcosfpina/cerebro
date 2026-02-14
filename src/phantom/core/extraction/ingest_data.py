@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-03_ingest_data.py - O JEITO CERTO DE INGERIR (Burn Credits Mode)
-Em vez de gerar embeddings na mão (caro), importamos para o Data Store.
-O Vertex AI Search faz a indexação/vetorização por conta da casa (créditos).
+03_ingest_data.py - Document ingestion via Discovery Engine.
+Instead of generating embeddings manually (expensive), import into the Data Store.
+Vertex AI Search handles indexing/vectorization using GCP credits.
 """
 import os
 import json
@@ -11,16 +11,16 @@ from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.api_core.client_options import ClientOptions
 
 def import_documents(project_id: str, location: str, data_store_id: str, input_jsonl: str):
-    print(f"🚀 Iniciando Ingestão Segura (Credit-Funded)...")
+    print("🚀 Starting document ingestion (credit-funded)...")
 
-    # 1. Configura Client no Endpoint Discovery Engine (Créditos ✅)
+    # 1. Configure client for Discovery Engine endpoint
     client_options = (
         ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
         if location != "global" else None
     )
     client = discoveryengine.DocumentServiceClient(client_options=client_options)
 
-    # 2. Define o caminho do Data Store
+    # 2. Define the Data Store path
     parent = client.branch_path(
         project=project_id,
         location=location,
@@ -28,27 +28,26 @@ def import_documents(project_id: str, location: str, data_store_id: str, input_j
         branch="default_branch"
     )
 
-    # 3. Prepara o Request de Importação (GCS ou Inline)
-    # Para 2600 arquivos, o ideal é subir o JSONL para o GCS (Google Cloud Storage) primeiro
-    # Mas aqui vamos assumir que você tem um JSONL local e vamos usar Inline (limite menor) ou GCS.
-    # Recomendação: Use GCS para "Burn Credits" em massa.
+    # 3. Prepare the Import Request (GCS or Inline)
+    # For large datasets, upload the JSONL to GCS first.
+    # Use GCS for bulk ingestion.
 
-    print("⚠️  Para ingestão em massa, suba o arquivo 'all_artifacts.jsonl' para um Bucket GCS.")
+    print("⚠️  For bulk ingestion, upload 'all_artifacts.jsonl' to a GCS bucket.")
     gcs_uri = f"gs://{project_id}-staging/all_artifacts.jsonl"
 
     request = discoveryengine.ImportDocumentsRequest(
         parent=parent,
         gcs_source=discoveryengine.GcsSource(input_uris=[gcs_uri]),
-        # O modo INCREMENTAL garante que você possa rodar de novo sem quebrar tudo
+        # INCREMENTAL mode allows re-running without breaking existing data
         reconciliation_mode=discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
     )
 
-    # 4. Dispara a operação (Long Running)
+    # 4. Trigger the long-running operation
     operation = client.import_documents(request=request)
-    print(f"⏳ Importação iniciada: {operation.operation.name}")
-    print("   O Vertex AI Search agora está gerando embeddings e indexando (coberto pelo crédito).")
+    print(f"⏳ Import started: {operation.operation.name}")
+    print("   Vertex AI Search is now generating embeddings and indexing (covered by credits).")
 
-    # Opcional: operation.result() para esperar
+    # Optional: operation.result() to wait for completion
 
 if __name__ == "__main__":
     # Exemplo de uso

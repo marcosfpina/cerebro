@@ -1,18 +1,29 @@
 # src/server.py
 """
-RAG server usando modelo LOCAL
-Zero custo após setup inicial!
+RAG server using LOCAL model.
+Zero cost after initial setup.
 """
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-import torch
-from chromadb import PersistentClient
 from typing import List, Optional
+import json
 import logging
 import time
 import os
+
+try:
+    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+    import torch
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+
+try:
+    from chromadb import PersistentClient
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
 
 # Structured Logging for Cloud Run (JSON format)
 class CloudRunFormatter(logging.Formatter):
@@ -64,6 +75,11 @@ class QueryResponse(BaseModel):
 
 class CEREBROServer:
     def __init__(self, model_name: str, db_path: str, quantization: str = "4bit"):
+        if not TRANSFORMERS_AVAILABLE:
+            raise ImportError("transformers and torch are required for CEREBROServer")
+        if not CHROMADB_AVAILABLE:
+            raise ImportError("chromadb is required for CEREBROServer")
+
         logger.info(f"🧠 Loading CEREBRO with {model_name}...")
         self.start_time = time.time()
 
@@ -71,7 +87,7 @@ class CEREBROServer:
         self.db = PersistentClient(path=db_path)
         self.collection = self.db.get_or_create_collection("cerebro_knowledge")
 
-        # Load local model com quantização
+        # Load local model with quantization
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=(quantization == "4bit"),
             bnb_4bit_compute_dtype=torch.float16,
@@ -111,7 +127,7 @@ class CEREBROServer:
     def generate(self, query: str, context: List[dict]) -> str:
         """Generate answer using local model + retrieved context"""
 
-        # Build prompt com retrieved context
+        # Build prompt with retrieved context
         context_text = "\n\n".join([
             f"Source: {c['metadata']['file_path']}\n{c['content']}"
             for c in context

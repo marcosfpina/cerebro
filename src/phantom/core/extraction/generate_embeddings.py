@@ -1,27 +1,44 @@
 # scripts/03_generate_embeddings.py
 """
-Gera embeddings usando GCP Vertex AI
-AQUI que você TORRA os créditos de forma inteligente!
+Generate embeddings using GCP Vertex AI.
+Optimized batch processing for efficient credit usage.
 """
 
-from google.cloud import discoveryengine_v1beta as discoveryengine
-from google.api_core.client_options import ClientOptions
+try:
+    from google.cloud import discoveryengine_v1beta as discoveryengine
+    from google.cloud import aiplatform
+    from google.api_core.client_options import ClientOptions
+    GCP_AVAILABLE = True
+except ImportError:
+    GCP_AVAILABLE = False
+
 from typing import List, Dict
 import json
 from pathlib import Path
-from tqdm import tqdm
-import numpy as np
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable, **kwargs):
+        return iterable
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore[assignment]
 
 class VertexEmbeddingGenerator:
-    """Usa Vertex AI pra gerar embeddings de alta qualidade"""
+    """Generate high-quality embeddings using Vertex AI."""
 
     def __init__(self, project_id: str, location: str = "us-central1"):
+        if not GCP_AVAILABLE:
+            raise ImportError("google-cloud-aiplatform is required for embedding generation")
         aiplatform.init(project=project_id, location=location)
-        self.model_name = "text-embedding-004"  # Último modelo do Google
+        self.model_name = "text-embedding-004"
         self.batch_size = 250  # Vertex AI limit
 
     def generate_embeddings(self, artifacts: List[Dict]) -> List[Dict]:
-        """Gera embeddings pra todos os artifacts"""
+        """Generate embeddings for all artifacts."""
 
         print(f"🚀 Generating embeddings for {len(artifacts)} artifacts using Vertex AI")
         print(f"💰 This will use your GCP credits efficiently!")
@@ -32,13 +49,13 @@ class VertexEmbeddingGenerator:
         for i in tqdm(range(0, len(artifacts), self.batch_size)):
             batch = artifacts[i:i + self.batch_size]
 
-            # Prepara textos pra embedding
+            # Prepare texts for embedding
             texts = [self.prepare_text(artifact) for artifact in batch]
 
-            # Chama Vertex AI
+            # Call Vertex AI
             embeddings = self.batch_embed(texts)
 
-            # Combina com artifacts
+            # Combine with artifacts
             for artifact, embedding in zip(batch, embeddings):
                 results.append({
                     **artifact,
@@ -50,8 +67,8 @@ class VertexEmbeddingGenerator:
 
     def prepare_text(self, artifact: Dict) -> str:
         """
-        Prepara texto otimizado pra embedding
-        Combina: nome + docstring + contexto + metadata
+        Prepare optimized text for embedding.
+        Combines: name + docstring + context + metadata.
         """
         parts = [
             f"Repository: {artifact['repo']}",
@@ -70,7 +87,7 @@ class VertexEmbeddingGenerator:
         return "\n\n".join(parts)
 
     def batch_embed(self, texts: List[str]) -> List[List[float]]:
-        """Chama Vertex AI em batch"""
+        """Call Vertex AI batch embedding API."""
 
         # Vertex AI Embeddings API
         from vertexai.preview.language_models import TextEmbeddingModel

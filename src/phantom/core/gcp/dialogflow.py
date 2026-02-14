@@ -13,8 +13,12 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from google.cloud import dialogflowcx_v3 as dialogflow
-from google.auth import default
+try:
+    from google.cloud import dialogflowcx_v3 as dialogflow
+    from google.auth import default
+    DIALOGFLOW_AVAILABLE = True
+except ImportError:
+    DIALOGFLOW_AVAILABLE = False
 
 
 # Default conversation scripts for testing (Portuguese)
@@ -69,6 +73,9 @@ class DialogflowCXManager:
             location: Dialogflow location (default: us-central1)
             agent_id: Dialogflow CX agent ID
         """
+        if not DIALOGFLOW_AVAILABLE:
+            raise ImportError("google-cloud-dialogflow-cx is required for DialogflowCXManager")
+
         if project_id is None:
             _, project_id = default()
 

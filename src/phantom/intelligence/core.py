@@ -8,6 +8,7 @@ Coordinates all intelligence gathering, analysis, and dissemination.
 import asyncio
 import json
 import hashlib
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -141,9 +142,12 @@ class CerebroIntelligence:
 
     def __init__(
         self,
-        arch_path: str = "/home/kernelcore/arch",
+        arch_path: str = os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "master" / "cerebro")),
         nixos_path: str = "/etc/nixos",
-        data_dir: str = "./data/intelligence",
+        data_dir: str = os.getenv(
+            "CEREBRO_DATA_DIR",
+            str(Path.home() / "master" / "cerebro" / "data" / "intelligence"),
+        ),
     ):
         self.arch_path = Path(arch_path)
         self.nixos_path = Path(nixos_path)
