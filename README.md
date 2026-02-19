@@ -361,6 +361,11 @@ export CEREBRO_CORS_ORIGINS="http://localhost:5173" # Comma-separated origins
 # RAG server
 export CEREBRO_MODEL="TheBloke/Mistral-7B-Instruct-v0.2-GPTQ"
 export CEREBRO_DB="./data/vector_db"
+
+# Reranker Service
+export CEREBRO_RERANKER_URL="http://localhost:8090" # Sidecar service URL
+export CEREBRO_RERANKER_MODE="service" # service | local | hybrid
+export HF_HOME="./data/models" # Cache dir for local fallback models
 ```
 
 ---
