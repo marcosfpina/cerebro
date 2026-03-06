@@ -453,7 +453,10 @@ def rag_ingest(source_file: str = "./data/analyzed/all_artifacts.jsonl"):
 
 
 @rag_app.command("query")
-def rag_query(question: str):
+def rag_query(
+    question: str,
+    rerank: bool = typer.Option(False, "--rerank", "-r", help="Rerank citations with cross‑encoder for better relevance"),
+):
     """
     Query the Cloud RAG (Discovery Engine) with Grounded Generation.
     """
@@ -493,10 +496,74 @@ def rag_query(question: str):
     console.print(table)
 
     if metrics.get("citations"):
+        citations = metrics["citations"]
+        if rerank:
+            try:
+                from phantom.core.rerank import rerank as rerank_fn
+            except ImportError:
+                console.print("[yellow]⚠️  sentence‑transformers not installed, skipping rerank.[/yellow]")
+            else:
+                console.print("[cyan]🧠 Reranking citations with cross‑encoder...[/cyan]")
+                ranked = rerank_fn(question, citations, top_k=len(citations))
+                # Reorder citations by ranking
+                citations = [doc for _, _, doc in ranked]
+                # Optional: show scores in a separate table
         console.print("\n[bold]📚 Cited Sources:[/bold]")
-        for c in metrics["citations"]:
+        for c in citations:
             console.print(f"  • {c}")
 
+
+@rag_app.command("rerank")
+def rag_rerank(
+    query: str = typer.Argument(..., help="Search query"),
+    documents_file: str = typer.Option("./data/analyzed/all_artifacts.jsonl", "--documents", "-d", help="JSONL file containing documents"),
+    top_k: int = typer.Option(10, "--top-k", "-k", help="Number of top results to return"),
+):
+    """
+    Rerank documents using a cross‑encoder model.
+    """
+    try:
+        from phantom.core.rerank import rerank
+    except ImportError:
+        console.print("[red]❌ sentence‑transformers not installed. Install with: poetry install[/red]")
+        return
+
+    import json
+    from pathlib import Path
+
+    path = Path(documents_file)
+    if not path.exists():
+        console.print(f"[red]❌ Documents file not found: {path}[/red]")
+        return
+
+    # Load documents
+    documents = []
+    with open(path, 'r') as f:
+        for line in f:
+            data = json.loads(line)
+            # Extract text from jsonData field
+            json_data = json.loads(data.get("jsonData", "{}"))
+            text = json_data.get("content", "")
+            if text:
+                documents.append(text)
+
+    if not documents:
+        console.print("[yellow]⚠️  No documents with content found.[/yellow]")
+        return
+
+    console.print(f"🔍 Reranking {len(documents)} documents for query: [cyan]{query}[/cyan]")
+    ranked = rerank(query, documents, top_k=top_k)
+
+    table = Table(title=f"Reranked Results (Top‑{top_k})")
+    table.add_column("Rank", style="dim")
+    table.add_column("Score", style="green")
+    table.add_column("Document Preview", style="white")
+
+    for i, (idx, score, doc) in enumerate(ranked, 1):
+        preview = doc[:200] + "..." if len(doc) > 200 else doc
+        table.add_row(str(i), f"{score:.4f}", preview)
+
+    console.print(table)
 
 @ops_app.command("health")
 def health():

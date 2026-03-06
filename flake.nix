@@ -167,12 +167,18 @@
             if [ -f ~/.config/gcloud/application_default_credentials.json ]; then
               export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
             fi
+# Project environment variables
+export CEREBRO_DATA_DIR="$PWD/data"
+export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
+export GCP_PROJECT_ID="gen-lang-client-0530325234"
+export GCP_REGION="us-central1"
 
-            # Project environment variables
-            export CEREBRO_DATA_DIR="$PWD/data"
-            export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
-            export GCP_PROJECT_ID="gen-lang-client-0530325234"
-            export GCP_REGION="us-central1"
+# Aliases for common cerebro commands
+alias cscan='cerebro metrics scan'
+alias canalyze='cerebro knowledge analyze'
+alias cingest='cerebro rag ingest'
+alias cquery='cerebro rag query'
+alias crerank='cerebro rag rerank'
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "🧠 PHANTOM CEREBRO - Development Environment (Nix-managed)"
@@ -204,8 +210,21 @@
             echo "  cerebro knowledge analyze .  - Extract AST from current repo"
             echo "  cerebro rag ingest           - Index artifacts to ChromaDB"
             echo "  cerebro rag query \"...\"      - Query the Knowledge Base"
+            echo "  cerebro rag rerank           - Rerank retrieved documents with cross‑encoder"
             echo "  just pipeline                - Run full validation (test + lint)"
             echo "  pytest tests/                - Run unit tests"
+            echo ""
+            echo "Current status:"
+            if [[ -f "./data/metrics/metrics_snapshot.json" ]]; then
+              echo "  📊 Metrics snapshot present"
+            else
+              echo "  📊 No metrics snapshot (run 'cscan')"
+            fi
+            if [[ -f "./data/analyzed/all_artifacts.jsonl" ]]; then
+              echo "  🧠 Artifacts ready"
+            else
+              echo "  🧠 No artifacts (run 'canalyze')"
+            fi
             echo ""
             echo "Data directories:"
             echo "  ./data/analyzed     - Analyzed artifacts"
