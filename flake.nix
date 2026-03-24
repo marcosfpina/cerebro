@@ -168,69 +168,44 @@ export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
 export GCP_PROJECT_ID="gen-lang-client-0530325234"
 export GCP_REGION="us-central1"
 
-# ── Cerebro short commands (funções, não aliases — suportam $@ e completion) ──
-cscan()   { cerebro metrics scan "$@"; }
-canalyze(){ cerebro knowledge analyze "$@"; }
-cingest() { cerebro rag ingest "$@"; }
-cquery()  { cerebro rag query "$@"; }
-crerank() { cerebro rag rerank "$@"; }
-cstrat()  { cerebro strategy optimize "$@"; }
-chealth() { cerebro ops health "$@"; }
-cdash()   { cerebro dashboard "$@"; }   # React GUI → http://localhost:5173
-ctui()    { cerebro tui "$@"; }         # TUI Textual (terminal)
+# ── Interface shortcuts ───────────────────────────────────────────────────────
+cdash() { cerebro dashboard "$@"; }   # React GUI → http://localhost:5173
+ctui()  { cerebro tui "$@"; }         # TUI Textual (terminal)
 
-# ── chelp: referência rápida de todos os atalhos ──────────────────────────────
+# ── chelp: referência rápida ──────────────────────────────────────────────────
 chelp() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "🧠 CEREBRO — Quick Reference"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
-  echo "SHORT COMMANDS (suportam --help e todos os flags):"
-  echo "  cscan   [opts]           cerebro metrics scan"
-  echo "  canalyze <path> [opts]   cerebro knowledge analyze"
-  echo "  cingest [file] [opts]    cerebro rag ingest"
-  echo "  cquery  \"<question>\"    cerebro rag query"
-  echo "  crerank <query> [opts]   cerebro rag rerank"
-  echo "  cstrat  [opts]           cerebro strategy optimize"
-  echo "  chealth                  cerebro ops health"
-  echo "  cdash                    Dashboard GUI  → http://localhost:5173"
-  echo "  ctui                     TUI Textual    (terminal interativo)"
+  echo "INTERFACES:"
+  echo "  cdash                        Dashboard GUI  → http://localhost:5173"
+  echo "  ctui                         TUI Textual    (terminal interativo)"
+  echo ""
+  echo "CEREBRO COMMANDS:"
+  echo "  cerebro knowledge analyze <path>   Extrair AST do código"
+  echo "  cerebro metrics scan               Métricas zero-token"
+  echo "  cerebro rag ingest                 Ingerir no Discovery Engine"
+  echo "  cerebro rag query \"<question>\"    Query RAG com grounded generation"
+  echo "  cerebro rag rerank <query>         Rerankar documentos"
+  echo "  cerebro strategy optimize          Otimização de carreira/tech"
+  echo "  cerebro gcp monitor                Monitorar créditos GCP"
+  echo "  cerebro ops health                 Health check completo"
   echo ""
   echo "JUST TARGETS:"
-  echo "  just test                Unit tests"
-  echo "  just lint                Ruff linter"
-  echo "  just format              Ruff format"
-  echo "  just pipeline            Full CI pipeline local"
-  echo "  just health              Health check"
-  echo "  just ingest              RAG ingest"
-  echo "  just query \"...\"        RAG query"
-  echo "  just analyze <path>      Code analysis"
+  echo "  just test          Unit tests"
+  echo "  just lint          Ruff linter"
+  echo "  just pipeline      CI pipeline completo"
+  echo "  just dashboard     Subir Dashboard GUI"
+  echo "  just tui           Subir TUI"
   echo ""
-  echo "CEREBRO GROUPS:"
-  echo "  cerebro knowledge --help   Análise de código (AST, batch)"
-  echo "  cerebro metrics --help     Métricas zero-token"
-  echo "  cerebro rag --help         RAG: ingest / query / rerank"
-  echo "  cerebro strategy --help    Strategy & salary intel"
-  echo "  cerebro gcp --help         GCP: burn, monitor, datastores"
-  echo "  cerebro ops --help         Health, status"
-  echo ""
-  echo "  cerebro --help             Todos os comandos"
+  echo "  cerebro --help     Referência completa"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
-# ── Shell completion para cerebro (delegada às funções curtas via compdef) ────
+# ── Shell completion para cerebro ─────────────────────────────────────────────
 if command -v cerebro &>/dev/null; then
   eval "$(cerebro --show-completion zsh 2>/dev/null)" 2>/dev/null || true
-  # Delegar completion das funções curtas ao cerebro
-  if command -v compdef &>/dev/null; then
-    compdef cscan='cerebro'
-    compdef canalyze='cerebro'
-    compdef cingest='cerebro'
-    compdef cquery='cerebro'
-    compdef crerank='cerebro'
-    compdef cstrat='cerebro'
-    compdef chealth='cerebro'
-  fi
 fi
 
             # ── Instalação (apenas na primeira vez) ───────────────────────────
@@ -255,12 +230,12 @@ fi
             if [[ -f "./data/metrics/metrics_snapshot.json" ]]; then
               echo "  📊 Metrics snapshot present"
             else
-              echo "  📊 No metrics snapshot  →  cscan"
+              echo "  📊 No metrics snapshot  →  cerebro metrics scan"
             fi
             if [[ -f "./data/analyzed/all_artifacts.jsonl" ]]; then
               echo "  🧠 Artifacts ready"
             else
-              echo "  🧠 No artifacts         →  canalyze ."
+              echo "  🧠 No artifacts         →  cerebro knowledge analyze ."
             fi
             echo ""
             echo "Interfaces:"
