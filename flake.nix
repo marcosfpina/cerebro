@@ -179,6 +179,7 @@ chelp() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo "INTERFACES:"
+  echo "  cerebro <command>            CLI  (principal — cerebro --help)"
   echo "  cdash                        Dashboard GUI  → http://localhost:5173"
   echo "  ctui                         TUI Textual    (terminal interativo)"
   echo ""
@@ -239,11 +240,11 @@ fi
             fi
             echo ""
             echo "Interfaces:"
-            echo "  cdash            → Dashboard GUI  (http://localhost:5173)"
-            echo "  ctui             → TUI Textual    (terminal)"
+            echo "  cerebro <cmd>    → CLI             (cerebro --help)"
+            echo "  cdash            → Dashboard GUI   (http://localhost:5173)"
+            echo "  ctui             → TUI Textual     (terminal)"
             echo ""
-            echo "  chelp            → quick reference de todos os atalhos"
-            echo "  cerebro --help   → referência completa"
+            echo "  chelp            → quick reference"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           '';
         };
