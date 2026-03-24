@@ -165,8 +165,8 @@
 # Project environment variables
 export CEREBRO_DATA_DIR="$PWD/data"
 export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
-export GCP_PROJECT_ID="${GCP_PROJECT_ID:-}"
-export GCP_REGION="${GCP_REGION:-us-central1}"
+export GCP_PROJECT_ID="''${GCP_PROJECT_ID:-}"
+export GCP_REGION="''${GCP_REGION:-us-central1}"
 
 # ── Interface shortcuts ───────────────────────────────────────────────────────
 cdash() { cerebro dashboard "$@"; }   # React GUI → http://localhost:18321
