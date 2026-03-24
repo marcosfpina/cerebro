@@ -1,6 +1,6 @@
 /**
  * API Client for Cerebro Backend
- * Connects to Cerebro API (FastAPI) on localhost:8000
+ * Connects to Cerebro API (FastAPI) on localhost:8009
  */
 
 import type {

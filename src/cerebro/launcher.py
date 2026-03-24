@@ -70,7 +70,7 @@ def launch_gui():
     # Start the backend API server
     print("📡 Starting backend API server...")
     backend_process = subprocess.Popen(
-        ["uvicorn", "cerebro.api.server:app", "--host", "0.0.0.0", "--port", "8000"],
+        ["uvicorn", "cerebro.api.server:app", "--host", "0.0.0.0", "--port", "8009"],
         cwd=Path(__file__).parent.parent.parent,
     )
 
@@ -83,7 +83,7 @@ def launch_gui():
         )
 
         print("\n✅ Cerebro Dashboard is running!")
-        print("   Backend:  http://localhost:8000")
+        print("   Backend:  http://localhost:8009")
         print("   Frontend: http://localhost:18321")
         print("\nPress Ctrl+C to stop both servers\n")
 
