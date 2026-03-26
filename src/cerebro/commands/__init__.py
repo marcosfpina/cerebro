@@ -25,8 +25,8 @@ except ImportError:
     testing_app = None  # type: ignore[assignment]
 
 __all__ = [
+    "content_app",
     "gcp_app",
     "strategy_app",
-    "content_app",
     "testing_app",
 ]

@@ -1,12 +1,17 @@
-import pytest
-import os
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from cerebro.core.extraction.analyze_code import HermeticAnalyzer, RepoMetrics
-from cerebro.core.rag.engine import RigorousRAGEngine
-from cerebro.interfaces.llm import LLMProvider
-from cerebro.interfaces.vector_store import VectorStoreProvider
+
+import pytest
+
+# Skip entire module if google-cloud-storage is not installed (Nix env)
+pytest.importorskip("google.cloud.storage", reason="google-cloud-storage not installed")
+
+from cerebro.core.extraction.analyze_code import HermeticAnalyzer  # noqa: E402
+from cerebro.core.rag.engine import RigorousRAGEngine  # noqa: E402
+from cerebro.interfaces.llm import LLMProvider  # noqa: E402
+from cerebro.interfaces.vector_store import VectorStoreProvider  # noqa: E402
+
 
 @pytest.mark.integration
 class TestPhantomWorkflow:
@@ -33,10 +38,10 @@ class TestPhantomWorkflow:
 
         analyzer = HermeticAnalyzer()
         result = analyzer.analyze_repo(repo_path)
-        
+
         assert len(result["artifacts"]) > 0
         assert result["artifacts"][0].name == "hello"
-        
+
         # Save artifacts for ingestion
         import json
         jsonl_path = test_data_dir / "artifacts.jsonl"
@@ -51,7 +56,7 @@ class TestPhantomWorkflow:
                     })
                 }
                 f.write(json.dumps(doc) + "\n")
-        
+
         assert jsonl_path.exists()
 
     def test_2_ingest_artifacts(self, test_data_dir):
@@ -59,15 +64,15 @@ class TestPhantomWorkflow:
         # Create mock providers
         mock_llm = MagicMock(spec=LLMProvider)
         mock_llm.import_documents.return_value = "operation-123"
-        
+
         mock_vector_store = MagicMock(spec=VectorStoreProvider)
         mock_vector_store.add_documents.return_value = 1
-        
+
         # Mock GCS storage
         with patch("cerebro.core.rag.engine.storage.Client") as mock_storage:
             mock_bucket = MagicMock()
             mock_storage.return_value.get_bucket.return_value = mock_bucket
-            
+
             engine = RigorousRAGEngine(
                 llm_provider=mock_llm,
                 vector_store_provider=mock_vector_store,
@@ -75,10 +80,10 @@ class TestPhantomWorkflow:
                 data_store_id="test-store"
             )
             engine.project_id = "test-project"
-            
+
             jsonl_path = test_data_dir / "artifacts.jsonl"
             count = engine.ingest(str(jsonl_path))
-            
+
             assert count > 0
             mock_llm.import_documents.assert_called_once()
 
@@ -92,7 +97,7 @@ class TestPhantomWorkflow:
             "confidence": 0.95,
             "cost_estimate": 0.004,
         }
-        
+
         mock_vector_store = MagicMock(spec=VectorStoreProvider)
         mock_vector_store.search.return_value = [
             {
@@ -102,15 +107,15 @@ class TestPhantomWorkflow:
                 "similarity": 0.95,
             }
         ]
-        
+
         engine = RigorousRAGEngine(
             llm_provider=mock_llm,
             vector_store_provider=mock_vector_store,
             persist_directory=str(test_data_dir / "vector_db")
         )
-        
+
         result = engine.query_with_metrics("What does hello do?")
-        
+
         assert "hello" in result["answer"]
         assert result["metrics"]["avg_confidence"] == 0.95
         assert "100%" in result["metrics"]["hit_rate_k"]

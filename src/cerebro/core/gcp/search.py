@@ -6,11 +6,11 @@ Consolidated from test_credits.py and real.py
 Uses SearchServiceClient (NOT GroundedGenerationServiceClient)
 """
 import os
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
-from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.auth import default
+from google.cloud import discoveryengine_v1beta as discoveryengine
 
 
 @dataclass
@@ -18,18 +18,18 @@ class SearchResult:
     """Single search result"""
     title: str
     snippet: str
-    link: Optional[str]
-    metadata: Dict[str, Any]
+    link: str | None
+    metadata: dict[str, Any]
 
 
 @dataclass
 class GroundedResponse:
     """Grounded generation response with citations"""
     summary: str
-    citations: List[str]
-    results: List[SearchResult]
+    citations: list[str]
+    results: list[SearchResult]
     cost_estimate: float  # USD
-    snippets: List[str] = None  # Short excerpts from top results
+    snippets: list[str] = None  # Short excerpts from top results
 
     def __post_init__(self):
         if self.snippets is None:
@@ -50,9 +50,9 @@ class VertexAISearch:
 
     def __init__(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         location: str = "global",
-        data_store_id: Optional[str] = None
+        data_store_id: str | None = None
     ):
         """
         Initialize Vertex AI Search client
@@ -77,7 +77,7 @@ class VertexAISearch:
 
         self.client = discoveryengine.SearchServiceClient(client_options=client_options)
 
-    def _get_serving_config(self, data_store_id: Optional[str] = None) -> str:
+    def _get_serving_config(self, data_store_id: str | None = None) -> str:
         """Build serving config path"""
         ds_id = data_store_id or self.data_store_id
 
@@ -93,7 +93,7 @@ class VertexAISearch:
     def search(
         self,
         query: str,
-        data_store_id: Optional[str] = None,
+        data_store_id: str | None = None,
         page_size: int = 10,
         include_summary: bool = True
     ) -> GroundedResponse:
@@ -216,7 +216,7 @@ class VertexAISearch:
     def grounded_search(
         self,
         query: str,
-        data_store_id: Optional[str] = None,
+        data_store_id: str | None = None,
         top_k: int = 5
     ) -> GroundedResponse:
         """
@@ -253,7 +253,7 @@ def main():
 
     query = os.getenv("SEARCH_QUERY", "What is machine learning?")
 
-    print(f"\n🎯 Configuration:")
+    print("\n🎯 Configuration:")
     print(f"   Project: {project}")
     print(f"   Location: {location}")
     print(f"   Data Store: {data_store_id or '⚠️  NOT CONFIGURED'}")
@@ -311,7 +311,7 @@ def main():
         print("\n" + "="*60)
         print("✅ QUERY EXECUTED SUCCESSFULLY!")
         print("="*60)
-        print(f"\n💰 CREDIT CONSUMED:")
+        print("\n💰 CREDIT CONSUMED:")
         print(f"   • Search Enterprise Edition: ${VertexAISearch.SEARCH_ENTERPRISE_COST_PER_1K} / 1,000 queries")
         print(f"   • This query: ~${response.cost_estimate:.4f}")
 
@@ -320,7 +320,7 @@ def main():
 
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
-        print(f"\n🔧 DEBUG INFO:")
+        print("\n🔧 DEBUG INFO:")
         print(f"   - Project: {project}")
         print(f"   - Location: {location}")
         print(f"   - Data Store: {data_store_id}")

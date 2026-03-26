@@ -4,28 +4,26 @@ GCP Authentication and Validation
 
 Consolidated from validate_credits.py
 """
-import os
 import sys
-from typing import Tuple, Optional
 from dataclasses import dataclass
 
+from google.api_core import exceptions
 from google.auth import default
 from google.auth.credentials import Credentials
 from google.cloud import billing_v1
-from google.api_core import exceptions
 
 
 @dataclass
 class SetupStatus:
     """Status of GCP setup"""
     authenticated: bool
-    project_id: Optional[str]
+    project_id: str | None
     billing_enabled: bool
     required_apis: list[str]
     errors: list[str]
 
 
-def get_credentials() -> Tuple[Credentials, str]:
+def get_credentials() -> tuple[Credentials, str]:
     """
     Get Google Cloud credentials and project ID
 
@@ -125,7 +123,7 @@ def validate_setup(verbose: bool = True) -> SetupStatus:
 
         except exceptions.PermissionDenied:
             if verbose:
-                print(f"\n⚠️  No permission to view billing (normal if not owner)")
+                print("\n⚠️  No permission to view billing (normal if not owner)")
             status.billing_enabled = True  # Assume enabled
 
         except Exception as e:
@@ -140,7 +138,7 @@ def validate_setup(verbose: bool = True) -> SetupStatus:
 
     # Step 3: APIs
     if verbose:
-        print(f"\n🔌 Required APIs:")
+        print("\n🔌 Required APIs:")
         print("\n🔧 To enable required APIs, run:")
         for api in status.required_apis:
             print(f"   gcloud services enable {api} --project={project}")

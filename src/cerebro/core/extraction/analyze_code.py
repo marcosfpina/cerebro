@@ -8,12 +8,10 @@ PHANTOM Deep Intelligence Engine
 
 import ast
 import fnmatch
-import json
 import re
 import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
 try:
     from tree_sitter_languages import get_language, get_parser
@@ -28,12 +26,12 @@ class RepoMetrics:
     loc: int = 0
     functions: int = 0
     classes: int = 0
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     complexity_score: int = 0
-    security_hints: List[str] = field(default_factory=list)
-    performance_hints: List[str] = field(default_factory=list)
-    task_context: Optional[str] = None
-    hook_results: Dict[str, str] = field(default_factory=dict)
+    security_hints: list[str] = field(default_factory=list)
+    performance_hints: list[str] = field(default_factory=list)
+    task_context: str | None = None
+    hook_results: dict[str, str] = field(default_factory=dict)
 
 
 def validate_repository_path(repo_path: Path):
@@ -52,13 +50,13 @@ class CodeArtifact:
     name: str
     content: str
     context: str
-    dependencies: List[str]
+    dependencies: list[str]
     documentation: str
-    metadata: Dict
+    metadata: dict
 
 
 class HermeticAnalyzer:
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: dict = None):
         self.config = config or {}
         self.parsers = {}
         if TREESITTER_AVAILABLE:
@@ -69,8 +67,8 @@ class HermeticAnalyzer:
                     pass
 
     def run_hooks(
-        self, stage: str, hooks_config: List[Dict], repo_path: Path
-    ) -> Dict[str, str]:
+        self, stage: str, hooks_config: list[dict], repo_path: Path
+    ) -> dict[str, str]:
         """
         Execute hooks with enhanced metadata support.
 
@@ -118,7 +116,7 @@ class HermeticAnalyzer:
                     if res.returncode == 0:
                         status = "✅"
                         results[desc] = f"{status} (Exit: {res.returncode})"
-                        print(f"   ✅ Success")
+                        print("   ✅ Success")
                         break
                     else:
                         status = "❌"
@@ -138,14 +136,14 @@ class HermeticAnalyzer:
                     if not retry_on_fail or attempt == attempts - 1:
                         break
                 except Exception as e:
-                    results[desc] = f"❌ Error: {str(e)}"
+                    results[desc] = f"❌ Error: {e!s}"
                     print(f"   ❌ Exception: {e}")
                     if not retry_on_fail or attempt == attempts - 1:
                         break
 
         return results
 
-    def detect_language(self, file_path: Path) -> Optional[str]:
+    def detect_language(self, file_path: Path) -> str | None:
         mapping = {
             ".py": "python",
             ".nix": "nix",
@@ -156,7 +154,7 @@ class HermeticAnalyzer:
         }
         return mapping.get(file_path.suffix.lower())
 
-    def analyze_repo(self, repo_path: Path, hooks: Optional[Dict] = None) -> Dict:
+    def analyze_repo(self, repo_path: Path, hooks: dict | None = None) -> dict:
         """Perform deep analysis of a complete repository."""
         artifacts = []
         metrics = RepoMetrics(
@@ -235,7 +233,7 @@ class HermeticAnalyzer:
 
         return {"artifacts": artifacts, "metrics": asdict(metrics)}
 
-    def extract_external_deps(self, repo_path: Path) -> List[str]:
+    def extract_external_deps(self, repo_path: Path) -> list[str]:
         deps = []
         dep_files = {
             "requirements.txt": r"^([a-zA-Z0-9\-_]+)",
@@ -272,7 +270,7 @@ class HermeticAnalyzer:
 
     def analyze_file(
         self, file_path: Path, lang: str, content: str
-    ) -> List[CodeArtifact]:
+    ) -> list[CodeArtifact]:
         artifacts = []
         if lang == "python":
             try:

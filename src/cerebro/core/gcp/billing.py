@@ -7,12 +7,11 @@ Validates credit consumption via BigQuery export
 """
 import os
 import sys
-from typing import Optional, List
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from google.cloud import bigquery
 from google.auth import default
+from google.cloud import bigquery
 
 
 @dataclass
@@ -27,8 +26,8 @@ class BillingTransaction:
     gross_cost: float
     credit_amount: float
     net_cost: float
-    usage_amount: Optional[float]
-    usage_unit: Optional[str]
+    usage_amount: float | None
+    usage_unit: str | None
 
 
 @dataclass
@@ -38,7 +37,7 @@ class CreditStatus:
     total_gross_cost: float
     total_credits_applied: float
     total_net_cost: float
-    transactions: List[BillingTransaction]
+    transactions: list[BillingTransaction]
 
 
 class BillingAuditor:
@@ -55,9 +54,9 @@ class BillingAuditor:
 
     def __init__(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         dataset_id: str = "billing_export",
-        table_name: Optional[str] = None
+        table_name: str | None = None
     ):
         """
         Initialize BillingAuditor
@@ -128,7 +127,7 @@ class BillingAuditor:
         self,
         days_back: int = 7,
         limit: int = 500
-    ) -> Optional[CreditStatus]:
+    ) -> CreditStatus | None:
         """
         Audit credit consumption from BigQuery
 

@@ -11,12 +11,9 @@ Tests cover:
 
 import json
 import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
 
-import pytest
 import pathspec
+import pytest
 
 from cerebro.core.analyzer import RepoAnalyzer
 
@@ -41,7 +38,7 @@ class TestRepoAnalyzerInitialization:
         # Create a subdirectory
         subdir = tmp_path / "subdir"
         subdir.mkdir()
-        
+
         # Change to parent directory and use relative path
         original_cwd = os.getcwd()
         try:
@@ -55,7 +52,7 @@ class TestRepoAnalyzerInitialization:
         """Test initialization with .gitignore file."""
         gitignore_path = tmp_path / ".gitignore"
         gitignore_path.write_text("*.pyc\n__pycache__/\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert analyzer.ignore_spec is not None
         assert isinstance(analyzer.ignore_spec, pathspec.PathSpec)
@@ -80,7 +77,7 @@ class TestLoadGitignore:
         gitignore_path = tmp_path / ".gitignore"
         gitignore_content = "*.pyc\n__pycache__/\nnode_modules/\n"
         gitignore_path.write_text(gitignore_content)
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert analyzer.ignore_spec is not None
         # Test that the spec can match patterns
@@ -96,7 +93,7 @@ class TestLoadGitignore:
         """Test loading empty .gitignore file."""
         gitignore_path = tmp_path / ".gitignore"
         gitignore_path.write_text("")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert analyzer.ignore_spec is not None
 
@@ -107,12 +104,12 @@ class TestIsIgnored:
     def test_is_ignored_default_patterns(self, tmp_path):
         """Test that default patterns are ignored."""
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         # Create test paths
         git_dir = tmp_path / ".git" / "config"
         pycache_dir = tmp_path / "__pycache__" / "module.pyc"
         venv_dir = tmp_path / ".venv" / "bin" / "python"
-        
+
         assert analyzer._is_ignored(git_dir)
         assert analyzer._is_ignored(pycache_dir)
         assert analyzer._is_ignored(venv_dir)
@@ -121,26 +118,26 @@ class TestIsIgnored:
         """Test that .gitignore patterns are respected."""
         gitignore_path = tmp_path / ".gitignore"
         gitignore_path.write_text("*.log\nbuild/\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         log_file = tmp_path / "debug.log"
         build_file = tmp_path / "build" / "output.txt"
-        
+
         assert analyzer._is_ignored(log_file)
         assert analyzer._is_ignored(build_file)
 
     def test_is_ignored_normal_files(self, tmp_path):
         """Test that normal files are not ignored."""
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         normal_file = tmp_path / "main.py"
         assert not analyzer._is_ignored(normal_file)
 
     def test_is_ignored_nested_directories(self, tmp_path):
         """Test ignoring nested directories."""
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         # Create nested structure
         nested_path = tmp_path / "src" / "node_modules" / "package" / "index.js"
         assert analyzer._is_ignored(nested_path)
@@ -148,10 +145,10 @@ class TestIsIgnored:
     def test_is_ignored_extension_patterns(self, tmp_path):
         """Test ignoring files by extension."""
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         lock_file = tmp_path / "package.lock"
         pyc_file = tmp_path / "module.pyc"
-        
+
         assert analyzer._is_ignored(lock_file)
         assert analyzer._is_ignored(pyc_file)
 
@@ -163,7 +160,7 @@ class TestIsBinary:
         """Test that text files are not detected as binary."""
         text_file = tmp_path / "test.txt"
         text_file.write_text("This is a text file\nWith multiple lines\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert not analyzer._is_binary(text_file)
 
@@ -171,7 +168,7 @@ class TestIsBinary:
         """Test that Python files are not detected as binary."""
         py_file = tmp_path / "test.py"
         py_file.write_text("def hello():\n    print('world')\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert not analyzer._is_binary(py_file)
 
@@ -179,7 +176,7 @@ class TestIsBinary:
         """Test that JSON files are not detected as binary."""
         json_file = tmp_path / "data.json"
         json_file.write_text('{"key": "value"}\n')
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert not analyzer._is_binary(json_file)
 
@@ -188,14 +185,14 @@ class TestIsBinary:
         binary_file = tmp_path / "test.bin"
         # Write actual binary data
         binary_file.write_bytes(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR')
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         assert analyzer._is_binary(binary_file)
 
     def test_is_binary_nonexistent_file(self, tmp_path):
         """Test behavior with nonexistent file."""
         nonexistent = tmp_path / "nonexistent.txt"
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         # Should return True (treated as binary/unreadable)
         assert analyzer._is_binary(nonexistent)
@@ -215,10 +212,10 @@ class TestScan:
         test_file = tmp_path / "test.py"
         test_content = "def hello():\n    print('world')\n"
         test_file.write_text(test_content)
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "test.py"
         assert artifacts[0]["content"] == test_content
@@ -230,10 +227,10 @@ class TestScan:
         (tmp_path / "file1.py").write_text("# File 1\n")
         (tmp_path / "file2.py").write_text("# File 2\n")
         (tmp_path / "file3.txt").write_text("# File 3\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 3
         titles = {a["title"] for a in artifacts}
         assert titles == {"file1.py", "file2.py", "file3.txt"}
@@ -243,14 +240,14 @@ class TestScan:
         src_dir = tmp_path / "src"
         src_dir.mkdir()
         (src_dir / "main.py").write_text("# Main\n")
-        
+
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
         (tests_dir / "test_main.py").write_text("# Tests\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 2
         titles = {a["title"] for a in artifacts}
         assert titles == {"src/main.py", "tests/test_main.py"}
@@ -260,27 +257,27 @@ class TestScan:
         (tmp_path / ".gitignore").write_text("*.log\n")
         (tmp_path / "main.py").write_text("# Main\n")
         (tmp_path / "debug.log").write_text("# Log\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "main.py"
 
     def test_scan_ignores_default_patterns(self, tmp_path):
         """Test that scan ignores default patterns."""
         (tmp_path / "main.py").write_text("# Main\n")
-        
+
         # Create ignored directories
         (tmp_path / "__pycache__").mkdir()
         (tmp_path / "__pycache__" / "main.pyc").write_text("# Compiled\n")
-        
+
         (tmp_path / ".git").mkdir()
         (tmp_path / ".git" / "config").write_text("# Git config\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "main.py"
 
@@ -289,13 +286,13 @@ class TestScan:
         # Create a file larger than 50 KB
         large_file = tmp_path / "large.txt"
         large_file.write_text("x" * (51 * 1024))
-        
+
         small_file = tmp_path / "small.txt"
         small_file.write_text("small content\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path), max_file_size_kb=50)
         artifacts = analyzer.scan()
-        
+
         # Only small file should be included
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "small.txt"
@@ -304,13 +301,13 @@ class TestScan:
         """Test that scan skips binary files."""
         text_file = tmp_path / "text.txt"
         text_file.write_text("text content\n")
-        
+
         binary_file = tmp_path / "image.bin"
         binary_file.write_bytes(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR')
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "text.txt"
 
@@ -319,24 +316,24 @@ class TestScan:
         test_file = tmp_path / "test.py"
         test_content = "def hello():\n    pass\n"
         test_file.write_text(test_content)
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         artifact = artifacts[0]
-        
+
         # Check required fields
         assert "id" in artifact
         assert "title" in artifact
         assert "content" in artifact
         assert "metadata" in artifact
-        
+
         # Check metadata fields
         assert "path" in artifact["metadata"]
         assert "extension" in artifact["metadata"]
         assert "size" in artifact["metadata"]
-        
+
         # Check values
         assert artifact["title"] == "test.py"
         assert artifact["content"] == test_content
@@ -348,13 +345,13 @@ class TestScan:
         # Create a file with mixed encodings
         mixed_file = tmp_path / "mixed.txt"
         mixed_file.write_bytes(b"Valid UTF-8\n\xff\xfe Invalid bytes\n")
-        
+
         valid_file = tmp_path / "valid.txt"
         valid_file.write_text("Valid content\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         # Should include the valid file and handle the mixed file gracefully
         assert len(artifacts) >= 1
         titles = {a["title"] for a in artifacts}
@@ -364,10 +361,10 @@ class TestScan:
         """Test scanning files with special characters in names."""
         special_file = tmp_path / "file-with-dashes_and_underscores.py"
         special_file.write_text("# Special\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "file-with-dashes_and_underscores.py"
 
@@ -379,9 +376,9 @@ class TestSaveJsonl:
         """Test saving empty artifacts list."""
         output_file = tmp_path / "output.jsonl"
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         analyzer.save_jsonl([], str(output_file))
-        
+
         assert output_file.exists()
         assert output_file.read_text() == ""
 
@@ -389,7 +386,7 @@ class TestSaveJsonl:
         """Test saving single artifact."""
         output_file = tmp_path / "output.jsonl"
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         artifact = {
             "id": "test_1",
             "title": "test.py",
@@ -400,13 +397,13 @@ class TestSaveJsonl:
                 "size": 20
             }
         }
-        
+
         analyzer.save_jsonl([artifact], str(output_file))
-        
+
         assert output_file.exists()
         lines = output_file.read_text().strip().split("\n")
         assert len(lines) == 1
-        
+
         loaded = json.loads(lines[0])
         assert loaded == artifact
 
@@ -414,7 +411,7 @@ class TestSaveJsonl:
         """Test saving multiple artifacts."""
         output_file = tmp_path / "output.jsonl"
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         artifacts = [
             {
                 "id": "test_1",
@@ -429,12 +426,12 @@ class TestSaveJsonl:
                 "metadata": {"path": "file2.py", "extension": ".py", "size": 10}
             }
         ]
-        
+
         analyzer.save_jsonl(artifacts, str(output_file))
-        
+
         lines = output_file.read_text().strip().split("\n")
         assert len(lines) == 2
-        
+
         loaded_artifacts = [json.loads(line) for line in lines]
         assert loaded_artifacts == artifacts
 
@@ -442,16 +439,16 @@ class TestSaveJsonl:
         """Test saving artifacts with special characters."""
         output_file = tmp_path / "output.jsonl"
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         artifact = {
             "id": "test_1",
             "title": "test.py",
             "content": "# Special chars: é, ñ, 中文, emoji 🎉\n",
             "metadata": {"path": "test.py", "extension": ".py", "size": 50}
         }
-        
+
         analyzer.save_jsonl([artifact], str(output_file))
-        
+
         lines = output_file.read_text().strip().split("\n")
         loaded = json.loads(lines[0])
         assert loaded["content"] == artifact["content"]
@@ -460,7 +457,7 @@ class TestSaveJsonl:
         """Test that save_jsonl overwrites existing file."""
         output_file = tmp_path / "output.jsonl"
         output_file.write_text("old content\n")
-        
+
         analyzer = RepoAnalyzer(str(tmp_path))
         artifact = {
             "id": "test_1",
@@ -468,9 +465,9 @@ class TestSaveJsonl:
             "content": "new content\n",
             "metadata": {"path": "test.py", "extension": ".py", "size": 12}
         }
-        
+
         analyzer.save_jsonl([artifact], str(output_file))
-        
+
         lines = output_file.read_text().strip().split("\n")
         assert len(lines) == 1
         loaded = json.loads(lines[0])
@@ -480,14 +477,14 @@ class TestSaveJsonl:
         """Test that save_jsonl creates parent directories if needed."""
         output_file = tmp_path / "subdir" / "nested" / "output.jsonl"
         analyzer = RepoAnalyzer(str(tmp_path))
-        
+
         artifact = {
             "id": "test_1",
             "title": "test.py",
             "content": "content\n",
             "metadata": {"path": "test.py", "extension": ".py", "size": 8}
         }
-        
+
         # Note: The current implementation doesn't create parent directories
         # This test documents the current behavior
         with pytest.raises(FileNotFoundError):
@@ -503,27 +500,27 @@ class TestIntegration:
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("def main():\n    pass\n")
         (tmp_path / "src" / "utils.py").write_text("def util():\n    pass\n")
-        
+
         (tmp_path / "tests").mkdir()
         (tmp_path / "tests" / "test_main.py").write_text("def test_main():\n    pass\n")
-        
+
         (tmp_path / ".gitignore").write_text("*.pyc\n__pycache__/\n")
-        
+
         # Scan
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == 3
-        
+
         # Save
         output_file = tmp_path / "output.jsonl"
         analyzer.save_jsonl(artifacts, str(output_file))
-        
+
         # Verify
         assert output_file.exists()
         lines = output_file.read_text().strip().split("\n")
         assert len(lines) == 3
-        
+
         loaded_artifacts = [json.loads(line) for line in lines]
         assert len(loaded_artifacts) == 3
 
@@ -551,23 +548,23 @@ dist/
 *.log
 """
         (tmp_path / ".gitignore").write_text(gitignore_content)
-        
+
         # Create various files
         (tmp_path / "main.py").write_text("# Main\n")
         (tmp_path / "debug.log").write_text("# Log\n")
-        
+
         venv_dir = tmp_path / ".venv" / "lib"
         venv_dir.mkdir(parents=True)
         (venv_dir / "python.py").write_text("# Python\n")
-        
+
         build_dir = tmp_path / "build"
         build_dir.mkdir()
         (build_dir / "output.txt").write_text("# Build\n")
-        
+
         # Scan
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         # Only main.py should be included
         assert len(artifacts) == 1
         assert artifacts[0]["title"] == "main.py"
@@ -583,10 +580,10 @@ dist/
             "docs",
             "config"
         ]
-        
+
         for dir_path in dirs:
             (tmp_path / dir_path).mkdir(parents=True)
-        
+
         # Create files
         files = [
             "src/core/main.py",
@@ -597,14 +594,14 @@ dist/
             "docs/README.md",
             "config/settings.json"
         ]
-        
+
         for file_path in files:
             (tmp_path / file_path).write_text(f"# Content of {file_path}\n")
-        
+
         # Scan
         analyzer = RepoAnalyzer(str(tmp_path))
         artifacts = analyzer.scan()
-        
+
         assert len(artifacts) == len(files)
         titles = {a["title"] for a in artifacts}
         assert titles == set(files)

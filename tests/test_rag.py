@@ -3,9 +3,9 @@
 All GCP/chromadb imports are mocked to allow running locally.
 """
 
-import json
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, mock_open
 
 # Mock heavy dependencies at import time so the module loads cleanly.
 # Must cover the full import chain that engine.py triggers:

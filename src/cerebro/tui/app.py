@@ -8,9 +8,9 @@ import os
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Vertical, Horizontal, VerticalScroll
-from textual.widgets import Header, Footer, Button, Static, DataTable, Input, Label, ProgressBar
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
+from textual.widgets import Button, DataTable, Footer, Header, Input, Label, ProgressBar, Static
 
 
 class Sidebar(Vertical):
@@ -127,7 +127,7 @@ class DashboardScreen(Screen):
 
         except Exception as e:
             metrics_widget = self.query_one("#metrics-display", Static)
-            metrics_widget.update(f"[red]Error loading metrics: {str(e)}[/red]")
+            metrics_widget.update(f"[red]Error loading metrics: {e!s}[/red]")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle quick action button clicks."""
@@ -160,7 +160,7 @@ class DashboardScreen(Screen):
                     else:
                         activity_widget.update(f"[yellow]🔄 {message}[/yellow]")
         except Exception as e:
-            activity_widget.update(f"[red]✗ Scan failed: {str(e)}[/red]")
+            activity_widget.update(f"[red]✗ Scan failed: {e!s}[/red]")
 
     async def action_refresh(self) -> None:
         """Refresh dashboard data."""
@@ -246,7 +246,7 @@ class ProjectsScreen(Screen):
             table = self.query_one("#projects-table", DataTable)
             table.clear()
             details = self.query_one("#project-details", Static)
-            details.update(f"[red]Error loading projects: {str(e)}[/red]")
+            details.update(f"[red]Error loading projects: {e!s}[/red]")
 
     async def update_table(self, filter_text: str = "") -> None:
         """Update table with filtered and paginated projects."""
@@ -551,7 +551,7 @@ class IntelligenceScreen(Screen):
                     status_widget.update(f"[yellow]🔄 {message}[/yellow]")
 
         except Exception as e:
-            results_widget.update(f"[red]✗ Error executing query: {str(e)}[/red]")
+            results_widget.update(f"[red]✗ Error executing query: {e!s}[/red]")
             status_widget.update("[red]✗ Error[/red]")
 
     def format_results(self, results: list) -> str:
@@ -824,7 +824,7 @@ class ScriptsScreen(Screen):
 
         except Exception as e:
             status.update("[red]✗ Execution failed[/red]")
-            output.update(f"[red]✗ Error: {str(e)}[/red]")
+            output.update(f"[red]✗ Error: {e!s}[/red]")
 
     async def _simple_command(self, coro):
         """Wrapper for commands that return dict instead of streaming."""
@@ -968,7 +968,7 @@ class GCPCreditsScreen(Screen):
 
         except Exception as e:
             credits_display = self.query_one("#credits-display", Static)
-            credits_display.update(f"[red]Error loading credits: {str(e)}[/red]")
+            credits_display.update(f"[red]Error loading credits: {e!s}[/red]")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks."""
@@ -1041,7 +1041,7 @@ class GCPCreditsScreen(Screen):
                     status.update(f"[red]✗ Execution failed: {message}[/red]")
 
         except Exception as e:
-            status.update(f"[red]✗ Error: {str(e)}[/red]")
+            status.update(f"[red]✗ Error: {e!s}[/red]")
 
     def action_stop_burn(self) -> None:
         """Stop current batch operation."""

@@ -2,7 +2,6 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -330,7 +329,7 @@ def generate_queries(
 def index_repository(
     repo_path: str = typer.Argument(".", help="Repository path to index"),
     force: bool = typer.Option(False, "--force", "-f", help="Force re-indexing"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output directory"),
+    output: str | None = typer.Option(None, "--output", help="Output directory"),
 ):
     """
     Index a code repository for knowledge base.
@@ -554,7 +553,7 @@ def rag_rerank(
 
     # Load documents — support both flat {"content": "..."} and nested {"jsonData": "{...}"}
     documents = []
-    with open(path, 'r') as f:
+    with open(path) as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -598,7 +597,7 @@ def health():
     Check system health (Credentials, Permissions, APIs, Data Stores).
     """
     import os
-    
+
     table = Table(title="CEREBRO System Health Check")
     table.add_column("Check", style="cyan")
     table.add_column("Status", style="bold")
@@ -619,7 +618,7 @@ def health():
         try:
             import google.auth
             creds, detected_project = google.auth.default()
-            
+
             final_project = project_id or detected_project
             if creds and final_project:
                  table.add_row("GCP Auth", "[green]OK[/green]", f"Project: {final_project}")
@@ -647,7 +646,7 @@ def health():
         table.add_row("Billing Audit", "[dim]N/A[/dim]", "Enable BQ Export to monitor credits")
 
     console.print(table)
-    
+
     if not ds_id or not final_project:
         console.print("\n[bold red]⚠️  WARNING: INCOMPLETE CONFIGURATION[/bold red]")
         console.print("To use GCP features, configure the following environment variables:")

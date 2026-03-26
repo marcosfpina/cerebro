@@ -4,17 +4,18 @@ RAG server using LOCAL model.
 Zero cost after initial setup.
 """
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
 import json
 import logging
-import time
 import os
+import time
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
     import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
@@ -24,6 +25,7 @@ try:
     CHROMADB_AVAILABLE = True
 except ImportError:
     CHROMADB_AVAILABLE = False
+
 
 # Structured Logging for Cloud Run (JSON format)
 class CloudRunFormatter(logging.Formatter):
@@ -42,13 +44,31 @@ class CloudRunFormatter(logging.Formatter):
             log_entry["request_id"] = record.request_id
         return json.dumps(log_entry)
 
+
 logger = logging.getLogger("cerebro")
 handler = logging.StreamHandler()
 handler.setFormatter(CloudRunFormatter())
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-app = FastAPI(title="CEREBRO RAG Server")
+# Global instance
+cerebro = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan handler: startup + shutdown logic."""
+    global cerebro
+    model_name = os.getenv("CEREBRO_MODEL", "TheBloke/Mistral-7B-Instruct-v0.2-GPTQ")
+    db_path = os.getenv("CEREBRO_DB", "./data/cerebro.db")
+    quantization = os.getenv("CEREBRO_QUANTIZATION", "4bit")
+    cerebro = CEREBROServer(model_name, db_path, quantization)
+    yield
+    # Shutdown: nothing to clean up for now
+
+
+app = FastAPI(title="CEREBRO RAG Server", lifespan=lifespan)
+
 
 # Middleware for request timing (Observability)
 @app.middleware("http")
@@ -70,7 +90,7 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
-    sources: List[dict]
+    sources: list[dict]
     confidence: float
 
 class CEREBROServer:
@@ -105,7 +125,7 @@ class CEREBROServer:
 
         print("✅ CEREBRO ready!")
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[dict]:
+    def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
         """Retrieve relevant artifacts from knowledge base"""
         results = self.collection.query(
             query_texts=[query],
@@ -124,7 +144,7 @@ class CEREBROServer:
 
         return artifacts
 
-    def generate(self, query: str, context: List[dict]) -> str:
+    def generate(self, query: str, context: list[dict]) -> str:
         """Generate answer using local model + retrieved context"""
 
         # Build prompt with retrieved context
@@ -161,19 +181,7 @@ ANSWER:"""
 
         return answer.strip()
 
-# Global instance
-cerebro = None
 
-@app.on_event("startup")
-async def startup():
-    global cerebro
-    import os
-
-    model_name = os.getenv("CEREBRO_MODEL", "TheBloke/Mistral-7B-Instruct-v0.2-GPTQ")
-    db_path = os.getenv("CEREBRO_DB", "./data/cerebro.db")
-    quantization = os.getenv("CEREBRO_QUANTIZATION", "4bit")
-
-    cerebro = CEREBROServer(model_name, db_path, quantization)
 
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):

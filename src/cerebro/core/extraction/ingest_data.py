@@ -5,10 +5,10 @@ Instead of generating embeddings manually (expensive), import into the Data Stor
 Vertex AI Search handles indexing/vectorization using GCP credits.
 """
 import os
-import json
-from typing import List, Dict
-from google.cloud import discoveryengine_v1beta as discoveryengine
+
 from google.api_core.client_options import ClientOptions
+from google.cloud import discoveryengine_v1beta as discoveryengine
+
 
 def import_documents(project_id: str, location: str, data_store_id: str, input_jsonl: str):
     print("🚀 Starting document ingestion (credit-funded)...")

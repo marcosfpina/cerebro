@@ -6,6 +6,10 @@ Implementations for Google Cloud services:
 - Discovery Engine for grounded generation
 """
 
-from .vertex_ai_llm import VertexAILLMProvider
+try:
+    from .vertex_ai_llm import VertexAILLMProvider
 
-__all__ = ["VertexAILLMProvider"]
+    __all__ = ["VertexAILLMProvider"]
+except ImportError:
+    # google-cloud-discoveryengine is a Poetry dep; gracefully skip when not installed
+    __all__ = []

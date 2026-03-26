@@ -7,51 +7,49 @@ for the Cerebro Intelligence System.
 
 import asyncio
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from pathlib import Path
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-import logging
 
+from cerebro.core.metrics_collector import MetricsCollector
+from cerebro.core.watcher import RepoWatcher
+from cerebro.intelligence.analyzer import IntelligenceAnalyzer
+from cerebro.intelligence.briefing import BriefingGenerator, BriefingType
 from cerebro.intelligence.core import (
     CerebroIntelligence,
     IntelligenceType,
     ThreatLevel,
-    Project,
 )
-from cerebro.intelligence.analyzer import IntelligenceAnalyzer
-from cerebro.intelligence.briefing import BriefingGenerator, BriefingType
-from cerebro.registry.scanner import ProjectScanner
 from cerebro.registry.indexer import KnowledgeIndexer
-from cerebro.core.metrics_collector import MetricsCollector
-from cerebro.core.watcher import RepoWatcher
+from cerebro.registry.scanner import ProjectScanner
 
 logger = logging.getLogger("cerebro.api")
 
 # Global instances
-cerebro: Optional[CerebroIntelligence] = None
-scanner: Optional[ProjectScanner] = None
-indexer: Optional[KnowledgeIndexer] = None
-analyzer: Optional[IntelligenceAnalyzer] = None
-briefing_gen: Optional[BriefingGenerator] = None
-metrics_collector: Optional[MetricsCollector] = None
-repo_watcher: Optional[RepoWatcher] = None
+cerebro: CerebroIntelligence | None = None
+scanner: ProjectScanner | None = None
+indexer: KnowledgeIndexer | None = None
+analyzer: IntelligenceAnalyzer | None = None
+briefing_gen: BriefingGenerator | None = None
+metrics_collector: MetricsCollector | None = None
+repo_watcher: RepoWatcher | None = None
 
 # WebSocket connections and subscriptions
-active_connections: List[WebSocket] = []
+active_connections: list[WebSocket] = []
 
 
 class SubscriptionManager:
     """Manages WebSocket subscriptions to different topics."""
 
     def __init__(self):
-        self.subscriptions: Dict[WebSocket, set[str]] = {}
+        self.subscriptions: dict[WebSocket, set[str]] = {}
 
     async def subscribe(self, ws: WebSocket, topic: str):
         """Subscribe a WebSocket connection to a topic."""
@@ -88,8 +86,8 @@ subscription_manager = SubscriptionManager()
 class QueryRequest(BaseModel):
     """Request for intelligence query."""
     query: str = Field(..., min_length=1, max_length=1000)
-    types: Optional[List[str]] = None
-    projects: Optional[List[str]] = None
+    types: list[str] | None = None
+    projects: list[str] | None = None
     limit: int = Field(default=10, ge=1, le=100)
     semantic: bool = Field(default=True, description="Use semantic search")
 
@@ -97,7 +95,7 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     """Response for intelligence query."""
     query: str
-    results: List[Dict[str, Any]]
+    results: list[dict[str, Any]]
     total: int
     search_type: str
 
@@ -107,12 +105,12 @@ class ProjectResponse(BaseModel):
     name: str
     path: str
     description: str
-    languages: List[str]
+    languages: list[str]
     status: str
     health_score: float
-    last_commit: Optional[str]
-    last_indexed: Optional[str]
-    metadata: Dict[str, Any]
+    last_commit: str | None
+    last_indexed: str | None
+    metadata: dict[str, Any]
 
 
 class EcosystemStatus(BaseModel):
@@ -122,13 +120,13 @@ class EcosystemStatus(BaseModel):
     health_score: float
     total_intelligence: int
     alerts_count: int
-    last_scan: Optional[str]
+    last_scan: str | None
 
 
 class BriefingRequest(BaseModel):
     """Request for briefing generation."""
     type: str = Field(default="daily")
-    project: Optional[str] = None
+    project: str | None = None
     format: str = Field(default="json")  # json or markdown
 
 
@@ -149,7 +147,7 @@ async def lifespan(app: FastAPI):
     arch_path = os.getenv("CEREBRO_ARCH_PATH", "/home/kernelcore/arch")
     data_dir = os.getenv("CEREBRO_DATA_DIR", "./data/intelligence")
 
-    logger.info(f"Initializing Cerebro Intelligence System...")
+    logger.info("Initializing Cerebro Intelligence System...")
     logger.info(f"Arch path: {arch_path}")
     logger.info(f"Data dir: {data_dir}")
 
@@ -225,7 +223,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "cerebro-intelligence",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -250,10 +248,10 @@ async def get_status():
 
 # ==================== Projects ====================
 
-@app.get("/projects", response_model=List[ProjectResponse])
+@app.get("/projects", response_model=list[ProjectResponse])
 async def list_projects(
-    status: Optional[str] = Query(None, description="Filter by status"),
-    language: Optional[str] = Query(None, description="Filter by language"),
+    status: str | None = Query(None, description="Filter by status"),
+    language: str | None = Query(None, description="Filter by language"),
     sort_by: str = Query("health_score", description="Sort field"),
     order: str = Query("desc", description="Sort order (asc/desc)"),
 ):
@@ -279,7 +277,7 @@ async def list_projects(
         projects.sort(key=lambda p: p.name, reverse=reverse)
     elif sort_by == "last_commit":
         projects.sort(
-            key=lambda p: p.last_commit or datetime.min.replace(tzinfo=timezone.utc),
+            key=lambda p: p.last_commit or datetime.min.replace(tzinfo=UTC),
             reverse=reverse
         )
 
@@ -561,7 +559,7 @@ async def websocket_endpoint(websocket: WebSocket):
         subscription_manager.remove_connection(websocket)
 
 
-async def broadcast(message: Dict[str, Any]):
+async def broadcast(message: dict[str, Any]):
     """Broadcast message to all connected WebSocket clients."""
     for connection in active_connections:
         try:
@@ -645,7 +643,7 @@ async def trigger_metrics_scan():
         raise HTTPException(status_code=503, detail="Metrics not initialised")
     loop = asyncio.get_running_loop()
     results = await loop.run_in_executor(None, metrics_collector.collect_all)
-    await broadcast({"type": "metrics_scan_complete", "repo_count": len(results), "timestamp": datetime.now(timezone.utc).isoformat()})
+    await broadcast({"type": "metrics_scan_complete", "repo_count": len(results), "timestamp": datetime.now(UTC).isoformat()})
     await subscription_manager.broadcast_to_topic("metrics", {"type": "metrics_scan_complete", "repo_count": len(results)})
     return {"status": "complete", "repo_count": len(results)}
 

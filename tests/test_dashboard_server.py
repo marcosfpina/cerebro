@@ -4,9 +4,7 @@ Uses FastAPI TestClient with a mocked MetricsCollector to avoid
 real filesystem access.
 """
 
-import json
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 

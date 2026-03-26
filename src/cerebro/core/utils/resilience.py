@@ -12,12 +12,13 @@ Usage:
         ...
 """
 
-import time
-import logging
 import functools
+import logging
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Any
+from typing import Any
 
 logger = logging.getLogger("cerebro.resilience")
 
@@ -25,11 +26,11 @@ logger = logging.getLogger("cerebro.resilience")
 # Se tenacity estiver disponível, usa ele. Senão, fallback manual.
 try:
     from tenacity import (
+        before_sleep_log,
         retry,
+        retry_if_exception_type,
         stop_after_attempt,
         wait_exponential,
-        retry_if_exception_type,
-        before_sleep_log,
     )
     _HAS_TENACITY = True
 except ImportError:
@@ -185,7 +186,6 @@ class CircuitBreaker:
 
 class CircuitOpenError(RuntimeError):
     """Raised quando circuit está OPEN e bloqueia a call."""
-    pass
 
 
 # ─── Registry global de circuit breakers ────────────────────────────────────

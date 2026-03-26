@@ -5,9 +5,9 @@ Routes UI actions to CLI command functions with progress streaming.
 Includes caching for performance optimization.
 """
 
-from typing import AsyncIterator, Any, Optional
 import asyncio
-from functools import lru_cache
+from collections.abc import AsyncIterator
+from typing import Any
 
 
 class CommandRouter:
@@ -21,8 +21,8 @@ class CommandRouter:
     def __init__(self):
         """Initialize the command router."""
         self.running_tasks: dict[str, asyncio.Task] = {}
-        self._projects_cache: Optional[tuple[list, float]] = None
-        self._status_cache: Optional[tuple[dict, float]] = None
+        self._projects_cache: tuple[list, float] | None = None
+        self._status_cache: tuple[dict, float] | None = None
         self._cache_ttl = 30  # Cache for 30 seconds
 
     async def run_scan(
@@ -70,8 +70,8 @@ class CommandRouter:
         query: str,
         limit: int = 10,
         semantic: bool = True,
-        types: Optional[list[str]] = None,
-        projects: Optional[list[str]] = None,
+        types: list[str] | None = None,
+        projects: list[str] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """
         Execute intelligence query with progress updates.
@@ -210,7 +210,6 @@ class CommandRouter:
 
         try:
             # Import the command function
-            from cerebro.commands.gcp import batch_burn_credits
 
             yield {"status": "running", "progress": 10, "message": "Initializing batch burn..."}
 

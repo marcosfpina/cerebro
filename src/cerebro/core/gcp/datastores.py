@@ -4,14 +4,12 @@ Vertex AI Data Store Management
 
 Consolidated from manage_datastores.py (root and cerebro/)
 """
-import os
 import sys
-from typing import List, Optional
 from dataclasses import dataclass
 
-from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.api_core import exceptions
 from google.auth import default
+from google.cloud import discoveryengine_v1beta as discoveryengine
 
 
 @dataclass
@@ -27,7 +25,7 @@ class DataStore:
 class DataStoreManager:
     """Manages Vertex AI Search Data Stores"""
 
-    def __init__(self, project_id: Optional[str] = None, location: str = "global"):
+    def __init__(self, project_id: str | None = None, location: str = "global"):
         """
         Initialize DataStoreManager
 
@@ -50,7 +48,7 @@ class DataStoreManager:
 
         self.client = discoveryengine.DataStoreServiceClient(client_options=client_options)
 
-    def list(self) -> List[DataStore]:
+    def list(self) -> list[DataStore]:
         """
         List all data stores in the project
 
@@ -78,7 +76,7 @@ class DataStoreManager:
         except Exception as e:
             raise RuntimeError(f"Error listing data stores: {e}")
 
-    def get(self, data_store_id: str) -> Optional[DataStore]:
+    def get(self, data_store_id: str) -> DataStore | None:
         """
         Get a specific data store by ID
 
@@ -219,7 +217,7 @@ def main():
                 print("\n" + "="*60)
                 print("✅ NEXT STEP: Populate the data store")
                 print("="*60)
-                print(f"\n📝 Save this ID for queries:")
+                print("\n📝 Save this ID for queries:")
                 print(f"   export DATA_STORE_ID='{ds.id}'")
                 print("\n🔧 To add documents:")
                 print("   1. Via Console: https://console.cloud.google.com/gen-app-builder")
@@ -239,7 +237,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         print("\n🔧 FIX: Verify that the API is enabled:")
-        print(f"   gcloud services enable discoveryengine.googleapis.com")
+        print("   gcloud services enable discoveryengine.googleapis.com")
         sys.exit(1)
 
 

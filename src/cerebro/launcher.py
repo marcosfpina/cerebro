@@ -8,9 +8,9 @@ Automatically detects the best interface based on environment:
 - Interactive terminal no args → TUI (default)
 """
 
-import sys
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 

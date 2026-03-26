@@ -6,13 +6,12 @@ Migrated from: scripts/content_gold_miner.py
 """
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 content_app = typer.Typer(help="Content Mining & Analysis", no_args_is_help=True)
 console = Console()
@@ -23,7 +22,7 @@ def mine_content(
     sources: str = typer.Option(..., "--sources", help="Content sources (URLs or file paths, comma-separated)"),
     output: Path = typer.Option("content_analysis.json", "--output", help="Output JSON file"),
     depth: int = typer.Option(2, "--depth", help="Mining depth (1-5)"),
-    categories: Optional[str] = typer.Option(None, "--categories", help="Filter by categories"),
+    categories: str | None = typer.Option(None, "--categories", help="Filter by categories"),
     format: str = typer.Option("json", "--format", help="Output format: json, markdown, or html"),
 ):
     """

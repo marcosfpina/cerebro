@@ -11,24 +11,24 @@ Zero LLM tokens consumed.
 """
 
 import json
+import logging
 import os
 import re
 import subprocess
 import tomllib
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
-
-import logging
+from typing import Any
 
 logger = logging.getLogger("cerebro.metrics")
 
 # ---------------------------------------------------------------------------
 # Language / extension maps
 # ---------------------------------------------------------------------------
-LANG_EXTENSIONS: Dict[str, List[str]] = {
+LANG_EXTENSIONS: dict[str, list[str]] = {
     "Python": [".py"],
     "Rust": [".rs"],
     "TypeScript": [".ts", ".tsx"],
@@ -50,7 +50,7 @@ LANG_EXTENSIONS: Dict[str, List[str]] = {
     "Svelte": [".svelte"],
 }
 
-EXT_TO_LANG: Dict[str, str] = {ext: lang for lang, exts in LANG_EXTENSIONS.items() for ext in exts}
+EXT_TO_LANG: dict[str, str] = {ext: lang for lang, exts in LANG_EXTENSIONS.items() for ext in exts}
 
 # ---------------------------------------------------------------------------
 # Skip / security constants
@@ -63,7 +63,7 @@ SKIP_DIRS = {
 
 MAX_FILES_PER_REPO = 80_000  # safety cap for huge data repos
 
-SECURITY_PATTERNS: Dict[str, re.Pattern] = {
+SECURITY_PATTERNS: dict[str, re.Pattern] = {
     "hardcoded_secret": re.compile(
         r'(?i)(api[_-]?key|secret[_-]?key|password|token)\s*[=:]\s*["\'][A-Za-z0-9+/=_-]{20,}',
     ),
@@ -115,18 +115,18 @@ class RepoMetricsSnapshot:
     # code
     total_files: int = 0
     total_loc: int = 0
-    languages: Dict[str, Dict[str, int]] = field(default_factory=dict)
+    languages: dict[str, dict[str, int]] = field(default_factory=dict)
     primary_language: str = ""
 
     # git
-    git: Dict[str, Any] = field(default_factory=dict)
+    git: dict[str, Any] = field(default_factory=dict)
 
     # deps
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     dep_count: int = 0
 
     # security
-    security_findings: List[Dict[str, Any]] = field(default_factory=list)
+    security_findings: list[dict[str, Any]] = field(default_factory=list)
     security_score: float = 100.0
 
     # quality
@@ -141,7 +141,7 @@ class RepoMetricsSnapshot:
     health_score: float = 0.0
     status: str = "unknown"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -162,10 +162,10 @@ class MetricsCollector:
     # Names that are vendor / skill sub-repos — skip them
     SKIP_REPO_NAMES = {"ux-agents", "forge-std", "sdk-core"}
 
-    def discover_repos(self) -> List[Path]:
+    def discover_repos(self) -> list[Path]:
         """Discover git repos up to 2 levels deep under arch_path, deduplicated."""
         seen: set = set()          # resolved paths already added
-        repos: List[Path] = []
+        repos: list[Path] = []
         skip_top = {"scripts", "docs", "skills"}
 
         def _add(p: Path) -> None:
@@ -204,10 +204,10 @@ class MetricsCollector:
     # ------------------------------------------------------------------
     # Bulk / single collection
     # ------------------------------------------------------------------
-    def collect_all(self) -> List[RepoMetricsSnapshot]:
+    def collect_all(self) -> list[RepoMetricsSnapshot]:
         repos = self.discover_repos()
         logger.info("MetricsCollector: discovered %d repos", len(repos))
-        results: List[RepoMetricsSnapshot] = []
+        results: list[RepoMetricsSnapshot] = []
         for repo_path in repos:
             try:
                 snapshot = self.collect_repo(repo_path)
@@ -222,7 +222,7 @@ class MetricsCollector:
         snapshot = RepoMetricsSnapshot(
             name=repo_path.name,
             path=str(repo_path),
-            collected_at=datetime.now(timezone.utc).isoformat(),
+            collected_at=datetime.now(UTC).isoformat(),
         )
         self._collect_code_metrics(repo_path, snapshot)
         self._collect_git_metrics(repo_path, snapshot)
@@ -237,7 +237,7 @@ class MetricsCollector:
     # Code metrics (filesystem)
     # ------------------------------------------------------------------
     def _collect_code_metrics(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
-        lang_stats: Dict[str, Dict[str, int]] = defaultdict(lambda: {"files": 0, "lines": 0})
+        lang_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"files": 0, "lines": 0})
         for file_path in self._iter_files(repo_path):
             if snapshot.total_files >= MAX_FILES_PER_REPO:
                 break
@@ -284,7 +284,7 @@ class MetricsCollector:
             snapshot.git = {"error": "not a git repo"}
             return
 
-        git: Dict[str, Any] = {}
+        git: dict[str, Any] = {}
         git["total_commits"] = self._git_int(repo_path, ["rev-list", "--count", "HEAD"])
         git["commits_30d"] = self._git_int(repo_path, ["rev-list", "--count", "--after=30 days ago", "HEAD"])
         git["commits_90d"] = self._git_int(repo_path, ["rev-list", "--count", "--after=90 days ago", "HEAD"])
@@ -320,7 +320,7 @@ class MetricsCollector:
     # Dependencies
     # ------------------------------------------------------------------
     def _collect_dependencies(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
-        deps: List[str] = []
+        deps: list[str] = []
 
         # pyproject.toml (Poetry)
         pyproject = repo_path / "pyproject.toml"
@@ -392,7 +392,7 @@ class MetricsCollector:
     # Security scan
     # ------------------------------------------------------------------
     def _collect_security(self, repo_path: Path, snapshot: RepoMetricsSnapshot) -> None:
-        findings: List[Dict[str, Any]] = []
+        findings: list[dict[str, Any]] = []
         code_exts = set(EXT_TO_LANG.keys()) - {".json", ".yaml", ".yml", ".toml", ".md"}
         scanned = 0
 
@@ -511,7 +511,7 @@ class MetricsCollector:
     # Git helpers
     # ------------------------------------------------------------------
     @staticmethod
-    def _git_output(repo_path: Path, args: List[str]) -> str:
+    def _git_output(repo_path: Path, args: list[str]) -> str:
         try:
             r = subprocess.run(
                 ["git", *args], cwd=repo_path,
@@ -522,7 +522,7 @@ class MetricsCollector:
             return ""
 
     @classmethod
-    def _git_int(cls, repo_path: Path, args: List[str]) -> int:
+    def _git_int(cls, repo_path: Path, args: list[str]) -> int:
         try:
             return int(cls._git_output(repo_path, args).strip())
         except ValueError:
@@ -534,16 +534,16 @@ class MetricsCollector:
     # ------------------------------------------------------------------
     # Persistence
     # ------------------------------------------------------------------
-    def _save_snapshot(self, snapshots: List[RepoMetricsSnapshot]) -> None:
+    def _save_snapshot(self, snapshots: list[RepoMetricsSnapshot]) -> None:
         data = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "repo_count": len(snapshots),
             "repos": [snap.to_dict() for snap in snapshots],
         }
         (self.metrics_dir / "metrics_snapshot.json").write_text(json.dumps(data, indent=2))
         logger.info("Saved metrics snapshot: %d repos", len(snapshots))
 
-    def load_snapshot(self) -> Optional[Dict[str, Any]]:
+    def load_snapshot(self) -> dict[str, Any] | None:
         p = self.metrics_dir / "metrics_snapshot.json"
         if not p.exists():
             return None

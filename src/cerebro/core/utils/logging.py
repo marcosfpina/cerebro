@@ -14,13 +14,12 @@ Usage:
     logger.info("Query processed", query=query, latency_ms=42.3, k=5)
 """
 
-import os
-import sys
+import datetime
 import json
 import logging
-import datetime
+import os
+import sys
 from typing import Any
-
 
 # ─── Detecção de ambiente ────────────────────────────────────────────────────
 

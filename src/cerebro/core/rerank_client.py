@@ -6,11 +6,11 @@ Implements a sidecar pattern with local fallback.
 import logging
 import os
 import time
-from typing import List, Tuple, Optional, Any
 
 import requests
 
-from .rerank import CrossEncoderReranker, get_reranker as get_local_reranker
+from .rerank import CrossEncoderReranker
+from .rerank import get_reranker as get_local_reranker
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class CerebroRerankerClient:
 
     def __init__(
         self,
-        service_url: Optional[str] = None,
+        service_url: str | None = None,
         timeout: float = 1.0,
         mode: str = "service",  # 'service', 'local', 'hybrid'
     ):
@@ -45,9 +45,9 @@ class CerebroRerankerClient:
         )
         self.timeout = timeout
         self.mode = mode or os.getenv("CEREBRO_RERANKER_MODE", "service")
-        
+
         # Lazy initialization of local fallback
-        self._local_reranker: Optional[CrossEncoderReranker] = None
+        self._local_reranker: CrossEncoderReranker | None = None
 
     @property
     def local_reranker(self) -> CrossEncoderReranker:
@@ -60,9 +60,9 @@ class CerebroRerankerClient:
     def rerank(
         self,
         query: str,
-        documents: List[str],
-        top_k: Optional[int] = None,
-    ) -> List[Tuple[int, float, str]]:
+        documents: list[str],
+        top_k: int | None = None,
+    ) -> list[tuple[int, float, str]]:
         """
         Rerank documents using the service or fallback.
 
@@ -89,9 +89,9 @@ class CerebroRerankerClient:
     def _call_service(
         self,
         query: str,
-        documents: List[str],
-        top_k: Optional[int] = None,
-    ) -> List[Tuple[int, float, str]]:
+        documents: list[str],
+        top_k: int | None = None,
+    ) -> list[tuple[int, float, str]]:
         """
         Call the external cerebro-reranker FastAPI service.
         Endpoint: POST /v1/rerank

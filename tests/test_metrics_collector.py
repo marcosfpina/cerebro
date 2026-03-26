@@ -1,19 +1,15 @@
 """Tests for MetricsCollector — zero-token repository analysis engine."""
 
 import json
-import os
 import subprocess
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
 from cerebro.core.metrics_collector import (
+    EXT_TO_LANG,
     MetricsCollector,
     RepoMetricsSnapshot,
-    LANG_EXTENSIONS,
-    EXT_TO_LANG,
-    SKIP_DIRS,
 )
 
 

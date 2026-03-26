@@ -5,6 +5,7 @@ Credit Audit Module
 Wrapper around BillingAuditor for credit consumption validation
 """
 import sys
+
 from cerebro.core.gcp import BillingAuditor
 
 
@@ -37,7 +38,7 @@ def audit_credits(days_back: int = 7, verbose: bool = True) -> dict:
         status = auditor.audit_credit_consumption(days_back=days_back)
 
         if verbose:
-            print(f"\n✅ Audit complete!")
+            print("\n✅ Audit complete!")
             print(f"Transactions: {status.total_transactions}")
             print(f"Gross cost: ${status.total_gross_cost:.4f}")
             print(f"Credits applied: ${status.total_credits_applied:.4f}")

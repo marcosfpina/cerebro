@@ -8,20 +8,17 @@ Generates intelligence briefings in various formats:
 - Executive summaries
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
-from enum import Enum
 import json
 import logging
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
+from .analyzer import IntelligenceAnalyzer
 from .core import (
     CerebroIntelligence,
-    IntelligenceItem,
-    IntelligenceType,
     ThreatLevel,
-    Project,
 )
-from .analyzer import IntelligenceAnalyzer
 
 logger = logging.getLogger("cerebro.briefing")
 
@@ -45,8 +42,8 @@ class BriefingGenerator:
     def generate(
         self,
         briefing_type: BriefingType = BriefingType.DAILY,
-        project_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        project_name: str | None = None,
+    ) -> dict[str, Any]:
         """Generate a briefing of the specified type."""
         generators = {
             BriefingType.DAILY: self._generate_daily,
@@ -59,9 +56,9 @@ class BriefingGenerator:
         generator = generators.get(briefing_type, self._generate_daily)
         return generator()
 
-    def _generate_daily(self) -> Dict[str, Any]:
+    def _generate_daily(self) -> dict[str, Any]:
         """Generate daily intelligence briefing."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         yesterday = now - timedelta(days=1)
 
         briefing = {
@@ -111,9 +108,9 @@ class BriefingGenerator:
 
         return briefing
 
-    def _generate_weekly(self) -> Dict[str, Any]:
+    def _generate_weekly(self) -> dict[str, Any]:
         """Generate weekly intelligence briefing."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         week_ago = now - timedelta(days=7)
 
         # Run ecosystem analysis
@@ -148,9 +145,9 @@ class BriefingGenerator:
 
         return briefing
 
-    def _generate_threat(self) -> Dict[str, Any]:
+    def _generate_threat(self) -> dict[str, Any]:
         """Generate threat assessment briefing."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         briefing = {
             "type": BriefingType.THREAT.value,
@@ -189,7 +186,7 @@ class BriefingGenerator:
 
         return briefing
 
-    def _generate_project(self, project_name: Optional[str]) -> Dict[str, Any]:
+    def _generate_project(self, project_name: str | None) -> dict[str, Any]:
         """Generate project-specific briefing."""
         if not project_name:
             return {"error": "Project name required"}
@@ -198,7 +195,7 @@ class BriefingGenerator:
         if not project:
             return {"error": f"Project not found: {project_name}"}
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         analysis = self.analyzer.analyze_project(project)
 
         briefing = {
@@ -233,9 +230,9 @@ class BriefingGenerator:
 
         return briefing
 
-    def _generate_executive(self) -> Dict[str, Any]:
+    def _generate_executive(self) -> dict[str, Any]:
         """Generate executive summary briefing."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         ecosystem_analysis = self.analyzer.analyze_ecosystem()
 
         briefing = {
@@ -292,7 +289,7 @@ class BriefingGenerator:
 
         return briefing
 
-    def _generate_summary(self, briefing: Dict[str, Any]) -> str:
+    def _generate_summary(self, briefing: dict[str, Any]) -> str:
         """Generate a text summary for the briefing."""
         status = briefing.get("ecosystem_status", {})
         total = status.get("total_projects", 0)
@@ -308,13 +305,13 @@ class BriefingGenerator:
             f"{developments} key developments, {alerts} alerts."
         )
 
-    def to_markdown(self, briefing: Dict[str, Any]) -> str:
+    def to_markdown(self, briefing: dict[str, Any]) -> str:
         """Convert briefing to Markdown format."""
         lines = []
         briefing_type = briefing.get("type", "unknown")
 
         # Header
-        lines.append(f"# CEREBRO Intelligence Briefing")
+        lines.append("# CEREBRO Intelligence Briefing")
         lines.append(f"**Type:** {briefing_type.upper()}")
         lines.append(f"**Classification:** {briefing.get('classification', 'INTERNAL')}")
         lines.append(f"**Generated:** {briefing.get('timestamp', 'N/A')}")
@@ -378,6 +375,6 @@ class BriefingGenerator:
 
         return "\n".join(lines)
 
-    def to_json(self, briefing: Dict[str, Any]) -> str:
+    def to_json(self, briefing: dict[str, Any]) -> str:
         """Convert briefing to JSON format."""
         return json.dumps(briefing, indent=2, default=str)

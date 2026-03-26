@@ -4,14 +4,14 @@ CEREBRO Embedding Server - GCP Vertex AI Edition
 Embedding server using Vertex AI text-embedding-004.
 """
 
+import logging
+import os
+import time
+
+import vertexai
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
-import vertexai
 from vertexai.language_models import TextEmbeddingModel
-import os
-import logging
-import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cerebro-embeddings")
@@ -23,17 +23,17 @@ class EmbeddingRequest(BaseModel):
     task_type: str = "RETRIEVAL_DOCUMENT"  # or RETRIEVAL_QUERY
 
 class EmbeddingResponse(BaseModel):
-    embedding: List[float]
+    embedding: list[float]
     dimension: int
     model: str
     cost_estimate_usd: float
 
 class BatchEmbeddingRequest(BaseModel):
-    texts: List[str]
+    texts: list[str]
     task_type: str = "RETRIEVAL_DOCUMENT"
 
 class BatchEmbeddingResponse(BaseModel):
-    embeddings: List[List[float]]
+    embeddings: list[list[float]]
     dimension: int
     model: str
     total_tokens: int
@@ -99,7 +99,7 @@ async def generate_embedding(request: EmbeddingRequest):
 
     except Exception as e:
         logger.error(f"Embedding generation failed: {e}")
-        raise HTTPException(500, f"Embedding failed: {str(e)}")
+        raise HTTPException(500, f"Embedding failed: {e!s}")
 
 @app.post("/embeddings/batch", response_model=BatchEmbeddingResponse)
 async def generate_batch_embeddings(request: BatchEmbeddingRequest):
@@ -135,7 +135,7 @@ async def generate_batch_embeddings(request: BatchEmbeddingRequest):
 
     except Exception as e:
         logger.error(f"Batch embedding failed: {e}")
-        raise HTTPException(500, f"Batch embedding failed: {str(e)}")
+        raise HTTPException(500, f"Batch embedding failed: {e!s}")
 
 @app.get("/health")
 async def health():

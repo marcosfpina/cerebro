@@ -11,9 +11,10 @@ Design: HEAD-hash polling only — no inotify / watchdog dependency.
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any
 
 from cerebro.core.metrics_collector import MetricsCollector
 
@@ -25,19 +26,19 @@ class RepoWatcher:
         self,
         arch_path: str = os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "arch")),
         poll_interval: int = 10,
-        on_change: Optional[Callable[[Dict[str, Any]], Coroutine]] = None,
+        on_change: Callable[[dict[str, Any]], Coroutine] | None = None,
     ):
         self.collector = MetricsCollector(arch_path)
         self.poll_interval = poll_interval
         self.on_change = on_change
 
-        self._head_cache: Dict[str, str] = {}
-        self._tracked_repos: List[Path] = []
+        self._head_cache: dict[str, str] = {}
+        self._tracked_repos: list[Path] = []
         self._running = False
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._poll_count = 0
 
-        self.last_update: Optional[str] = None
+        self.last_update: str | None = None
         self.changes_detected: int = 0
 
     # ------------------------------------------------------------------
@@ -113,7 +114,7 @@ class RepoWatcher:
                 logger.info("Change in %s: %s → %s", repo_path.name, cached_head[:8], current_head[:8])
                 self._head_cache[repo_path.name] = current_head
                 self.changes_detected += 1
-                self.last_update = datetime.now(timezone.utc).isoformat()
+                self.last_update = datetime.now(UTC).isoformat()
 
                 # re-collect in thread pool so we don't block the event loop
                 snapshot = await loop.run_in_executor(None, self.collector.collect_repo, repo_path)

@@ -5,9 +5,8 @@ Implements VectorStoreProvider interface for ChromaDB.
 Provides local vector storage and similarity search capabilities.
 """
 
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cerebro.interfaces.vector_store import VectorStoreProvider
 
@@ -48,7 +47,7 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
 
         # Initialize Chroma client with persistence
         self.client = chromadb.PersistentClient(path=persist_directory)
-        
+
         # Get or create collection
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
@@ -57,8 +56,8 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
 
     def add_documents(
         self,
-        documents: List[Dict[str, Any]],
-        embeddings: List[List[float]],
+        documents: list[dict[str, Any]],
+        embeddings: list[list[float]],
         **kwargs
     ) -> int:
         """
@@ -114,10 +113,10 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
 
     def search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
         **kwargs
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search for documents similar to the query embedding.
         
@@ -138,7 +137,7 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
 
             # Transform Chroma results to standard format
             documents = []
-            
+
             if results and results["ids"] and len(results["ids"]) > 0:
                 for i, doc_id in enumerate(results["ids"][0]):
                     # Chroma returns distances, convert to similarity (1 - distance for cosine)
@@ -159,7 +158,7 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
             print(f"❌ Error searching Chroma: {e}")
             raise
 
-    def delete_documents(self, document_ids: List[str]) -> int:
+    def delete_documents(self, document_ids: list[str]) -> int:
         """
         Delete documents from the vector store.
         
@@ -220,7 +219,7 @@ class ChromaVectorStoreProvider(VectorStoreProvider):
             print(f"❌ Chroma health check failed: {e}")
             return False
 
-    def get_collection_info(self) -> Dict[str, Any]:
+    def get_collection_info(self) -> dict[str, Any]:
         """
         Get information about the current collection.
         

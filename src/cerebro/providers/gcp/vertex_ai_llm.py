@@ -7,14 +7,14 @@ Handles embeddings, text generation, and grounded generation with citations.
 
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from google.cloud import discoveryengine_v1beta as discoveryengine
 from google.api_core import exceptions
 from google.auth import default
+from google.cloud import discoveryengine_v1 as discoveryengine
 
+from cerebro.core.gcp.search import GroundedResponse, VertexAISearch
 from cerebro.interfaces.llm import LLMProvider
-from cerebro.core.gcp.search import VertexAISearch, GroundedResponse
 
 
 class VertexAILLMProvider(LLMProvider):
@@ -32,9 +32,9 @@ class VertexAILLMProvider(LLMProvider):
 
     def __init__(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         location: str = "global",
-        data_store_id: Optional[str] = None,
+        data_store_id: str | None = None,
     ):
         """
         Initialize Vertex AI LLM Provider.
@@ -70,7 +70,7 @@ class VertexAILLMProvider(LLMProvider):
             client_options=client_options
         )
 
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         """
         Generate an embedding vector for the given text.
         
@@ -86,9 +86,9 @@ class VertexAILLMProvider(LLMProvider):
 
     def embed_batch(
         self,
-        texts: List[str],
+        texts: list[str],
         batch_size: int = 20
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         """
         Generate embedding vectors for a batch of texts with exponential backoff.
         
@@ -113,14 +113,14 @@ class VertexAILLMProvider(LLMProvider):
         )
 
         all_embeddings = []
-        
+
         # Process in batches with exponential backoff
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
-            
+
             retries = 0
             backoff = self.INITIAL_BACKOFF
-            
+
             while retries < self.MAX_RETRIES:
                 try:
                     batch_embeddings = embeddings_model.embed_documents(batch)
@@ -170,10 +170,10 @@ class VertexAILLMProvider(LLMProvider):
     def grounded_generate(
         self,
         query: str,
-        context: List[str],
+        context: list[str],
         top_k: int = 5,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate text grounded in provided context with citations.
         
@@ -216,7 +216,7 @@ class VertexAILLMProvider(LLMProvider):
             }
         except Exception as e:
             return {
-                "answer": f"❌ Error in grounded generation: {str(e)}",
+                "answer": f"❌ Error in grounded generation: {e!s}",
                 "citations": [],
                 "confidence": 0.0,
                 "cost_estimate": 0.0,
@@ -237,7 +237,7 @@ class VertexAILLMProvider(LLMProvider):
                     f"collections/default_collection"
                 )
                 self.discovery_client.list_data_stores(parent=parent)
-            
+
             return True
         except Exception as e:
             print(f"❌ Vertex AI health check failed: {e}")

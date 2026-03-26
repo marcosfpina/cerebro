@@ -5,14 +5,13 @@ Optimized batch processing for efficient credit usage.
 """
 
 try:
-    from google.cloud import discoveryengine_v1beta as discoveryengine
-    from google.cloud import aiplatform
     from google.api_core.client_options import ClientOptions
+    from google.cloud import aiplatform
+    from google.cloud import discoveryengine_v1beta as discoveryengine
     GCP_AVAILABLE = True
 except ImportError:
     GCP_AVAILABLE = False
 
-from typing import List, Dict
 import json
 from pathlib import Path
 
@@ -37,11 +36,11 @@ class VertexEmbeddingGenerator:
         self.model_name = "text-embedding-004"
         self.batch_size = 250  # Vertex AI limit
 
-    def generate_embeddings(self, artifacts: List[Dict]) -> List[Dict]:
+    def generate_embeddings(self, artifacts: list[dict]) -> list[dict]:
         """Generate embeddings for all artifacts."""
 
         print(f"🚀 Generating embeddings for {len(artifacts)} artifacts using Vertex AI")
-        print(f"💰 This will use your GCP credits efficiently!")
+        print("💰 This will use your GCP credits efficiently!")
 
         results = []
 
@@ -65,7 +64,7 @@ class VertexEmbeddingGenerator:
 
         return results
 
-    def prepare_text(self, artifact: Dict) -> str:
+    def prepare_text(self, artifact: dict) -> str:
         """
         Prepare optimized text for embedding.
         Combines: name + docstring + context + metadata.
@@ -86,7 +85,7 @@ class VertexEmbeddingGenerator:
 
         return "\n\n".join(parts)
 
-    def batch_embed(self, texts: List[str]) -> List[List[float]]:
+    def batch_embed(self, texts: list[str]) -> list[list[float]]:
         """Call Vertex AI batch embedding API."""
 
         # Vertex AI Embeddings API

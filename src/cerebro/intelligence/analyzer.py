@@ -8,18 +8,16 @@ Analyzes collected intelligence to:
 - Calculate health scores
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional, Tuple
-from collections import Counter
 import logging
+from collections import Counter
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from .core import (
     CerebroIntelligence,
-    IntelligenceItem,
-    IntelligenceType,
-    ThreatLevel,
     Project,
     ProjectStatus,
+    ThreatLevel,
 )
 
 logger = logging.getLogger("cerebro.analyzer")
@@ -31,11 +29,11 @@ class IntelligenceAnalyzer:
     def __init__(self, cerebro: CerebroIntelligence):
         self.cerebro = cerebro
 
-    def analyze_project(self, project: Project) -> Dict[str, Any]:
+    def analyze_project(self, project: Project) -> dict[str, Any]:
         """Perform comprehensive analysis of a project."""
         analysis = {
             "project": project.name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "health_score": 0.0,
             "status": ProjectStatus.UNKNOWN.value,
             "insights": [],
@@ -61,7 +59,7 @@ class IntelligenceAnalyzer:
 
         return analysis
 
-    def _calculate_health_score(self, project: Project) -> Tuple[float, Dict[str, float]]:
+    def _calculate_health_score(self, project: Project) -> tuple[float, dict[str, float]]:
         """
         Calculate project health score (0-100).
 
@@ -93,7 +91,7 @@ class IntelligenceAnalyzer:
             # Check if there are recent commits (within 30 days)
             recent_commits = [
                 i for i in git_items
-                if i.timestamp > datetime.now(timezone.utc) - timedelta(days=30)
+                if i.timestamp > datetime.now(UTC) - timedelta(days=30)
             ]
             factors["activity"] = min(100, len(recent_commits) * 10)
 
@@ -137,7 +135,7 @@ class IntelligenceAnalyzer:
         else:
             return ProjectStatus.ARCHIVED
 
-    def _generate_insights(self, project: Project) -> List[str]:
+    def _generate_insights(self, project: Project) -> list[str]:
         """Generate insights about the project."""
         insights = []
 
@@ -167,8 +165,8 @@ class IntelligenceAnalyzer:
         return insights
 
     def _generate_recommendations(
-        self, project: Project, health_factors: Dict[str, float]
-    ) -> List[str]:
+        self, project: Project, health_factors: dict[str, float]
+    ) -> list[str]:
         """Generate recommendations to improve project health."""
         recommendations = []
 
@@ -189,12 +187,12 @@ class IntelligenceAnalyzer:
 
         return recommendations
 
-    def analyze_ecosystem(self) -> Dict[str, Any]:
+    def analyze_ecosystem(self) -> dict[str, Any]:
         """Analyze the entire ecosystem."""
         projects = self.cerebro.list_projects()
 
         ecosystem_analysis = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "total_projects": len(projects),
             "health_distribution": {
                 "healthy": 0,      # 70+
@@ -235,9 +233,9 @@ class IntelligenceAnalyzer:
 
         return ecosystem_analysis
 
-    def find_dependencies_graph(self) -> Dict[str, List[str]]:
+    def find_dependencies_graph(self) -> dict[str, list[str]]:
         """Build a dependency graph between projects."""
-        graph: Dict[str, List[str]] = {}
+        graph: dict[str, list[str]] = {}
         projects = self.cerebro.list_projects()
 
         for project in projects:

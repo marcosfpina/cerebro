@@ -1,9 +1,6 @@
 """Tests for the Cerebro Smart Launcher (phantom.launcher)."""
 
-import sys
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import patch
 
 from cerebro.launcher import detect_environment
 

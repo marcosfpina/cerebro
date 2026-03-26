@@ -9,19 +9,16 @@ Specialized collectors for different types of intelligence:
 """
 
 import json
+import logging
 import re
 import subprocess
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-import logging
+from typing import Any
 
 from .core import (
     IntelligenceItem,
     IntelligenceType,
-    ThreatLevel,
     Project,
-    ProjectStatus,
+    ThreatLevel,
 )
 
 logger = logging.getLogger("cerebro.collectors")
@@ -35,7 +32,7 @@ class BaseCollector:
     def __init__(self, cerebro: "CerebroIntelligence"):
         self.cerebro = cerebro
 
-    def collect(self, project: Project) -> List[IntelligenceItem]:
+    def collect(self, project: Project) -> list[IntelligenceItem]:
         """Collect intelligence from a project. Override in subclasses."""
         raise NotImplementedError
 
@@ -44,10 +41,10 @@ class BaseCollector:
         source: str,
         title: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         threat_level: ThreatLevel = ThreatLevel.INFO,
-        tags: Optional[List[str]] = None,
-        related_projects: Optional[List[str]] = None,
+        tags: list[str] | None = None,
+        related_projects: list[str] | None = None,
     ) -> IntelligenceItem:
         """Helper to create an intelligence item."""
         return IntelligenceItem(
@@ -76,7 +73,7 @@ class SignalCollector(BaseCollector):
 
     intel_type = IntelligenceType.SIGINT
 
-    def collect(self, project: Project) -> List[IntelligenceItem]:
+    def collect(self, project: Project) -> list[IntelligenceItem]:
         """Collect signal intelligence from a project."""
         items = []
 
@@ -90,7 +87,7 @@ class SignalCollector(BaseCollector):
 
         return items
 
-    def _collect_git_signals(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_git_signals(self, project: Project) -> list[IntelligenceItem]:
         """Collect signals from git history."""
         items = []
         git_dir = project.path / ".git"
@@ -146,7 +143,7 @@ class SignalCollector(BaseCollector):
 
         return items
 
-    def _collect_ci_status(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_ci_status(self, project: Project) -> list[IntelligenceItem]:
         """Collect CI/CD status."""
         items = []
 
@@ -186,7 +183,7 @@ class HumanIntelCollector(BaseCollector):
 
     intel_type = IntelligenceType.HUMINT
 
-    def collect(self, project: Project) -> List[IntelligenceItem]:
+    def collect(self, project: Project) -> list[IntelligenceItem]:
         """Collect human intelligence from a project."""
         items = []
 
@@ -204,7 +201,7 @@ class HumanIntelCollector(BaseCollector):
 
         return items
 
-    def _collect_adrs(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_adrs(self, project: Project) -> list[IntelligenceItem]:
         """Collect ADRs from adr-ledger or project ADR directories."""
         items = []
 
@@ -249,7 +246,7 @@ class HumanIntelCollector(BaseCollector):
 
         return items
 
-    def _collect_docs(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_docs(self, project: Project) -> list[IntelligenceItem]:
         """Collect documentation files."""
         items = []
         docs_dir = project.path / "docs"
@@ -286,7 +283,7 @@ class HumanIntelCollector(BaseCollector):
 
         return items
 
-    def _collect_readme(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_readme(self, project: Project) -> list[IntelligenceItem]:
         """Collect README file."""
         items = []
         readme_files = ["README.md", "README.rst", "README.txt", "README"]
@@ -332,7 +329,7 @@ class OpenSourceCollector(BaseCollector):
 
     intel_type = IntelligenceType.OSINT
 
-    def collect(self, project: Project) -> List[IntelligenceItem]:
+    def collect(self, project: Project) -> list[IntelligenceItem]:
         """Collect open source intelligence from a project."""
         items = []
 
@@ -350,12 +347,12 @@ class OpenSourceCollector(BaseCollector):
 
         return items
 
-    def _collect_code_structure(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_code_structure(self, project: Project) -> list[IntelligenceItem]:
         """Analyze code structure."""
         items = []
 
         # Count files by extension
-        extensions: Dict[str, int] = {}
+        extensions: dict[str, int] = {}
         for file_path in project.path.rglob("*"):
             if file_path.is_file() and not any(
                 part.startswith(".") for part in file_path.parts
@@ -401,7 +398,7 @@ class OpenSourceCollector(BaseCollector):
 
         return items
 
-    def _collect_configs(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_configs(self, project: Project) -> list[IntelligenceItem]:
         """Collect configuration files."""
         items = []
 
@@ -438,7 +435,7 @@ class OpenSourceCollector(BaseCollector):
 
         return items
 
-    def _collect_api_definitions(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_api_definitions(self, project: Project) -> list[IntelligenceItem]:
         """Collect API definitions."""
         items = []
 
@@ -487,7 +484,7 @@ class TechIntelCollector(BaseCollector):
 
     intel_type = IntelligenceType.TECHINT
 
-    def collect(self, project: Project) -> List[IntelligenceItem]:
+    def collect(self, project: Project) -> list[IntelligenceItem]:
         """Collect technical intelligence from a project."""
         items = []
 
@@ -501,7 +498,7 @@ class TechIntelCollector(BaseCollector):
 
         return items
 
-    def _collect_dependencies(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_dependencies(self, project: Project) -> list[IntelligenceItem]:
         """Analyze project dependencies."""
         items = []
         dependencies = []
@@ -553,7 +550,7 @@ class TechIntelCollector(BaseCollector):
 
         return items
 
-    def _collect_test_info(self, project: Project) -> List[IntelligenceItem]:
+    def _collect_test_info(self, project: Project) -> list[IntelligenceItem]:
         """Collect test information."""
         items = []
 

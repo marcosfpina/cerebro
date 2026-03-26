@@ -5,16 +5,15 @@ The central nervous system of the ecosystem.
 Coordinates all intelligence gathering, analysis, and dissemination.
 """
 
-import asyncio
-import json
 import hashlib
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field, asdict
-from enum import Enum
+import json
 import logging
+import os
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("cerebro.intelligence")
 
@@ -53,14 +52,14 @@ class IntelligenceItem:
     source: str
     title: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     threat_level: ThreatLevel = ThreatLevel.INFO
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    tags: List[str] = field(default_factory=list)
-    related_projects: List[str] = field(default_factory=list)
-    embedding: Optional[List[float]] = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    tags: list[str] = field(default_factory=list)
+    related_projects: list[str] = field(default_factory=list)
+    embedding: list[float] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         data = asdict(self)
         data["timestamp"] = self.timestamp.isoformat()
@@ -69,7 +68,7 @@ class IntelligenceItem:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "IntelligenceItem":
+    def from_dict(cls, data: dict[str, Any]) -> "IntelligenceItem":
         """Create from dictionary."""
         data["timestamp"] = datetime.fromisoformat(data["timestamp"])
         data["type"] = IntelligenceType(data["type"])
@@ -83,17 +82,17 @@ class Project:
     name: str
     path: Path
     description: str = ""
-    languages: List[str] = field(default_factory=list)
+    languages: list[str] = field(default_factory=list)
     status: ProjectStatus = ProjectStatus.UNKNOWN
     health_score: float = 0.0
-    last_commit: Optional[datetime] = None
-    last_indexed: Optional[datetime] = None
-    dependencies: List[str] = field(default_factory=list)
-    dependents: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_commit: datetime | None = None
+    last_indexed: datetime | None = None
+    dependencies: list[str] = field(default_factory=list)
+    dependents: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     intelligence_count: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "name": self.name,
@@ -118,10 +117,10 @@ class EcosystemStatus:
     active_projects: int = 0
     total_intelligence: int = 0
     health_score: float = 0.0
-    last_scan: Optional[datetime] = None
-    alerts: List[Dict[str, Any]] = field(default_factory=list)
+    last_scan: datetime | None = None
+    alerts: list[dict[str, Any]] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_projects": self.total_projects,
             "active_projects": self.active_projects,
@@ -155,12 +154,12 @@ class CerebroIntelligence:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # In-memory stores
-        self._projects: Dict[str, Project] = {}
-        self._intelligence: Dict[str, IntelligenceItem] = {}
+        self._projects: dict[str, Project] = {}
+        self._intelligence: dict[str, IntelligenceItem] = {}
         self._ecosystem_status = EcosystemStatus()
 
         # Vector store for semantic search
-        self._embeddings: Dict[str, List[float]] = {}
+        self._embeddings: dict[str, list[float]] = {}
 
         # Load persisted data
         self._load_state()
@@ -172,7 +171,7 @@ class CerebroIntelligence:
         state_file = self.data_dir / "cerebro_state.json"
         if state_file.exists():
             try:
-                with open(state_file, "r") as f:
+                with open(state_file) as f:
                     state = json.load(f)
                     # Restore projects
                     for name, proj_data in state.get("projects", {}).items():
@@ -193,7 +192,7 @@ class CerebroIntelligence:
         state = {
             "projects": {name: proj.to_dict() for name, proj in self._projects.items()},
             "ecosystem_status": self._ecosystem_status.to_dict(),
-            "last_saved": datetime.now(timezone.utc).isoformat(),
+            "last_saved": datetime.now(UTC).isoformat(),
         }
         with open(state_file, "w") as f:
             json.dump(state, f, indent=2)
@@ -215,11 +214,11 @@ class CerebroIntelligence:
         )
         logger.info(f"Registered project: {project.name}")
 
-    def get_project(self, name: str) -> Optional[Project]:
+    def get_project(self, name: str) -> Project | None:
         """Get a project by name."""
         return self._projects.get(name)
 
-    def list_projects(self) -> List[Project]:
+    def list_projects(self) -> list[Project]:
         """List all registered projects."""
         return list(self._projects.values())
 
@@ -244,17 +243,17 @@ class CerebroIntelligence:
         logger.debug(f"Added intelligence: {item.id} ({item.type.value})")
         return item.id
 
-    def get_intelligence(self, item_id: str) -> Optional[IntelligenceItem]:
+    def get_intelligence(self, item_id: str) -> IntelligenceItem | None:
         """Get an intelligence item by ID."""
         return self._intelligence.get(item_id)
 
     def query_intelligence(
         self,
         query: str,
-        types: Optional[List[IntelligenceType]] = None,
-        projects: Optional[List[str]] = None,
+        types: list[IntelligenceType] | None = None,
+        projects: list[str] | None = None,
         limit: int = 10,
-    ) -> List[IntelligenceItem]:
+    ) -> list[IntelligenceItem]:
         """
         Query intelligence items.
 
@@ -295,7 +294,7 @@ class CerebroIntelligence:
         total_score = sum(p.health_score for p in self._projects.values())
         return total_score / len(self._projects)
 
-    def get_alerts(self) -> List[Dict[str, Any]]:
+    def get_alerts(self) -> list[dict[str, Any]]:
         """Get current alerts from the ecosystem."""
         alerts = []
 
@@ -323,9 +322,9 @@ class CerebroIntelligence:
 
     # ==================== Briefing ====================
 
-    def generate_briefing(self) -> Dict[str, Any]:
+    def generate_briefing(self) -> dict[str, Any]:
         """Generate an intelligence briefing for the ecosystem."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         return {
             "timestamp": now.isoformat(),

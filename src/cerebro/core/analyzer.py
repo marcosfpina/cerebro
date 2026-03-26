@@ -1,7 +1,6 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import pathspec
 from rich.progress import track
@@ -34,10 +33,10 @@ class RepoAnalyzer:
             "Cargo.lock",
         ]
 
-    def _load_gitignore(self) -> Optional[pathspec.PathSpec]:
+    def _load_gitignore(self) -> pathspec.PathSpec | None:
         gitignore_path = self.root_path / ".gitignore"
         if gitignore_path.exists():
-            with open(gitignore_path, "r") as f:
+            with open(gitignore_path) as f:
                 return pathspec.PathSpec.from_lines("gitwildmatch", f)
         return None
 
@@ -71,7 +70,7 @@ class RepoAnalyzer:
         except (OSError, PermissionError):
             return True
 
-    def scan(self) -> List[Dict]:
+    def scan(self) -> list[dict]:
         artifacts = []
 
         print(f"🔍 Scanning: {self.root_path}")
@@ -96,7 +95,7 @@ class RepoAnalyzer:
                 continue
 
             try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(file_path, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 rel_path = file_path.relative_to(self.root_path).as_posix()
@@ -118,7 +117,7 @@ class RepoAnalyzer:
 
         return artifacts
 
-    def save_jsonl(self, artifacts: List[Dict], output_path: str):
+    def save_jsonl(self, artifacts: list[dict], output_path: str):
         with open(output_path, "w", encoding="utf-8") as f:
             for item in artifacts:
                 f.write(json.dumps(item) + "\n")

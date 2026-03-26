@@ -7,18 +7,17 @@ Migrated from: scripts/batch_burn.py, monitor_credits.py, create_search_engine.p
 
 import time
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
 from rich.live import Live
+from rich.panel import Panel
+from rich.table import Table
 
 # GCP imports (conditional to avoid breaking if not available)
 try:
-    from google.cloud import discoveryengine_v1beta as discoveryengine  # noqa: F401
     from google.cloud import bigquery  # noqa: F401
+    from google.cloud import discoveryengine_v1beta as discoveryengine  # noqa: F401
     GCP_AVAILABLE = True
 except ImportError:
     GCP_AVAILABLE = False
@@ -35,8 +34,8 @@ def batch_burn(
     project_id: str = typer.Option(..., "--project", help="GCP Project ID"),
     location: str = typer.Option("global", "--location", help="Engine location"),
     engine_id: str = typer.Option(..., "--engine", help="Search engine ID"),
-    rate_limit: Optional[float] = typer.Option(None, "--rate-limit", help="Queries per second limit"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Output JSON file for results"),
+    rate_limit: float | None = typer.Option(None, "--rate-limit", help="Queries per second limit"),
+    output: Path | None = typer.Option(None, "--output", help="Output JSON file for results"),
 ):
     """
     Execute batch queries for load testing and credit utilization.
@@ -111,8 +110,8 @@ def monitor_credits(
     interval: int = typer.Option(60, "--interval", help="Update interval in seconds"),
     days: int = typer.Option(30, "--days", help="Look back period in days"),
     alert_threshold: float = typer.Option(10.0, "--alert", help="Alert when net cost exceeds this"),
-    dataset: Optional[str] = typer.Option(None, "--dataset", help="BigQuery billing dataset"),
-    table: Optional[str] = typer.Option(None, "--table", help="BigQuery billing table"),
+    dataset: str | None = typer.Option(None, "--dataset", help="BigQuery billing dataset"),
+    table: str | None = typer.Option(None, "--table", help="BigQuery billing table"),
 ):
     """
     Monitor GCP credit usage in real-time.
@@ -203,7 +202,7 @@ def create_search_engine(
     location: str = typer.Option("global", "--location", help="Engine location"),
     data_store: str = typer.Option(..., "--data-store", help="Data store ID"),
     industry: str = typer.Option("GENERIC", "--industry", help="Industry vertical (GENERIC, MEDIA, etc.)"),
-    config: Optional[Path] = typer.Option(None, "--config", help="YAML configuration file"),
+    config: Path | None = typer.Option(None, "--config", help="YAML configuration file"),
 ):
     """
     Create a new GCP Discovery Engine search engine.

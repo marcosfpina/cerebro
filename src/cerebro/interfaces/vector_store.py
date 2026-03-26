@@ -9,7 +9,7 @@ Implementations should handle:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class VectorStoreProvider(ABC):
@@ -26,8 +26,8 @@ class VectorStoreProvider(ABC):
     @abstractmethod
     def add_documents(
         self,
-        documents: List[Dict[str, Any]],
-        embeddings: List[List[float]],
+        documents: list[dict[str, Any]],
+        embeddings: list[list[float]],
         **kwargs
     ) -> int:
         """
@@ -41,15 +41,14 @@ class VectorStoreProvider(ABC):
         Returns:
             Number of documents successfully added
         """
-        pass
 
     @abstractmethod
     def search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
         **kwargs
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search for documents similar to the query embedding.
         
@@ -61,10 +60,9 @@ class VectorStoreProvider(ABC):
         Returns:
             List of documents with similarity scores, sorted by relevance
         """
-        pass
 
     @abstractmethod
-    def delete_documents(self, document_ids: List[str]) -> int:
+    def delete_documents(self, document_ids: list[str]) -> int:
         """
         Delete documents from the vector store.
         
@@ -74,14 +72,12 @@ class VectorStoreProvider(ABC):
         Returns:
             Number of documents successfully deleted
         """
-        pass
 
     @abstractmethod
     def clear(self) -> None:
         """
         Clear all documents from the vector store.
         """
-        pass
 
     @abstractmethod
     def get_document_count(self) -> int:
@@ -91,7 +87,6 @@ class VectorStoreProvider(ABC):
         Returns:
             Number of documents
         """
-        pass
 
     @abstractmethod
     def health_check(self) -> bool:
@@ -101,4 +96,3 @@ class VectorStoreProvider(ABC):
         Returns:
             True if healthy, False otherwise
         """
-        pass

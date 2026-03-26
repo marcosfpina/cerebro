@@ -20,7 +20,6 @@ import hashlib
 import logging
 import time
 from dataclasses import dataclass
-from typing import Callable
 
 logger = logging.getLogger("cerebro.orchestrator")
 

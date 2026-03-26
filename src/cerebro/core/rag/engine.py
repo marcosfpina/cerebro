@@ -1,16 +1,14 @@
-import json
 import os
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from google.cloud import storage
 from google.api_core import exceptions
+from google.cloud import storage
 
 from cerebro.interfaces.llm import LLMProvider
 from cerebro.interfaces.vector_store import VectorStoreProvider
-from cerebro.providers.gcp.vertex_ai_llm import VertexAILLMProvider
 from cerebro.providers.chroma.chroma_vector_store import ChromaVectorStoreProvider
+from cerebro.providers.gcp.vertex_ai_llm import VertexAILLMProvider
 
 
 class RigorousRAGEngine:
@@ -24,9 +22,9 @@ class RigorousRAGEngine:
 
     def __init__(
         self,
-        llm_provider: Optional[LLMProvider] = None,
-        vector_store_provider: Optional[VectorStoreProvider] = None,
-        data_store_id: Optional[str] = None,
+        llm_provider: LLMProvider | None = None,
+        vector_store_provider: VectorStoreProvider | None = None,
+        data_store_id: str | None = None,
         location: str = "global",
         persist_directory: str = "./data/vector_db"
     ):
@@ -44,7 +42,7 @@ class RigorousRAGEngine:
         self.location = location
         self.data_store_id = data_store_id or os.getenv("DATA_STORE_ID")
         self.persist_directory = persist_directory
-        
+
         # Initialize providers with defaults if not provided
         if llm_provider is None:
             self.llm_provider = VertexAILLMProvider(
@@ -102,10 +100,10 @@ class RigorousRAGEngine:
         print("💡 Check status at: https://console.cloud.google.com/gen-app-builder/data-stores")
 
         # Returns the number of lines in the file
-        with open(path, 'r') as f:
+        with open(path) as f:
             return sum(1 for _ in f)
 
-    def query_with_metrics(self, query: str, k: int = 5) -> Dict[str, Any]:
+    def query_with_metrics(self, query: str, k: int = 5) -> dict[str, Any]:
         """
         Execute Grounded Generation via Discovery Engine (consumes GenAI credits).
         """
@@ -137,7 +135,7 @@ class RigorousRAGEngine:
             }
         except Exception as e:
             return {
-                "answer": f"Error querying Discovery Engine: {str(e)}",
+                "answer": f"Error querying Discovery Engine: {e!s}",
                 "error": True,
                 "metrics": {"hit_rate_k": "ERR", "avg_confidence": 0.0, "top_source": "N/A"},
             }

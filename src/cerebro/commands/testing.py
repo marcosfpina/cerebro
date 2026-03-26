@@ -5,15 +5,14 @@ Test utilities for grounded search and generation APIs.
 Migrated from: grounded_search.py, grounded_generation_test.py, verify_grounded_api.py
 """
 
-from pathlib import Path
-from typing import Optional
 import json
+from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.syntax import Syntax
+from rich.table import Table
 
 # GCP imports (conditional)
 try:
@@ -103,11 +102,11 @@ def test_grounded_search(
 @testing_app.command("grounded-gen")
 def test_grounded_generation(
     prompt: str = typer.Option(..., "--prompt", help="Generation prompt"),
-    context: Optional[Path] = typer.Option(None, "--context", help="Context documents file"),
+    context: Path | None = typer.Option(None, "--context", help="Context documents file"),
     project_id: str = typer.Option(..., "--project", help="GCP Project ID"),
     engine_id: str = typer.Option(..., "--engine", help="Search engine ID"),
     model: str = typer.Option("preview", "--model", help="Model version"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Save output to file"),
+    output: Path | None = typer.Option(None, "--output", help="Save output to file"),
 ):
     """
     Test grounded generation API.
@@ -179,8 +178,8 @@ def test_grounded_generation(
 def verify_api(
     endpoint: str = typer.Option(..., "--endpoint", help="API endpoint to verify"),
     method: str = typer.Option("GET", "--method", help="HTTP method"),
-    payload: Optional[Path] = typer.Option(None, "--payload", help="JSON payload file"),
-    headers: Optional[str] = typer.Option(None, "--headers", help="Custom headers (JSON string)"),
+    payload: Path | None = typer.Option(None, "--payload", help="JSON payload file"),
+    headers: str | None = typer.Option(None, "--headers", help="Custom headers (JSON string)"),
     expect_status: int = typer.Option(200, "--expect-status", help="Expected HTTP status code"),
 ):
     """
@@ -257,7 +256,7 @@ def verify_api(
 @testing_app.command("batch-verify", hidden=True)
 def batch_verify(
     config: Path = typer.Argument(..., help="YAML config file with endpoints to test"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Save results to file"),
+    output: Path | None = typer.Option(None, "--output", help="Save results to file"),
     parallel: int = typer.Option(1, "--parallel", help="Number of parallel tests"),
 ):
     """

@@ -5,8 +5,8 @@ Reusable components for the TUI interface.
 """
 
 __all__ = [
-    "ProjectTable",
-    "StatusPanel",
-    "QueryInput",
     "ProgressView",
+    "ProjectTable",
+    "QueryInput",
+    "StatusPanel",
 ]

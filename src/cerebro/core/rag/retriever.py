@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 logger = logging.getLogger("cerebro.retriever")
 
@@ -151,7 +151,7 @@ class HybridRetriever:
         vector_store: VectorStoreProtocol,
         chunks: list,  # list[Chunk] do chunker.py
         **kwargs,
-    ) -> "HybridRetriever":
+    ) -> HybridRetriever:
         """Convenience constructor a partir de Chunk objects."""
         texts    = [c.content for c in chunks]
         ids      = [c.id for c in chunks]

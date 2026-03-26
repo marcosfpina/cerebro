@@ -9,7 +9,7 @@ Implementations should handle:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class LLMProvider(ABC):
@@ -23,7 +23,7 @@ class LLMProvider(ABC):
     """
 
     @abstractmethod
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         """
         Generate an embedding vector for the given text.
         
@@ -33,10 +33,9 @@ class LLMProvider(ABC):
         Returns:
             A list of floats representing the embedding vector
         """
-        pass
 
     @abstractmethod
-    def embed_batch(self, texts: List[str], batch_size: int = 20) -> List[List[float]]:
+    def embed_batch(self, texts: list[str], batch_size: int = 20) -> list[list[float]]:
         """
         Generate embedding vectors for a batch of texts.
         
@@ -47,7 +46,6 @@ class LLMProvider(ABC):
         Returns:
             A list of embedding vectors
         """
-        pass
 
     @abstractmethod
     def generate(self, prompt: str, **kwargs) -> str:
@@ -61,16 +59,15 @@ class LLMProvider(ABC):
         Returns:
             Generated text
         """
-        pass
 
     @abstractmethod
     def grounded_generate(
         self,
         query: str,
-        context: List[str],
+        context: list[str],
         top_k: int = 5,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate text grounded in provided context with citations.
         
@@ -87,7 +84,6 @@ class LLMProvider(ABC):
             - 'confidence': Confidence score
             - 'cost_estimate': Estimated cost in USD
         """
-        pass
 
     @abstractmethod
     def health_check(self) -> bool:
@@ -97,4 +93,3 @@ class LLMProvider(ABC):
         Returns:
             True if healthy, False otherwise
         """
-        pass

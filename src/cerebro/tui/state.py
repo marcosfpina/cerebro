@@ -5,9 +5,9 @@ Saves and loads TUI state between sessions.
 """
 
 import json
-from pathlib import Path
-from typing import Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 
 class TUIState:
@@ -36,10 +36,10 @@ class TUIState:
         # Load state if file exists
         if self.state_file.exists():
             try:
-                with open(self.state_file, "r") as f:
+                with open(self.state_file) as f:
                     state = json.load(f)
                 return state
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 # Return default state if file is corrupted
                 return self.default_state()
         else:
@@ -90,7 +90,7 @@ class TUIState:
 
             with open(self.state_file, "w") as f:
                 json.dump(self.state, f, indent=2)
-        except IOError as e:
+        except OSError:
             # Fail silently - state persistence is not critical
             pass
 

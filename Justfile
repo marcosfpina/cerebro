@@ -78,6 +78,11 @@ test-cli:
 # DASHBOARD
 # ============================================================================
 
+# Start the Dashboard API server (kills any stale process on port 8009 first)
+serve:
+    @kill $(lsof -ti:8009) 2>/dev/null || true
+    uvicorn cerebro.api.server:app --host 0.0.0.0 --port 8009 --reload
+
 # Launch the web dashboard (React GUI → http://localhost:18321)
 dashboard:
     cerebro dashboard
@@ -85,6 +90,10 @@ dashboard:
 # Launch the TUI (Textual terminal UI)
 tui:
     cerebro tui
+
+# Install React dashboard dependencies
+dashboard-install:
+    cd dashboard && npm install
 
 # Lint the React dashboard
 dashboard-lint:

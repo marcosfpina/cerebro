@@ -13,22 +13,22 @@ This module provides centralized intelligence gathering, analysis,
 and dissemination for the entire ~/arch ecosystem.
 """
 
-from .core import CerebroIntelligence
-from .collectors import (
-    SignalCollector,
-    HumanIntelCollector,
-    OpenSourceCollector,
-    TechIntelCollector,
-)
 from .analyzer import IntelligenceAnalyzer
 from .briefing import BriefingGenerator
+from .collectors import (
+    HumanIntelCollector,
+    OpenSourceCollector,
+    SignalCollector,
+    TechIntelCollector,
+)
+from .core import CerebroIntelligence
 
 __all__ = [
-    "CerebroIntelligence",
-    "SignalCollector",
-    "HumanIntelCollector",
-    "OpenSourceCollector",
-    "TechIntelCollector",
-    "IntelligenceAnalyzer",
     "BriefingGenerator",
+    "CerebroIntelligence",
+    "HumanIntelCollector",
+    "IntelligenceAnalyzer",
+    "OpenSourceCollector",
+    "SignalCollector",
+    "TechIntelCollector",
 ]

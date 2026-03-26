@@ -21,4 +21,4 @@ try:
 except ImportError:
     rag = None  # type: ignore[assignment]
 
-__all__ = ["gcp", "extraction", "rag", "utils"]
+__all__ = ["extraction", "gcp", "rag", "utils"]

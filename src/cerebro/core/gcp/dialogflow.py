@@ -7,15 +7,15 @@ Manages Dialogflow CX sessions and conversations
 """
 import os
 import sys
-import uuid
 import time
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from typing import Any
 
 try:
-    from google.cloud import dialogflowcx_v3 as dialogflow
     from google.auth import default
+    from google.cloud import dialogflowcx_v3 as dialogflow
     DIALOGFLOW_AVAILABLE = True
 except ImportError:
     DIALOGFLOW_AVAILABLE = False
@@ -61,9 +61,9 @@ class DialogflowCXManager:
 
     def __init__(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         location: str = "us-central1",
-        agent_id: Optional[str] = None
+        agent_id: str | None = None
     ):
         """
         Initialize DialogflowCXManager
@@ -159,10 +159,10 @@ class DialogflowCXManager:
 
     def simulate_conversation(
         self,
-        conversation_script: List[str],
+        conversation_script: list[str],
         user_id: int,
         language_code: str = "pt-BR"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Simulate a complete user conversation
 
@@ -225,7 +225,7 @@ class DialogflowCXManager:
         self,
         num_conversations: int,
         max_workers: int = 5,
-        conversation_scripts: Optional[List[List[str]]] = None,
+        conversation_scripts: list[list[str]] | None = None,
         auto_confirm: bool = False
     ) -> ConversationMetrics:
         """
@@ -245,7 +245,7 @@ class DialogflowCXManager:
         print("="*60)
         print("🔥 PHANTOM - Dialogflow CX Load Test")
         print("="*60)
-        print(f"\n📊 Configuration:")
+        print("\n📊 Configuration:")
         print(f"   Project: {self.project_id}")
         print(f"   Location: {self.location}")
         print(f"   Agent: {self.agent_id}")
@@ -257,7 +257,7 @@ class DialogflowCXManager:
         estimated_interactions = int(num_conversations * avg_messages)
         estimated_cost = estimated_interactions * self.TEXT_SESSION_COST
 
-        print(f"\n💰 Estimate:")
+        print("\n💰 Estimate:")
         print(f"   Interactions: ~{estimated_interactions}")
         print(f"   Cost: ~${estimated_cost:.2f} USD")
 
@@ -357,7 +357,7 @@ def main():
         print("3. Export: export DIALOGFLOW_AGENT_ID='your-agent-id-here'")
         sys.exit(1)
 
-    print(f"\n🎯 Configuration:")
+    print("\n🎯 Configuration:")
     print(f"   Agent ID: {agent_id}")
     print(f"   Location: {location}")
 

@@ -8,11 +8,9 @@ Uses validated SearchServiceClient with summary_spec
 import os
 import sys
 import time
-from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from cerebro.core.gcp import VertexAISearch
-
 
 # Sample queries for realistic load testing
 SAMPLE_QUERIES = [
@@ -43,8 +41,8 @@ def run_loadtest(
     num_queries: int,
     data_store_id: str,
     max_workers: int = 10,
-    queries: Optional[List[str]] = None,
-    project_id: Optional[str] = None,
+    queries: list[str] | None = None,
+    project_id: str | None = None,
     location: str = "global",
     auto_confirm: bool = False
 ) -> dict:
@@ -76,7 +74,7 @@ def run_loadtest(
         data_store_id=data_store_id
     )
 
-    print(f"\n📊 Configuration:")
+    print("\n📊 Configuration:")
     print(f"   Project: {search.project_id}")
     print(f"   Data Store: {data_store_id}")
     print(f"   Total Queries: {num_queries}")
@@ -85,7 +83,7 @@ def run_loadtest(
     # Cost estimate
     estimated_cost = (num_queries / 1000) * VertexAISearch.SEARCH_ENTERPRISE_COST_PER_1K
 
-    print(f"\n💰 Cost Estimate:")
+    print("\n💰 Cost Estimate:")
     print(f"   Rate: ${VertexAISearch.SEARCH_ENTERPRISE_COST_PER_1K} / 1,000 queries")
     print(f"   Total Cost: ~${estimated_cost:.2f} USD")
 

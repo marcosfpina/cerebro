@@ -6,14 +6,13 @@ Migrated from: strategy_optimizer.py, salary_intel.py, personal_moat_builder.py,
 """
 
 import json
-from pathlib import Path
-from typing import Optional
 from datetime import datetime
+from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 from rich.tree import Tree
 
 strategy_app = typer.Typer(help="Technology Strategy & Market Intelligence", no_args_is_help=True)
@@ -29,7 +28,7 @@ def optimize_strategy(
         help="Strategy goal: immediate_value, long_term_moat, or balanced"
     ),
     budget: float = typer.Option(10.0, "--budget", help="Budget in BRL"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Output JSON file"),
+    output: Path | None = typer.Option(None, "--output", help="Output JSON file"),
     execute: bool = typer.Option(False, "--execute", help="Execute recommended scripts"),
 ):
     """
@@ -128,10 +127,10 @@ def optimize_strategy(
 @strategy_app.command("salary")
 def salary_intelligence(
     role: str = typer.Option(..., "--role", help="Job role (e.g., Senior Engineer, Staff)"),
-    company: Optional[str] = typer.Option(None, "--company", help="Target company (FAANG, Unicorns, etc.)"),
-    level: Optional[str] = typer.Option(None, "--level", help="Career level (L3, E4, Senior, etc.)"),
+    company: str | None = typer.Option(None, "--company", help="Target company (FAANG, Unicorns, etc.)"),
+    level: str | None = typer.Option(None, "--level", help="Career level (L3, E4, Senior, etc.)"),
     location: str = typer.Option("Remote_Brazil", "--location", help="Location or remote status"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Output file"),
+    output: Path | None = typer.Option(None, "--output", help="Output file"),
     generate_queries: bool = typer.Option(True, "--queries/--no-queries", help="Generate negotiation queries"),
 ):
     """
@@ -218,7 +217,7 @@ def build_moat(
     skills: str = typer.Option(..., "--skills", help="Comma-separated skills"),
     niche: str = typer.Option(..., "--niche", help="Target niche or domain"),
     depth: int = typer.Option(3, "--depth", help="Analysis depth (1-5)"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Output file"),
+    output: Path | None = typer.Option(None, "--output", help="Output file"),
 ):
     """
     Build personal competitive moat analysis.
@@ -280,8 +279,8 @@ def build_moat(
 def predict_trends(
     sector: str = typer.Option("technology", "--sector", help="Industry sector"),
     horizon: int = typer.Option(12, "--horizon", help="Prediction horizon in months"),
-    categories: Optional[str] = typer.Option(None, "--categories", help="Comma-separated categories"),
-    output: Optional[Path] = typer.Option(None, "--output", help="Output file"),
+    categories: str | None = typer.Option(None, "--categories", help="Comma-separated categories"),
+    output: Path | None = typer.Option(None, "--output", help="Output file"),
 ):
     """
     Predict career and technology trends.

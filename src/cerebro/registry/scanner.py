@@ -5,24 +5,23 @@ Scans ~/arch directory to discover and register all projects.
 Detects project types, languages, and collects initial metadata.
 """
 
+import logging
 import os
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
-import json
-import logging
+from typing import Any
 
+from cerebro.intelligence.collectors import (
+    HumanIntelCollector,
+    OpenSourceCollector,
+    SignalCollector,
+    TechIntelCollector,
+)
 from cerebro.intelligence.core import (
     CerebroIntelligence,
     Project,
     ProjectStatus,
-)
-from cerebro.intelligence.collectors import (
-    SignalCollector,
-    HumanIntelCollector,
-    OpenSourceCollector,
-    TechIntelCollector,
 )
 
 logger = logging.getLogger("cerebro.scanner")
@@ -88,7 +87,7 @@ class ProjectScanner:
             TechIntelCollector(cerebro),
         ]
 
-    def scan(self, full_scan: bool = False) -> List[Project]:
+    def scan(self, full_scan: bool = False) -> list[Project]:
         """
         Scan the arch directory for projects.
 
@@ -131,7 +130,7 @@ class ProjectScanner:
                 return True
         return False
 
-    def _scan_project(self, path: Path) -> Optional[Project]:
+    def _scan_project(self, path: Path) -> Project | None:
         """Scan a single project and extract metadata."""
         try:
             project = Project(
@@ -155,7 +154,7 @@ class ProjectScanner:
             project.status = self._determine_status(project)
 
             # Set indexed time
-            project.last_indexed = datetime.now(timezone.utc)
+            project.last_indexed = datetime.now(UTC)
 
             # Collect metadata
             project.metadata = self._collect_metadata(path)
@@ -166,7 +165,7 @@ class ProjectScanner:
             logger.error(f"Error scanning project {path.name}: {e}")
             return None
 
-    def _detect_languages(self, path: Path) -> List[str]:
+    def _detect_languages(self, path: Path) -> list[str]:
         """Detect programming languages used in the project."""
         languages = set()
 
@@ -243,7 +242,7 @@ class ProjectScanner:
 
         return ""
 
-    def _get_last_commit_time(self, path: Path) -> Optional[datetime]:
+    def _get_last_commit_time(self, path: Path) -> datetime | None:
         """Get the timestamp of the last git commit."""
         if not (path / ".git").exists():
             return None
@@ -259,7 +258,7 @@ class ProjectScanner:
 
             if result.returncode == 0 and result.stdout.strip():
                 timestamp = int(result.stdout.strip())
-                return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                return datetime.fromtimestamp(timestamp, tz=UTC)
         except Exception:
             pass
 
@@ -297,7 +296,7 @@ class ProjectScanner:
             return ProjectStatus.UNKNOWN
 
         days_since_commit = (
-            datetime.now(timezone.utc) - project.last_commit
+            datetime.now(UTC) - project.last_commit
         ).days
 
         if days_since_commit < 30:
@@ -309,7 +308,7 @@ class ProjectScanner:
         else:
             return ProjectStatus.ARCHIVED
 
-    def _collect_metadata(self, path: Path) -> Dict[str, Any]:
+    def _collect_metadata(self, path: Path) -> dict[str, Any]:
         """Collect additional metadata about the project."""
         metadata = {}
 
@@ -351,7 +350,7 @@ class ProjectScanner:
         logger.info(f"Collected {total_items} intelligence items from {project.name}")
         return total_items
 
-    def full_scan_with_intelligence(self) -> Dict[str, Any]:
+    def full_scan_with_intelligence(self) -> dict[str, Any]:
         """
         Perform a full scan with intelligence collection.
 
@@ -364,7 +363,7 @@ class ProjectScanner:
             "duration_seconds": 0,
         }
 
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
 
         # Scan for projects
         projects = self.scan(full_scan=True)
@@ -382,7 +381,7 @@ class ProjectScanner:
         # Save state
         self.cerebro.save()
 
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.now(UTC)
         stats["duration_seconds"] = (end_time - start_time).total_seconds()
 
         logger.info(

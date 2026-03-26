@@ -6,11 +6,9 @@ Uses FAISS for efficient similarity search and sentence-transformers for embeddi
 """
 
 import json
-import pickle
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 import logging
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("cerebro.indexer")
 
@@ -75,7 +73,7 @@ class KnowledgeIndexer:
 
         # FAISS index
         self._index = None
-        self._id_map: List[str] = []  # Maps FAISS index to item IDs
+        self._id_map: list[str] = []  # Maps FAISS index to item IDs
 
         # Load existing index if available
         self._load_index()
@@ -122,7 +120,7 @@ class KnowledgeIndexer:
                 return False
 
             self._index = faiss.read_index(str(index_path))
-            with open(id_map_path, "r") as f:
+            with open(id_map_path) as f:
                 self._id_map = json.load(f)
 
             logger.info(f"Loaded index with {len(self._id_map)} items")
@@ -151,7 +149,7 @@ class KnowledgeIndexer:
             logger.error(f"Failed to save index: {e}")
             return False
 
-    def embed_text(self, text: str) -> Optional[List[float]]:
+    def embed_text(self, text: str) -> list[float] | None:
         """Generate embedding for a single text."""
         if self.embedder is None:
             return None
@@ -163,7 +161,7 @@ class KnowledgeIndexer:
             logger.error(f"Embedding failed: {e}")
             return None
 
-    def embed_texts(self, texts: List[str]) -> Optional[List[List[float]]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]] | None:
         """Generate embeddings for multiple texts."""
         if self.embedder is None:
             return None
@@ -266,7 +264,7 @@ class KnowledgeIndexer:
         query: str,
         top_k: int = 10,
         min_score: float = 0.3,
-    ) -> List[Tuple[str, float]]:
+    ) -> list[tuple[str, float]]:
         """
         Search for similar items.
 
@@ -312,7 +310,7 @@ class KnowledgeIndexer:
         query: str,
         top_k: int = 10,
         min_score: float = 0.3,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Semantic search with full item details.
 
@@ -343,7 +341,7 @@ class KnowledgeIndexer:
 
         return items
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get indexer statistics."""
         return {
             "model": self.model_name,

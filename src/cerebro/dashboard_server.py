@@ -5,10 +5,8 @@ Reads real data from MetricsCollector snapshots (zero extra tokens).
 Run:  cerebro dashboard-api   (or directly: uvicorn phantom.dashboard_server:app)
 """
 
-import json
 import os
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,7 +63,7 @@ def _repo_to_project(repo: dict) -> dict:
 # ---------------------------------------------------------------------------
 @app.get("/health")
 def health():
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(UTC).isoformat()}
 
 
 @app.get("/status")
@@ -228,7 +226,7 @@ def _build_briefing(briefing_type: str) -> dict:
     return {
         "type": briefing_type,
         "classification": "INTERNAL",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "headline": f"{len(repos)} repos tracked · {len(active)} active · avg health {avg_health:.0f}%",
         "ecosystem_status": {
             "total_projects": len(repos),

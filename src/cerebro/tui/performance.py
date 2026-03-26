@@ -4,10 +4,11 @@ Performance utilities for TUI optimization.
 Includes caching, lazy loading, and batch processing utilities.
 """
 
-from typing import Any, Callable, Optional
-from functools import lru_cache, wraps
-from collections import deque
 import time
+from collections import deque
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 
 
 class Cache:
@@ -23,7 +24,7 @@ class Cache:
         self.ttl = ttl
         self._cache: dict[str, tuple[Any, float]] = {}
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get value from cache if not expired.
 
@@ -255,7 +256,7 @@ class LazyLoader:
         """Initialize lazy loader."""
         self._modules = {}
 
-    def load(self, module_name: str, attribute: Optional[str] = None) -> Any:
+    def load(self, module_name: str, attribute: str | None = None) -> Any:
         """
         Lazily load module or module attribute.
 

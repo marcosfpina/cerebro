@@ -6,7 +6,7 @@ and reorder retrieved documents before answer generation.
 """
 
 import logging
-from typing import List, Tuple, Optional, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class CrossEncoderReranker:
         self,
         model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
         max_length: int = 512,
-        device: Optional[str] = None,
+        device: str | None = None,
     ):
         """
         Initialize a cross‑encoder reranker.
@@ -45,10 +45,10 @@ class CrossEncoderReranker:
     def rerank(
         self,
         query: str,
-        documents: List[str],
-        top_k: Optional[int] = None,
+        documents: list[str],
+        top_k: int | None = None,
         batch_size: int = 32,
-    ) -> List[Tuple[int, float, str]]:
+    ) -> list[tuple[int, float, str]]:
         """
         Rerank documents according to relevance to the query.
 
@@ -89,9 +89,9 @@ class CrossEncoderReranker:
     def rerank_and_sort(
         self,
         query: str,
-        documents: List[str],
-        top_k: Optional[int] = None,
-    ) -> List[str]:
+        documents: list[str],
+        top_k: int | None = None,
+    ) -> list[str]:
         """
         Convenience method that returns only the reranked document texts.
         """
@@ -100,13 +100,13 @@ class CrossEncoderReranker:
 
 
 # Global default instance for easy reuse
-_default_reranker: Optional[CrossEncoderReranker] = None
+_default_reranker: CrossEncoderReranker | None = None
 
 
 def get_reranker(
     model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
     max_length: int = 512,
-    device: Optional[str] = None,
+    device: str | None = None,
 ) -> CrossEncoderReranker:
     """
     Singleton factory for a cross‑encoder reranker.
@@ -122,11 +122,11 @@ def get_reranker(
 
 
 # Global client instance
-_default_client: Optional[Any] = None
+_default_client: Any | None = None
 
 
 def get_reranker_client(
-    service_url: Optional[str] = None,
+    service_url: str | None = None,
     timeout: float = 1.0,
     mode: str = "service",
 ) -> Any:
@@ -147,10 +147,10 @@ def get_reranker_client(
 
 def rerank(
     query: str,
-    documents: List[str],
-    top_k: Optional[int] = None,
+    documents: list[str],
+    top_k: int | None = None,
     **kwargs,
-) -> List[Tuple[int, float, str]]:
+) -> list[tuple[int, float, str]]:
     """
     One‑shot reranking using the hybrid service/local client.
     
