@@ -8,6 +8,7 @@ import type {
     Project,
     IntelligenceItem,
     IntelligenceStats,
+    QueryResult,
     Briefing,
     Alert,
     DependencyGraph,
@@ -67,12 +68,11 @@ class ApiClient {
         projects?: string[]
         limit?: number
         semantic?: boolean
-    }): Promise<IntelligenceItem[]> {
-        const result = await this.fetch<{ results: IntelligenceItem[] }>('/intelligence/query', {
+    }): Promise<QueryResult> {
+        return this.fetch<QueryResult>('/intelligence/query', {
             method: 'POST',
             body: JSON.stringify(params),
         })
-        return result.results
     }
 
     async getIntelligenceStats(): Promise<IntelligenceStats> {

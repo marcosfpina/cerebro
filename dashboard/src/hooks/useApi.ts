@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDashboardStore } from '@/stores/dashboard'
 import api from '@/lib/api'
-import type { IntelligenceType } from '@/types'
+import type { IntelligenceType, QueryResult } from '@/types'
 
 // Query keys
 export const queryKeys = {
@@ -59,7 +59,7 @@ export function useIntelligenceQuery(
     semantic?: boolean
   }
 ) {
-  return useQuery({
+  return useQuery<QueryResult>({
     queryKey: queryKeys.intelligence(query, options),
     queryFn: () =>
       api.queryIntelligence({
