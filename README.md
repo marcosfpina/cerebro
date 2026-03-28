@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/Tests-112_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**Enterprise Knowledge Extraction Platform** — static analysis, RAG pipelines, repository intelligence, and GCP integration. 61 modules, 3 interfaces, 112 tests. Built on Nix for reproducibility.
+**Enterprise Knowledge Extraction Platform** — static analysis, RAG pipelines, repository intelligence, and GCP integration. 61 modules, 3 interfaces, 112 tests. Built on Nix for reproducibility, and shipped to linux/MacOS. See the doc for instructions:< >
 
 ---
 
@@ -81,16 +81,16 @@ cerebro rag query "Where is credit card validation handled?" --grounded --citati
 
 ### Component Status
 
-| Component | Local | Cloud | Status |
-|-----------|-------|-------|--------|
-| **Code Analysis** | Tree-Sitter + Python AST | — | Production |
-| **Repository Metrics** | Git + filesystem scan | — | Production |
-| **Vector Store** | ChromaDB (SQLite) | Vertex AI Vector Search | Both supported |
-| **LLM Interface** | Local (Mistral-7B) | Gemini via Vertex AI | Both supported |
-| **Security Scanner** | Regex + AST patterns | — | Production |
-| **Dashboard** | Vite dev server | — | Production |
-| **TUI** | Textual framework | — | Production |
-| **CI/CD** | pytest + ruff | GitLab CI + GitHub Actions | Production |
+| Component              | Local                    | Cloud                      | Status         |
+| ---------------------- | ------------------------ | -------------------------- | -------------- |
+| **Code Analysis**      | Tree-Sitter + Python AST | —                          | Production     |
+| **Repository Metrics** | Git + filesystem scan    | —                          | Production     |
+| **Vector Store**       | ChromaDB (SQLite)        | Vertex AI Vector Search    | Both supported |
+| **LLM Interface**      | Local (Mistral-7B)       | Gemini via Vertex AI       | Both supported |
+| **Security Scanner**   | Regex + AST patterns     | —                          | Production     |
+| **Dashboard**          | Vite dev server          | —                          | Production     |
+| **TUI**                | Textual framework        | —                          | Production     |
+| **CI/CD**              | pytest + ruff            | GitLab CI + GitHub Actions | Production     |
 
 ---
 
@@ -191,29 +191,29 @@ All documentation lives under [`docs/`](docs/) in structured subdirectories.
 
 ### Getting Started
 
-| Document | Description |
-|----------|-------------|
-| [Quick Start](docs/guides/QUICK_START.md) | Get running in 5 minutes |
-| [Cheatsheet](docs/guides/CHEATSHEET.md) | Daily reference — one-liners and shortcuts |
-| [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md) | TUI navigation reference |
-| [Dashboard Integration](docs/guides/DASHBOARD_INTEGRATION.md) | Web dashboard setup |
+| Document                                                      | Description                                |
+| ------------------------------------------------------------- | ------------------------------------------ |
+| [Quick Start](docs/guides/QUICK_START.md)                     | Get running in 5 minutes                   |
+| [Cheatsheet](docs/guides/CHEATSHEET.md)                       | Daily reference — one-liners and shortcuts |
+| [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md)       | TUI navigation reference                   |
+| [Dashboard Integration](docs/guides/DASHBOARD_INTEGRATION.md) | Web dashboard setup                        |
 
 ### Architecture
 
-| Document | Description |
-|----------|-------------|
-| [Architecture Overview](docs/architecture/ARCHITECTURE.md) | System design and component interaction |
-| [Data Flow Diagram](docs/architecture/ARCHITECTURE_DATA_FLOW.md) | Pipeline visualization |
-| [ADR Summary](docs/architecture/ADR_SUMMARY.md) | All architectural decisions |
-| [Phoenix Report](docs/architecture/PHOENIX_ARCHITECTURE_REPORT.md) | Migration and restructuring analysis |
+| Document                                                           | Description                             |
+| ------------------------------------------------------------------ | --------------------------------------- |
+| [Architecture Overview](docs/architecture/ARCHITECTURE.md)         | System design and component interaction |
+| [Data Flow Diagram](docs/architecture/ARCHITECTURE_DATA_FLOW.md)   | Pipeline visualization                  |
+| [ADR Summary](docs/architecture/ADR_SUMMARY.md)                    | All architectural decisions             |
+| [Phoenix Report](docs/architecture/PHOENIX_ARCHITECTURE_REPORT.md) | Migration and restructuring analysis    |
 
 ### Features
 
-| Area | Documents |
-|------|-----------|
+| Area             | Documents                                                                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Intelligence** | [Capabilities](docs/features/intelligence/CAPABILITIES.md) · [Sources](docs/features/intelligence/INTEL_SOURCES.md) · [Query Mastery](docs/features/intelligence/QUERY_MASTERY.md) · [Stack Mastery](docs/features/intelligence/STACK_MASTERY.md) |
-| **GCP Credits** | [Overview](docs/features/gcp-credits/README.md) · [Automation](docs/features/gcp-credits/AUTOMATION_SYSTEMS.md) · [High-ROI Queries](docs/features/gcp-credits/HIGH_ROI_QUERIES.md) |
-| **Strategy** | [Executive Summary](docs/features/strategy/EXECUTIVE_SUMMARY.md) · [ROI Analysis](docs/features/strategy/HACKS_ROI.md) |
+| **GCP Credits**  | [Overview](docs/features/gcp-credits/README.md) · [Automation](docs/features/gcp-credits/AUTOMATION_SYSTEMS.md) · [High-ROI Queries](docs/features/gcp-credits/HIGH_ROI_QUERIES.md)                                                               |
+| **Strategy**     | [Executive Summary](docs/features/strategy/EXECUTIVE_SUMMARY.md) · [ROI Analysis](docs/features/strategy/HACKS_ROI.md)                                                                                                                            |
 
 ### CLI Commands
 
@@ -221,12 +221,12 @@ Full command reference with examples: [docs/commands/](docs/commands/README.md)
 
 ### Project Status
 
-| Document | Description |
-|----------|-------------|
-| [Master Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) | Active development roadmap |
-| [Status](docs/project/STATUS.md) | Current project status |
-| [Coverage Gaps](docs/project/COVERAGE_GAP.md) | Known gaps and planned features |
-| [Portfolio Audit](docs/project/PORTFOLIO_AUDIT.md) | Full project audit |
+| Document                                                       | Description                     |
+| -------------------------------------------------------------- | ------------------------------- |
+| [Master Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) | Active development roadmap      |
+| [Status](docs/project/STATUS.md)                               | Current project status          |
+| [Coverage Gaps](docs/project/COVERAGE_GAP.md)                  | Known gaps and planned features |
+| [Portfolio Audit](docs/project/PORTFOLIO_AUDIT.md)             | Full project audit              |
 
 ---
 
@@ -234,46 +234,46 @@ Full command reference with examples: [docs/commands/](docs/commands/README.md)
 
 ### Completed (Q4 2025 — Q1 2026)
 
-| Milestone | Details | Docs |
-|-----------|---------|------|
-| Nix-based reproducible builds | Flake with poetry2nix, hermetic dev shell | [Setup Guide](docs/guides/SETUP_COMPLETE.md) |
-| Tree-Sitter polyglot analysis | Python, JS/TS, Rust, Go, C/C++, Nix, Bash | [Capabilities](docs/features/intelligence/CAPABILITIES.md) |
-| Vertex AI RAG engine | Batching, circuit breakers, grounded generation | [Architecture](docs/architecture/ARCHITECTURE.md) |
-| CLI unification (Typer) | 8 command groups, 30+ commands | [Commands](docs/commands/README.md) |
-| TUI with 6 screens | Textual framework, keyboard shortcuts, live data | [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md) |
-| React Intelligence Dashboard | 17 components, FastAPI backend, real-time metrics | [Dashboard Guide](docs/guides/DASHBOARD_INTEGRATION.md) |
-| Zero-token metrics engine | Repository scanning without API costs | [Phase 4](docs/phases/PHASE4_COMPLETE.md) |
-| Enterprise repositioning (ADR-0030) | Rebrand from Phantom to Cerebro | [ADR Summary](docs/architecture/ADR_SUMMARY.md) |
-| Production readiness audit | 112 tests, import fallbacks, i18n cleanup | [Phase History](docs/phases/) |
-| GitLab CI/CD pipeline | Validate, test, build, deploy, monitor stages | [CI/CD Guide](docs/guides/GITLAB_CI_CD.md) |
+| Milestone                           | Details                                           | Docs                                                       |
+| ----------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| Nix-based reproducible builds       | Flake with poetry2nix, hermetic dev shell         | [Setup Guide](docs/guides/SETUP_COMPLETE.md)               |
+| Tree-Sitter polyglot analysis       | Python, JS/TS, Rust, Go, C/C++, Nix, Bash         | [Capabilities](docs/features/intelligence/CAPABILITIES.md) |
+| Vertex AI RAG engine                | Batching, circuit breakers, grounded generation   | [Architecture](docs/architecture/ARCHITECTURE.md)          |
+| CLI unification (Typer)             | 8 command groups, 30+ commands                    | [Commands](docs/commands/README.md)                        |
+| TUI with 6 screens                  | Textual framework, keyboard shortcuts, live data  | [Keyboard Shortcuts](docs/guides/KEYBOARD_SHORTCUTS.md)    |
+| React Intelligence Dashboard        | 17 components, FastAPI backend, real-time metrics | [Dashboard Guide](docs/guides/DASHBOARD_INTEGRATION.md)    |
+| Zero-token metrics engine           | Repository scanning without API costs             | [Phase 4](docs/phases/PHASE4_COMPLETE.md)                  |
+| Enterprise repositioning (ADR-0030) | Rebrand from Phantom to Cerebro                   | [ADR Summary](docs/architecture/ADR_SUMMARY.md)            |
+| Production readiness audit          | 112 tests, import fallbacks, i18n cleanup         | [Phase History](docs/phases/)                              |
+| GitLab CI/CD pipeline               | Validate, test, build, deploy, monitor stages     | [CI/CD Guide](docs/guides/GITLAB_CI_CD.md)                 |
 
 ### In Progress (Q1-Q2 2026)
 
-| Milestone | Details | Tracking |
-|-----------|---------|----------|
-| OpenTelemetry observability | Structured logging, trace context | [Next Steps](docs/project/NEXT_STEPS.md) |
-| REST API + OpenAPI docs | Public HTTP API for integrations | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
-| Terraform infrastructure-as-code | GCP provisioning, Cloud Run | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| Milestone                        | Details                           | Tracking                                                |
+| -------------------------------- | --------------------------------- | ------------------------------------------------------- |
+| OpenTelemetry observability      | Structured logging, trace context | [Next Steps](docs/project/NEXT_STEPS.md)                |
+| REST API + OpenAPI docs          | Public HTTP API for integrations  | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| Terraform infrastructure-as-code | GCP provisioning, Cloud Run       | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
 
 ### Planned (Q2-Q3 2026)
 
-| Milestone | Details | Tracking |
-|-----------|---------|----------|
-| Vertex AI Vector Search migration | Replace local ChromaDB for enterprise scale | [Coverage Gaps](docs/project/COVERAGE_GAP.md) |
-| Cloud Run production deployment | Containerized, auto-scaling | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
-| MCP (Model Context Protocol) server | IDE integration for code intelligence | [Next Steps](docs/project/NEXT_STEPS.md) |
-| Multi-tenant architecture | Team/org isolation, RBAC | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| Milestone                           | Details                                     | Tracking                                                |
+| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Vertex AI Vector Search migration   | Replace local ChromaDB for enterprise scale | [Coverage Gaps](docs/project/COVERAGE_GAP.md)           |
+| Cloud Run production deployment     | Containerized, auto-scaling                 | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
+| MCP (Model Context Protocol) server | IDE integration for code intelligence       | [Next Steps](docs/project/NEXT_STEPS.md)                |
+| Multi-tenant architecture           | Team/org isolation, RBAC                    | [Execution Plan](docs/project/MASTER_EXECUTION_PLAN.md) |
 
 ### Phase History
 
 Full implementation history is tracked in [`docs/phases/`](docs/phases/):
 
-| Phase | Document |
-|-------|----------|
-| Phase 1 — Core extraction | [Implementation](docs/phases/PHASE1_IMPLEMENTATION.md) · [Validation](docs/phases/PHASE1_VALIDATION.md) |
-| Phase 2 — RAG pipeline | [Complete](docs/phases/PHASE2_COMPLETE.md) · [Roadmap](docs/phases/PHASE2_ROADMAP.md) |
-| Phase 3 — TUI + commands | [Complete](docs/phases/PHASE3_IMPLEMENTATION_COMPLETE.md) · [Status](docs/phases/PHASE3_STATUS.md) |
-| Phase 4 — Metrics + dashboard | [Complete](docs/phases/PHASE4_COMPLETE.md) · [Performance](docs/phases/PERFORMANCE_REPORT.md) |
+| Phase                         | Document                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Phase 1 — Core extraction     | [Implementation](docs/phases/PHASE1_IMPLEMENTATION.md) · [Validation](docs/phases/PHASE1_VALIDATION.md) |
+| Phase 2 — RAG pipeline        | [Complete](docs/phases/PHASE2_COMPLETE.md) · [Roadmap](docs/phases/PHASE2_ROADMAP.md)                   |
+| Phase 3 — TUI + commands      | [Complete](docs/phases/PHASE3_IMPLEMENTATION_COMPLETE.md) · [Status](docs/phases/PHASE3_STATUS.md)      |
+| Phase 4 — Metrics + dashboard | [Complete](docs/phases/PHASE4_COMPLETE.md) · [Performance](docs/phases/PERFORMANCE_REPORT.md)           |
 
 ---
 
@@ -295,15 +295,15 @@ cerebro ops health
 
 ### Test Coverage
 
-| Module | Tests | File |
-|--------|-------|------|
-| CLI commands | 11 | `tests/test_cli.py` |
-| Code analyzer | 15 | `tests/test_analyzer.py` |
-| Metrics collector | 28 | `tests/test_metrics_collector.py` |
-| Intelligence core | 24 | `tests/test_intelligence.py` |
-| Dashboard server | 22 | `tests/test_dashboard_server.py` |
-| Launcher | 9 | `tests/test_launcher.py` |
-| RAG engine | 6 | `tests/test_rag.py` |
+| Module            | Tests | File                              |
+| ----------------- | ----- | --------------------------------- |
+| CLI commands      | 11    | `tests/test_cli.py`               |
+| Code analyzer     | 15    | `tests/test_analyzer.py`          |
+| Metrics collector | 28    | `tests/test_metrics_collector.py` |
+| Intelligence core | 24    | `tests/test_intelligence.py`      |
+| Dashboard server  | 22    | `tests/test_dashboard_server.py`  |
+| Launcher          | 9     | `tests/test_launcher.py`          |
+| RAG engine        | 6     | `tests/test_rag.py`               |
 
 ---
 
