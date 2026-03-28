@@ -4,22 +4,46 @@ LlamaCpp LLM Provider
 Implements LLMProvider interface for a local llama.cpp server.
 The server must expose an OpenAI-compatible API (llama-server --port 8081).
 
+Uses only stdlib (urllib) — no extra dependencies required.
+
 Env vars:
   LLAMA_CPP_URL   Base URL of the llama.cpp server (default: http://localhost:8081)
   LLAMA_CPP_MODEL Model name to pass in requests (default: local)
 """
 
+import json
 import logging
 import os
+import urllib.error
+import urllib.request
 from typing import Any
-
-import httpx
 
 from cerebro.interfaces.llm import LLMProvider
 
 logger = logging.getLogger("cerebro.providers.llamacpp")
 
 _DEFAULT_URL = "http://localhost:8081"
+
+
+def _post(url: str, payload: dict, timeout: float) -> dict:
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read())
+
+
+def _get(url: str, timeout: float) -> int:
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        return e.code
 
 
 class LlamaCppProvider(LLMProvider):
@@ -46,14 +70,11 @@ class LlamaCppProvider(LLMProvider):
         results: list[list[float]] = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
-            response = httpx.post(
+            data = _post(
                 f"{self.base_url}/v1/embeddings",
-                json={"input": batch, "model": self.model},
-                timeout=self.timeout,
+                {"input": batch, "model": self.model},
+                self.timeout,
             )
-            response.raise_for_status()
-            data = response.json()
-            # Sort by index to preserve order
             ordered = sorted(data["data"], key=lambda x: x["index"])
             results.extend(item["embedding"] for item in ordered)
         return results
@@ -69,13 +90,8 @@ class LlamaCppProvider(LLMProvider):
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 1024),
         }
-        response = httpx.post(
-            f"{self.base_url}/v1/chat/completions",
-            json=payload,
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        data = _post(f"{self.base_url}/v1/chat/completions", payload, self.timeout)
+        return data["choices"][0]["message"]["content"]
 
     def grounded_generate(
         self,
@@ -93,10 +109,9 @@ class LlamaCppProvider(LLMProvider):
         )
         try:
             answer = self.generate(prompt, **kwargs)
-            citations = [f"[{i+1}]" for i in range(min(top_k, len(context)))]
             return {
                 "answer": answer,
-                "citations": citations,
+                "citations": [f"[{i+1}]" for i in range(min(top_k, len(context)))],
                 "snippets": context[:top_k],
                 "confidence": 0.9,
                 "cost_estimate": 0.0,
@@ -116,8 +131,7 @@ class LlamaCppProvider(LLMProvider):
 
     def health_check(self) -> bool:
         try:
-            response = httpx.get(f"{self.base_url}/health", timeout=5.0)
-            return response.status_code == 200
+            return _get(f"{self.base_url}/health", timeout=5.0) == 200
         except Exception as e:
             logger.warning(f"LlamaCpp health check failed: {e}")
             return False
