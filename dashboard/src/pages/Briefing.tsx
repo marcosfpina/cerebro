@@ -55,7 +55,7 @@ export function Briefing() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Intelligence Briefing</h1>
           <p className="text-muted-foreground">
-            Automated intelligence reports for ~/arch ecosystem
+            Automated intelligence reports for ~/master ecosystem
           </p>
         </div>
         <div className="flex items-center gap-2">

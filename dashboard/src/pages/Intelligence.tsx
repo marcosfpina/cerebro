@@ -75,7 +75,7 @@ export function Intelligence() {
         </h1>
         <p className="text-muted-foreground text-lg">
           Search and explore intelligence from{' '}
-          <span className="font-mono text-primary">~/arch</span> ecosystem
+          <span className="font-mono text-primary">~/master</span> ecosystem
         </p>
       </motion.div>
 

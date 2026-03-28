@@ -282,7 +282,7 @@ export function Settings() {
         <CardContent>
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p>
-              <strong>CEREBRO Intelligence System</strong> is the central brain of the ~/arch ecosystem.
+              <strong>CEREBRO Intelligence System</strong> is the central brain of the ~/master ecosystem.
               It provides unified intelligence gathering, analysis, and dissemination across all your projects.
             </p>
             <p className="text-sm text-muted-foreground mt-2">

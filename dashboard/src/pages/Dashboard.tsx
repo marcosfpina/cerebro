@@ -37,7 +37,7 @@ export function Dashboard() {
         </h1>
         <p className="text-muted-foreground text-lg">
           Central intelligence overview for{' '}
-          <span className="font-mono text-primary">~/arch</span> ecosystem
+          <span className="font-mono text-primary">~/master</span> ecosystem
         </p>
       </motion.div>
 

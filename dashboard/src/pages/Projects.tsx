@@ -47,7 +47,7 @@ export function Projects() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
           <p className="text-muted-foreground">
-            {projects?.length || 0} projects in ~/arch ecosystem
+            {projects?.length || 0} projects in ~/master ecosystem
           </p>
         </div>
       </div>

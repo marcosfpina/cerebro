@@ -154,7 +154,7 @@ export function Sidebar() {
           <span>Classification: INTERNAL</span>
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          v1.0.0 | ~/arch ecosystem
+          v1.0.0 | ~/master ecosystem
         </div>
       </div>
     </div>
