@@ -2,7 +2,7 @@
 name = "cerebro-cli"
 version = "0.1.0"
 description = "Cerebro - Enterprise Knowledge Extraction Platform"
-authors = [{ name = "Kernel Core", email = "kernel@example.com" }]
+authors = [{ name = "voidnxlabs", email = "dev@voidnxlabs.io" }]
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -51,6 +51,7 @@ textual = "^0.47.0"
 textual-dev = "^1.2.0"
 websockets = "^13.0"
 aiofiles = "^23.2.0"
+nats-py = ">=2.7,<3.0"
 dspy-ai = "^3.1.3"
 
 [tool.poetry.group.dev.dependencies]

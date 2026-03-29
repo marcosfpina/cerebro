@@ -144,6 +144,8 @@ class ScanRequest(BaseModel):
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
     global cerebro, scanner, indexer, analyzer, briefing_gen, metrics_collector, repo_watcher, llama
+    # NATS consumer task handle
+    _nats_consumer_task = None
 
     # Configuration
     arch_path = os.getenv("CEREBRO_ARCH_PATH", "/home/kernelcore/master")
@@ -191,7 +193,24 @@ async def lifespan(app: FastAPI):
     repo_watcher = RepoWatcher(arch_path=arch_path, poll_interval=10, on_change=_on_repo_change)
     await repo_watcher.start()
 
+    # Start NATS consumer + publisher
+    from cerebro.nats.publisher import connect as nats_connect, drain as nats_drain
+    from cerebro.nats.consumer import start_consumer, stop_consumer as nats_stop_consumer
+
+    await nats_connect()
+    _nats_consumer_task = asyncio.ensure_future(start_consumer())
+
     yield
+
+    # Cleanup NATS
+    await nats_stop_consumer()
+    if _nats_consumer_task is not None:
+        _nats_consumer_task.cancel()
+        try:
+            await _nats_consumer_task
+        except asyncio.CancelledError:
+            pass
+    await nats_drain()
 
     # Cleanup
     if repo_watcher:
