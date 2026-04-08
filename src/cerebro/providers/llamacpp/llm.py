@@ -79,7 +79,7 @@ class LlamaCppProvider(LLMProvider):
                     self.timeout,
                 )
             except urllib.error.HTTPError as e:
-                if e.code == 501:
+                if e.code in (400, 501):
                     raise RuntimeError(
                         "llama.cpp server does not support embeddings. "
                         "Restart with: llama-server --embeddings --port 8081"

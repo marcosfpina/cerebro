@@ -5,6 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     spider-nix.url = "path:/home/kernelcore/master/spider-nix";
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -13,6 +17,7 @@
       nixpkgs,
       flake-utils,
       spider-nix,
+      poetry2nix,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -107,6 +112,8 @@
             google-cloud-bigquery
             google-cloud-storage
           ];
+
+        p2nix = poetry2nix.lib.mkPoetry2Nix { inherit pkgs; };
 
         corePythonEnv = pkgs.python313.withPackages corePythonPackages;
         gcpPythonEnv = pkgs.python313.withPackages (
@@ -275,6 +282,15 @@
 
       in
       {
+        # Installable package — enables `nix build` and `nix run`
+        packages.default = p2nix.mkPoetryApplication {
+          projectDir = self;
+          python = pkgs.python313;
+          # Only the main group; optional providers installed separately via --with
+          groups = [ "main" ];
+          checkGroups = [ ];
+        };
+
         # Development shell
         devShells.default = pkgs.mkShell {
           buildInputs = [ corePythonEnv ] ++ commonBuildInputs;

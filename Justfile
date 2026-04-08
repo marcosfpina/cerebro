@@ -1,6 +1,43 @@
 # Justfile - CEREBRO Automation
 
 # ============================================================================
+# TODO — BETA LAUNCH TRACKER
+# Migrate to: cerebro todo (future command)
+# ============================================================================
+
+# Print current BETA launch progress
+todo:
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo "🧠 CEREBRO v1.0.0b1 — BETA LAUNCH TODO"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    @echo ""
+    @echo "PROVIDERS                                          STATUS"
+    @echo "  [x] Anthropic (claude-sonnet-4-6)               done"
+    @echo "  [x] Groq (llama-3.3-70b-versatile)              done"
+    @echo "  [x] Gemini (gemini-1.5-flash + embeddings)      done"
+    @echo "  [x] Engine aliases + factory wired              done"
+    @echo "  [x] Optional Poetry groups (pyproject.toml)     done"
+    @echo ""
+    @echo "BETA RELEASE                                       STATUS"
+    @echo "  [x] Version bump → 1.0.0b1                      done"
+    @echo "  [x] flake.nix: poetry2nix + packages.default    done"
+    @echo "  [x] nix/cerebro.nix nixpkgs derivation          done"
+    @echo "  [x] CHANGELOG.md                                 done"
+    @echo "  [ ] poetry lock --no-update                      pending"
+    @echo "  [ ] nix build .#default (verify packaging)       pending"
+    @echo "  [ ] git tag v1.0.0b1 + push                      pending"
+    @echo ""
+    @echo "TESTS                                              STATUS"
+    @echo "  [x] tests/test_anthropic_provider.py             done"
+    @echo "  [x] tests/test_groq_provider.py                  done"
+    @echo "  [x] tests/test_gemini_provider.py                done"
+    @echo "  [x] tests/test_rag_engine_new_providers.py       done"
+    @echo "  [ ] Run full test suite                          pending"
+    @echo ""
+    @echo "NEXT: just test-unit  →  just release VERSION=1.0.0b1"
+    @echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# ============================================================================
 # TESTING
 # ============================================================================
 
@@ -86,6 +123,23 @@ test-cli:
     nix develop --command cerebro info
     nix develop --command cerebro version
     nix develop --command cerebro ops status
+
+# ============================================================================
+# DOCS
+# ============================================================================
+
+# Serve docs locally with live reload (http://localhost:8001)
+docs:
+    nix develop --command poetry run mkdocs serve --dev-addr 0.0.0.0:8001
+
+# Build static docs site into site/
+docs-build:
+    nix develop --command poetry run mkdocs build --strict
+
+# Build and deploy docs to Cloudflare Pages (wiki.voidnxlabs.com)
+docs-deploy:
+    nix develop --command poetry run mkdocs build --strict
+    wrangler pages deploy site/ --project-name wiki-voidnxlabs --branch main
 
 # ============================================================================
 # DASHBOARD
@@ -186,3 +240,20 @@ clean:
     rm -rf build/ dist/ *.egg-info .pytest_cache .coverage htmlcov
     find . -type d -name __pycache__ -exec rm -rf {} +
     find . -type f -name "*.pyc" -delete
+
+# ============================================================================
+# RELEASE
+# ============================================================================
+
+# Bump version, commit, and tag for release.
+# Usage: just release VERSION=1.0.0b1
+release VERSION="1.0.0b1":
+    @echo "Preparing release {{VERSION}}..."
+    nix develop --command poetry lock --check
+    nix develop --command poetry version {{VERSION}}
+    @sed -i 's/__version__ = ".*"/__version__ = "{{VERSION}}"/' src/cerebro/__init__.py
+    @echo "Version bumped to {{VERSION}}"
+    git add pyproject.toml poetry.lock src/cerebro/__init__.py
+    git commit -m "chore: bump version to {{VERSION}}"
+    git tag -a "v{{VERSION}}" -m "Release v{{VERSION}}"
+    @echo "Tagged v{{VERSION}}. Push with: git push origin main --tags"

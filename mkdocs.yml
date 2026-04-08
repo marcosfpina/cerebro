@@ -1,0 +1,130 @@
+site_name: Cerebro
+site_description: Enterprise Knowledge Extraction Platform
+site_author: voidnxlabs
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/gitlab
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: README.md
+  - Getting Started:
+    - Quick Start: guides/QUICK_START.md
+    - Cheatsheet: guides/CHEATSHEET.md
+    - Keyboard Shortcuts: guides/KEYBOARD_SHORTCUTS.md
+    - Knowledge Base Quickstart: guides/QUICKSTART_KB.md
+  - Architecture:
+    - Overview: architecture/ARCHITECTURE.md
+    - Data Flow: architecture/ARCHITECTURE_DATA_FLOW.md
+    - ADR Summary: architecture/ADR_SUMMARY.md
+    - Phoenix Architecture Report: architecture/PHOENIX_ARCHITECTURE_REPORT.md
+  - Commands:
+    - Overview: commands/README.md
+    - cerebro info: commands/cerebro_info.md
+    - cerebro version: commands/cerebro_version.md
+    - cerebro rag query: commands/cerebro_rag_query.md
+    - cerebro knowledge analyze: commands/cerebro_knowledge_analyze.md
+    - cerebro knowledge batch-analyze: commands/cerebro_knowledge_batch-analyze.md
+    - cerebro knowledge summarize: commands/cerebro_knowledge_summarize.md
+    - cerebro ops health: commands/cerebro_ops_health.md
+  - Features:
+    - Intelligence:
+      - Capabilities: features/intelligence/CAPABILITIES.md
+      - Intel Sources: features/intelligence/INTEL_SOURCES.md
+      - Query Mastery: features/intelligence/QUERY_MASTERY.md
+      - Stack Mastery: features/intelligence/STACK_MASTERY.md
+    - Strategy:
+      - Executive Summary: features/strategy/EXECUTIVE_SUMMARY.md
+      - ROI Analysis: features/strategy/HACKS_ROI.md
+    - GCP Credits (optional):
+      - Overview: features/gcp-credits/README.md
+      - Automation Systems: features/gcp-credits/AUTOMATION_SYSTEMS.md
+      - Detailed Guide: features/gcp-credits/CREDIT_BURNER_DETAILED.md
+      - High-ROI Queries: features/gcp-credits/HIGH_ROI_QUERIES.md
+      - Speedrun: features/gcp-credits/README_SPEEDRUN.md
+  - Guides:
+    - Dashboard Integration: guides/DASHBOARD_INTEGRATION.md
+    - Dashboard Quick Summary: guides/DASHBOARD_QUICK_SUMMARY.md
+    - Dashboard UI/UX: guides/DASHBOARD_UI_UX_IMPROVEMENTS.md
+    - GitLab CI/CD: guides/GITLAB_CI_CD.md
+    - GitLab CI Migration: guides/GITLAB_CI_MIGRATION.md
+    - Nix + GitLab Duo Setup: guides/NIX_GITLAB_DUO_SETUP.md
+    - Setup Complete: guides/SETUP_COMPLETE.md
+    - Contributing to Docs: guides/CONTRIBUTING_DOCS.md
+  - Project:
+    - Status: project/STATUS.md
+    - Master Execution Plan: project/MASTER_EXECUTION_PLAN.md
+    - Agentic GPT Roadmap: project/AGENTIC_GPT_ROADMAP.md
+    - Next Steps: project/NEXT_STEPS.md
+    - Coverage Gaps: project/COVERAGE_GAP.md
+    - Portfolio Audit: project/PORTFOLIO_AUDIT.md
+    - Reranker Integration Plan: project/RERANKER_INTEGRATION_PLAN.md
+    - Victory Playbook: project/VICTORY_PLAYBOOK.md
+    - Hooks & Capabilities: project/HOOKS_AND_CAPABILITIES_IMPROVEMENTS.md
+    - TODO Plan: project/TODO_PLAN.md
+    - Migration Complete: project/MIGRATION_COMPLETE.md
+    - Portfolio README: project/README_PORTFOLIO.md
+  - History:
+    - Phase 1 - Core Extraction: phases/PHASE1_IMPLEMENTATION.md
+    - Phase 1 Validation: phases/PHASE1_VALIDATION.md
+    - Phase 1 Quickstart: phases/QUICKSTART_PHASE1.md
+    - Phase 2 - RAG Pipeline: phases/PHASE2_COMPLETE.md
+    - Phase 2 Roadmap: phases/PHASE2_ROADMAP.md
+    - Phase 3 - TUI + Commands: phases/PHASE3_IMPLEMENTATION_COMPLETE.md
+    - Phase 3 Quick Start: phases/PHASE3_QUICK_START.md
+    - Phase 3 Status: phases/PHASE3_STATUS.md
+    - Phase 4 - Metrics + Dashboard: phases/PHASE4_COMPLETE.md
+    - ADR Implementation: phases/ADR_IMPLEMENTATION_COMPLETE.md
+    - Implementation Summary: phases/IMPLEMENTATION_SUMMARY.md
+    - Performance Report: phases/PERFORMANCE_REPORT.md
+    - Next Steps (historical): phases/NEXT-STEPS.md
+    - Project Complete: phases/PROJECT_COMPLETE.md
+  - Translations:
+    - Resumo Executivo (PT-BR): i18n/RESUMO_EXECUTIVO.md
+    - Helper (PT-BR): i18n/helper.md

@@ -135,6 +135,24 @@ def get_metrics():
     return snapshot
 
 
+@app.get("/metrics/watcher")
+def watcher_status():
+    return {
+        "running": False,
+        "tracked_repos": len(_collector.discover_repos()),
+        "last_update": None,
+        "changes_detected": 0,
+        "poll_interval": 5,
+    }
+
+
+@app.post("/metrics/scan")
+def trigger_metrics_scan():
+    """Trigger a fresh scan synchronously (blocks until done)."""
+    results = _collector.collect_all()
+    return {"status": "ok", "repo_count": len(results)}
+
+
 @app.get("/metrics/{name}")
 def get_repo_metrics(name: str):
     snapshot = _load_snapshot()
@@ -145,24 +163,6 @@ def get_repo_metrics(name: str):
     if not repo:
         raise HTTPException(status_code=404, detail=f"Repo '{name}' not found")
     return repo
-
-
-@app.post("/metrics/scan")
-def trigger_metrics_scan():
-    """Trigger a fresh scan synchronously (blocks until done)."""
-    results = _collector.collect_all()
-    return {"status": "ok", "repo_count": len(results)}
-
-
-@app.get("/metrics/watcher")
-def watcher_status():
-    return {
-        "running": False,
-        "tracked_repos": len(_collector.discover_repos()),
-        "last_update": None,
-        "changes_detected": 0,
-        "poll_interval": 5,
-    }
 
 
 # ---------------------------------------------------------------------------

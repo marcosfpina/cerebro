@@ -29,6 +29,11 @@ class RigorousRAGEngine:
         "vertex-ai": "vertex-ai",
         "vertexai": "vertex-ai",
         "gcp-vertex-ai": "vertex-ai",
+        "anthropic": "anthropic",
+        "claude": "anthropic",
+        "groq": "groq",
+        "gemini": "gemini",
+        "google-gemini": "gemini",
     }
 
     def __init__(
@@ -100,9 +105,24 @@ class RigorousRAGEngine:
                 data_store_id=self.data_store_id,
             )
 
+        if provider_name == "anthropic":
+            from cerebro.providers.anthropic import AnthropicProvider
+
+            return AnthropicProvider()
+
+        if provider_name == "groq":
+            from cerebro.providers.groq import GroqProvider
+
+            return GroqProvider()
+
+        if provider_name == "gemini":
+            from cerebro.providers.gemini import GeminiProvider
+
+            return GeminiProvider()
+
         raise ValueError(
             f"Unsupported CEREBRO_LLM_PROVIDER value: {provider_name!r}. "
-            "Expected one of: llamacpp, openai-compatible, vertex-ai."
+            "Expected one of: llamacpp, openai-compatible, vertex-ai, anthropic, groq, gemini."
         )
 
     @classmethod

@@ -1,0 +1,8 @@
+name = "wiki-voidnxlabs"
+compatibility_date = "2025-01-01"
+
+# Static site served via Cloudflare Pages
+# Deploy with: wrangler pages deploy site/ --project-name wiki-voidnxlabs
+#
+# Custom domain: wiki.voidnxlabs.com
+# Set up in: Cloudflare Dashboard → Pages → wiki-voidnxlabs → Custom Domains
