@@ -17,6 +17,7 @@ import type {
     RepoMetrics,
     WatcherStatus,
     AiHealth,
+    RagRuntimeStatus,
     ChatRequest,
     ChatResponse,
 } from '@/types'
@@ -135,6 +136,10 @@ class ApiClient {
     // AI / Local LLM
     async getAiHealth(): Promise<AiHealth> {
         return this.fetch<AiHealth>('/ai/health')
+    }
+
+    async getRagStatus(): Promise<RagRuntimeStatus> {
+        return this.fetch<RagRuntimeStatus>('/rag/status')
     }
 
     async chat(request: ChatRequest): Promise<ChatResponse> {

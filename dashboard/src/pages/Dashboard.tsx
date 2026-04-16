@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { useStatus, useProjects, useAlerts, useDailyBriefing } from '@/hooks/useApi'
+import { useStatus, useProjects, useAlerts, useDailyBriefing, useRagStatus } from '@/hooks/useApi'
 import { getHealthColor, formatRelativeTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -21,9 +21,13 @@ export function Dashboard() {
   const { data: projects, isLoading: projectsLoading } = useProjects({ sort_by: 'health_score', order: 'asc' })
   const { data: alerts } = useAlerts()
   const { data: briefing } = useDailyBriefing()
+  const { data: ragStatus } = useRagStatus()
 
   const topProjects = projects?.slice(0, 5) || []
   const recentAlerts = alerts?.slice(0, 5) || []
+  const ragBadgeVariant: 'default' | 'outline' | 'destructive' =
+    !ragStatus ? 'outline' : ragStatus.healthy ? 'default' : 'destructive'
+  const ragBadgeLabel = !ragStatus ? 'Loading' : ragStatus.healthy ? 'Healthy' : 'Unavailable'
 
   return (
     <div className="space-y-6">
@@ -77,6 +81,61 @@ export function Dashboard() {
           }
         />
       </div>
+
+      <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              RAG Runtime
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Production retrieval backend configured for the new provider layer
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={ragBadgeVariant}>
+              {ragBadgeLabel}
+            </Badge>
+            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10">
+              <Link to="/settings">Details</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-4">
+            <RuntimeMetric
+              label="Backend"
+              value={ragStatus?.backend ?? 'loading'}
+            />
+            <RuntimeMetric
+              label="Mode"
+              value={ragStatus?.mode ?? 'loading'}
+            />
+            <RuntimeMetric
+              label="Documents"
+              value={ragStatus?.document_count != null ? String(ragStatus.document_count) : '—'}
+            />
+            <RuntimeMetric
+              label="Namespace"
+              value={ragStatus?.namespace ?? 'default'}
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/80">LLM:</span>
+            <Badge variant="outline">{ragStatus?.llm_provider ?? 'loading'}</Badge>
+            {ragStatus?.collection_name && (
+              <>
+                <span className="font-medium text-foreground/80">Collection:</span>
+                <span className="font-mono">{ragStatus.collection_name}</span>
+              </>
+            )}
+            {ragStatus?.error && (
+              <span className="text-red-500">{ragStatus.error}</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content Grid */}
       <div className="grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-2">
@@ -334,6 +393,15 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </motion.div>
+    </div>
+  )
+}
+
+function RuntimeMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-sm">{value}</p>
     </div>
   )
 }

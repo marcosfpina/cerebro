@@ -175,6 +175,18 @@ export interface AiHealth {
   model: string | null
 }
 
+export interface RagRuntimeStatus {
+  healthy: boolean
+  mode: string
+  backend: string
+  llm_provider: string
+  namespace: string | null
+  collection_name: string | null
+  document_count: number | null
+  details: Record<string, unknown>
+  error: string | null
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDashboardStore } from '@/stores/dashboard'
 import api from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
-import type { IntelligenceType, QueryResult, AiHealth, ChatRequest } from '@/types'
+import type { IntelligenceType, QueryResult, AiHealth, ChatRequest, RagRuntimeStatus } from '@/types'
 
 // Query keys
 export const queryKeys = {
@@ -17,6 +17,7 @@ export const queryKeys = {
   metrics: ['metrics'] as const,
   watcherStatus: ['metrics', 'watcher'] as const,
   aiHealth: ['ai', 'health'] as const,
+  ragStatus: ['rag', 'status'] as const,
 }
 
 // Status
@@ -189,6 +190,15 @@ export function useAiHealth() {
   return useQuery<AiHealth>({
     queryKey: queryKeys.aiHealth,
     queryFn: api.getAiHealth,
+    refetchInterval: autoRefresh ? refreshInterval : false,
+  })
+}
+
+export function useRagStatus() {
+  const { autoRefresh, refreshInterval } = useDashboardStore()
+  return useQuery<RagRuntimeStatus>({
+    queryKey: queryKeys.ragStatus,
+    queryFn: api.getRagStatus,
     refetchInterval: autoRefresh ? refreshInterval : false,
   })
 }

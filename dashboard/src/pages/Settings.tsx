@@ -3,6 +3,7 @@ import {
   Moon,
   Sun,
   Database,
+  Search,
   Scan,
   Trash2,
   Cpu,
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useDashboardStore } from '@/stores/dashboard'
-import { useIntelligenceStats, useScanMutation, useAiHealth } from '@/hooks/useApi'
+import { useIntelligenceStats, useScanMutation, useAiHealth, useRagStatus } from '@/hooks/useApi'
 import { TIME_RANGES } from '@/types'
 import type { IntelligenceStats } from '@/types'
 
@@ -30,7 +31,11 @@ export function Settings() {
 
   const { data: stats } = useIntelligenceStats()
   const { data: aiHealth } = useAiHealth()
+  const { data: ragStatus } = useRagStatus()
   const scanMutation = useScanMutation()
+  const ragBadgeVariant: 'default' | 'outline' | 'destructive' =
+    !ragStatus ? 'outline' : ragStatus.healthy ? 'default' : 'destructive'
+  const ragBadgeLabel = !ragStatus ? 'Loading' : ragStatus.healthy ? 'Healthy' : 'Unavailable'
 
   const handleFullScan = () => {
     scanMutation.mutate(undefined)
@@ -210,6 +215,61 @@ export function Settings() {
             {!aiHealth?.available && (
               <p className="text-sm text-muted-foreground">
                 Start with: <span className="font-mono">llama-server --embeddings --port 8081</span>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* RAG Runtime Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              RAG Runtime
+            </CardTitle>
+            <CardDescription>
+              New provider-based retrieval runtime for production backends
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Backend</p>
+                <p className="text-sm text-muted-foreground font-mono">
+                  {ragStatus?.backend ?? 'loading'}
+                </p>
+              </div>
+              <Badge variant={ragBadgeVariant}>
+                {ragBadgeLabel}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Mode</p>
+                <p className="font-mono text-sm">{ragStatus?.mode ?? '—'}</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Documents</p>
+                <p className="font-semibold">
+                  {ragStatus?.document_count != null ? ragStatus.document_count : '—'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Namespace</p>
+                <p className="font-mono text-sm">{ragStatus?.namespace ?? 'default'}</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Collection</p>
+                <p className="font-mono text-sm">{ragStatus?.collection_name ?? '—'}</p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-sm text-muted-foreground">LLM Provider</p>
+              <p className="font-mono text-sm">{ragStatus?.llm_provider ?? '—'}</p>
+            </div>
+            {ragStatus?.error && (
+              <p className="text-sm text-red-500">
+                {ragStatus.error}
               </p>
             )}
           </CardContent>
