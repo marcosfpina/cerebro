@@ -4,9 +4,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cerebro.core.rag.engine import RigorousRAGEngine
+from cerebro.core.rag.embeddings import EmbeddingResult
+from cerebro.core.rag.engine import RigorousRAGEngine, get_rag_runtime_status_snapshot
 from cerebro.interfaces.llm import LLMProvider
-from cerebro.interfaces.vector_store import VectorStoreProvider
+from cerebro.interfaces.vector_store import (
+    StoredVectorDocument,
+    VectorSearchResult,
+    VectorStoreHealth,
+    VectorStoreProvider,
+)
+from cerebro.settings import reset_settings_cache
 
 
 @pytest.fixture
@@ -21,8 +28,17 @@ def mock_llm_provider():
 def mock_vector_store_provider():
     """Mock VectorStoreProvider for testing."""
     mock = MagicMock(spec=VectorStoreProvider)
+    mock.backend_name = "mock-store"
     mock.health_check.return_value = True
     mock.get_document_count.return_value = 0
+    mock.health_status.return_value = VectorStoreHealth(
+        healthy=True,
+        backend="mock-store",
+        details={
+            "collection_name": "test_collection",
+            "default_namespace": "test-namespace",
+        },
+    )
     return mock
 
 
@@ -41,19 +57,21 @@ def test_initialization(mock_llm_provider, mock_vector_store_provider):
 def test_initialization_with_local_defaults(monkeypatch):
     """Test local-first default provider selection."""
     monkeypatch.delenv("CEREBRO_LLM_PROVIDER", raising=False)
+    reset_settings_cache()
     with patch("cerebro.core.rag.engine.LlamaCppProvider") as mock_llama:
-        with patch("cerebro.core.rag.engine.ChromaVectorStoreProvider") as mock_chroma:
+        with patch("cerebro.core.rag.engine.build_vector_store_provider") as mock_vector_store:
             engine = RigorousRAGEngine(persist_directory="./test_db")
             assert engine.persist_directory == "./test_db"
             mock_llama.assert_called_once()
-            mock_chroma.assert_called_once()
+            mock_vector_store.assert_called_once()
 
 
 def test_provider_alias_resolution_uses_registered_aliases(monkeypatch):
     """Test explicit alias resolution for the configured provider."""
     monkeypatch.setenv("CEREBRO_LLM_PROVIDER", "llama.cpp")
+    reset_settings_cache()
     with patch("cerebro.core.rag.engine.LlamaCppProvider") as mock_llama:
-        with patch("cerebro.core.rag.engine.ChromaVectorStoreProvider"):
+        with patch("cerebro.core.rag.engine.build_vector_store_provider"):
             RigorousRAGEngine(persist_directory="./test_db")
     mock_llama.assert_called_once()
 
@@ -81,16 +99,13 @@ def test_ingest_file_not_found(mock_llm_provider, mock_vector_store_provider):
 
 def test_ingest_local_success(tmp_path, mock_llm_provider, mock_vector_store_provider):
     """Test local ingestion uses EmbeddingSystem (not llm_provider) for embeddings."""
-    from unittest.mock import MagicMock
-    from cerebro.core.rag.embeddings import EmbeddingResult
-
     jsonl_path = tmp_path / "artifacts.jsonl"
     jsonl_path.write_text(
         '{"jsonData": "{\\"title\\": \\"test\\", \\"content\\": \\"code content\\", \\"repo\\": \\"repo1\\"}"}\n',
         encoding="utf-8",
     )
 
-    mock_vector_store_provider.add_documents.return_value = 1
+    mock_vector_store_provider.upsert_documents.return_value = 1
 
     with patch("cerebro.core.rag.engine.EmbeddingSystem") as mock_embed_cls:
         mock_embed = MagicMock()
@@ -109,17 +124,23 @@ def test_ingest_local_success(tmp_path, mock_llm_provider, mock_vector_store_pro
     assert count == 1
     mock_embed.embed.assert_called_once_with(["code content"])
     mock_llm_provider.embed_batch.assert_not_called()
-    mock_vector_store_provider.add_documents.assert_called_once()
+    mock_vector_store_provider.upsert_documents.assert_called_once_with(
+        [
+            {
+                "id": "repo1:test:1",
+                "content": "code content",
+                "title": "test",
+                "repo": "repo1",
+                "source": "repo1/test",
+            }
+        ],
+        [[0.1, 0.2, 0.3]],
+        namespace=None,
+    )
 
 
 def test_query_with_metrics_no_local_data(mock_llm_provider, mock_vector_store_provider):
     """Test query when no local vector data is available."""
-    mock_llm_provider.grounded_generate.return_value = {
-        "answer": "No answer could be generated from the available context.",
-        "citations": [],
-        "confidence": 0.0,
-        "cost_estimate": 0.0,
-    }
 
     engine = RigorousRAGEngine(
         llm_provider=mock_llm_provider,
@@ -128,15 +149,12 @@ def test_query_with_metrics_no_local_data(mock_llm_provider, mock_vector_store_p
 
     result = engine.query_with_metrics("test query")
 
-    assert "No answer" in result["answer"]
+    assert "No relevant information found" in result["answer"]
     assert result["error"] is False
     assert result["metrics"]["avg_confidence"] == 0.0
     assert "0/5" in result["metrics"]["hit_rate_k"]
-    mock_llm_provider.grounded_generate.assert_called_once_with(
-        query="test query",
-        context=[],
-        top_k=5,
-    )
+    assert result["metrics"]["grounded"] is False
+    mock_llm_provider.grounded_generate.assert_not_called()
 
 
 def test_query_with_metrics_uses_local_context(mock_llm_provider, mock_vector_store_provider):
@@ -145,12 +163,13 @@ def test_query_with_metrics_uses_local_context(mock_llm_provider, mock_vector_st
 
     mock_vector_store_provider.get_document_count.return_value = 1
     mock_vector_store_provider.search.return_value = [
-        {
-            "id": "doc_1",
-            "content": "def hello():\n    print('world')",
-            "metadata": {"source": "repo/main.py"},
-            "similarity": 0.95,
-        }
+        VectorSearchResult(
+            id="doc_1",
+            content="def hello():\n    print('world')",
+            metadata={"source": "repo/main.py"},
+            score=0.95,
+            source="repo/main.py",
+        )
     ]
     mock_llm_provider.grounded_generate.return_value = {
         "answer": "The hello function prints world.",
@@ -179,9 +198,167 @@ def test_query_with_metrics_uses_local_context(mock_llm_provider, mock_vector_st
     assert "1/5" in result["metrics"]["hit_rate_k"]
     mock_embed.embed_query.assert_called_once_with("What does hello do?")
     mock_llm_provider.embed.assert_not_called()
-    mock_vector_store_provider.search.assert_called_once_with([0.9, 0.1], top_k=5)
+    mock_vector_store_provider.search.assert_called_once_with(
+        [0.9, 0.1],
+        top_k=5,
+        namespace=None,
+    )
     mock_llm_provider.grounded_generate.assert_called_once_with(
         query="What does hello do?",
         context=["def hello():\n    print('world')"],
         top_k=5,
     )
+
+
+def test_get_runtime_status_reports_backend_metadata(
+    mock_llm_provider,
+    mock_vector_store_provider,
+):
+    """Test runtime status output for the provider-based RAG engine."""
+
+    mock_vector_store_provider.get_document_count.return_value = 12
+
+    engine = RigorousRAGEngine(
+        llm_provider=mock_llm_provider,
+        vector_store_provider=mock_vector_store_provider,
+        vector_store_namespace="prod",
+        vector_store_collection_name="documents",
+    )
+
+    status = engine.get_runtime_status()
+
+    assert status["healthy"] is True
+    assert status["mode"] == "local"
+    assert status["backend"] == "mock-store"
+    assert status["llm_provider"] == "LLMProvider"
+    assert status["namespace"] == "test-namespace"
+    assert status["collection_name"] == "test_collection"
+    assert status["document_count"] == 12
+
+
+def test_get_runtime_status_marks_backend_unhealthy_on_count_error(
+    mock_llm_provider,
+    mock_vector_store_provider,
+):
+    """Document count failures should propagate into runtime health output."""
+
+    mock_vector_store_provider.get_document_count.side_effect = RuntimeError("vector store offline")
+
+    engine = RigorousRAGEngine(
+        llm_provider=mock_llm_provider,
+        vector_store_provider=mock_vector_store_provider,
+    )
+
+    status = engine.get_runtime_status()
+
+    assert status["healthy"] is False
+    assert status["document_count"] is None
+    assert status["error"] == "vector store offline"
+
+
+def test_run_smoke_test_performs_write_read_cleanup(
+    mock_llm_provider,
+    mock_vector_store_provider,
+):
+    """Smoke test should validate write/read/delete on the active backend."""
+
+    mock_vector_store_provider.get_document_count.return_value = 4
+    mock_vector_store_provider.search.return_value = [
+        VectorSearchResult(
+            id="__cerebro_smoke__:match",
+            content="smoke content",
+            metadata={"source": "cerebro://smoke"},
+            score=0.99,
+        )
+    ]
+    mock_vector_store_provider.delete_documents.return_value = 1
+
+    with patch("cerebro.core.rag.engine.uuid4") as mock_uuid4:
+        mock_uuid4.side_effect = [MagicMock(hex="source"), MagicMock(hex="match")]
+        with patch("cerebro.core.rag.engine.EmbeddingSystem") as mock_embed_cls:
+            mock_embed = MagicMock()
+            mock_embed.embed.return_value = EmbeddingResult(
+                vectors=[[0.1, 0.2]],
+                model_used="test",
+                dimension=2,
+                latency_ms=0.0,
+                batch_size=1,
+            )
+            mock_embed.embed_query.return_value = [0.1, 0.2]
+            mock_embed_cls.return_value = mock_embed
+
+            engine = RigorousRAGEngine(
+                llm_provider=mock_llm_provider,
+                vector_store_provider=mock_vector_store_provider,
+            )
+            result = engine.run_smoke_test()
+
+    assert result["healthy"] is True
+    assert result["query_hits"] == 1
+    mock_vector_store_provider.initialize_schema.assert_called_once_with()
+    mock_vector_store_provider.upsert_documents.assert_called_once()
+    mock_vector_store_provider.delete_documents.assert_called_once()
+
+
+def test_migrate_documents_exports_and_upserts_batches(
+    mock_llm_provider,
+    mock_vector_store_provider,
+):
+    """Migration should batch-export from the source provider and upsert into the destination."""
+
+    source_provider = MagicMock(spec=VectorStoreProvider)
+    source_provider.backend_name = "chroma"
+    source_provider.get_document_count.return_value = 2
+    source_provider.export_documents.side_effect = [
+        [
+            StoredVectorDocument(
+                id="doc-1",
+                content="alpha",
+                metadata={"title": "Alpha", "source": "repo/a.py"},
+                embedding=[0.1, 0.2],
+            ),
+            StoredVectorDocument(
+                id="doc-2",
+                content="beta",
+                metadata={"title": "Beta", "source": "repo/b.py"},
+                embedding=[0.3, 0.4],
+            ),
+        ],
+        [],
+    ]
+    mock_vector_store_provider.get_document_count.side_effect = [3, 5]
+    mock_vector_store_provider.upsert_documents.return_value = 2
+
+    engine = RigorousRAGEngine(
+        llm_provider=mock_llm_provider,
+        vector_store_provider=mock_vector_store_provider,
+    )
+
+    result = engine.migrate_documents(source_provider, batch_size=50, clear_destination=True)
+
+    assert result["source_backend"] == "chroma"
+    assert result["destination_backend"] == "mock-store"
+    assert result["migrated_count"] == 2
+    assert result["destination_count_before"] == 3
+    assert result["destination_count_after"] == 5
+    mock_vector_store_provider.clear.assert_called_once_with(namespace=None)
+    mock_vector_store_provider.upsert_documents.assert_called_once()
+    source_provider.export_documents.assert_any_call(namespace=None, limit=50, offset=0)
+
+
+def test_runtime_status_snapshot_falls_back_when_engine_init_fails(monkeypatch):
+    """The shared snapshot helper should still return a typed payload on init errors."""
+
+    monkeypatch.setenv("CEREBRO_VECTOR_STORE_PROVIDER", "chromadb")
+    monkeypatch.setenv("CEREBRO_VECTOR_STORE_COLLECTION_NAME", "prod_collection")
+    monkeypatch.setenv("CEREBRO_LLM_PROVIDER", "llamacpp")
+    reset_settings_cache()
+
+    with patch("cerebro.core.rag.engine.RigorousRAGEngine", side_effect=RuntimeError("boom")):
+        status = get_rag_runtime_status_snapshot()
+
+    assert status["healthy"] is False
+    assert status["mode"] == "unavailable"
+    assert status["backend"] == "chromadb"
+    assert status["collection_name"] == "prod_collection"
+    assert status["error"] == "boom"

@@ -1,5 +1,7 @@
 """Tests for the Cerebro CLI."""
 
+from unittest.mock import patch
+
 from typer.testing import CliRunner
 
 from cerebro.cli import app
@@ -64,8 +66,242 @@ def test_rag_help():
     """rag --help should show sub-commands."""
     result = runner.invoke(app, ["rag", "--help"])
     assert result.exit_code == 0
+    assert "backend" in result.stdout
+    assert "backends" in result.stdout
     assert "ingest" in result.stdout
     assert "query" in result.stdout
+    assert "status" in result.stdout
+
+
+def test_rag_status_command():
+    """rag status should print the current runtime status."""
+
+    with patch(
+        "cerebro.core.rag.engine.get_rag_runtime_status_snapshot",
+        return_value={
+            "healthy": True,
+            "mode": "local",
+            "backend": "chroma",
+            "llm_provider": "llamacpp",
+            "namespace": "prod",
+            "collection_name": "cerebro_documents",
+            "document_count": 42,
+            "details": {"persist_directory": "./data/vector_db"},
+            "error": None,
+        },
+    ):
+        result = runner.invoke(app, ["rag", "status"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Runtime" in result.stdout
+    assert "chroma" in result.stdout
+    assert "42" in result.stdout
+
+
+def test_rag_init_command():
+    """rag init should initialize the configured backend and print details."""
+
+    with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+        mock_engine = mock_engine_cls.return_value
+        mock_engine.vector_store_provider.backend_name = "pgvector"
+        mock_engine.initialize_runtime.return_value = {
+            "backend": "pgvector",
+            "initialized": True,
+            "table_name": "cerebro_documents",
+        }
+        result = runner.invoke(app, ["rag", "init"])
+
+    assert result.exit_code == 0
+    assert "Backend initialized: pgvector" in result.stdout
+    assert "cerebro_documents" in result.stdout
+
+
+def test_rag_smoke_command():
+    """rag smoke should print the smoke validation summary."""
+
+    with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+        mock_engine = mock_engine_cls.return_value
+        mock_engine.run_smoke_test.return_value = {
+            "healthy": True,
+            "backend": "pgvector",
+            "namespace": "__cerebro_smoke__",
+            "write_check": True,
+            "document_count": 42,
+            "query_hits": 1,
+            "steps": [
+                {"name": "initialize", "ok": True, "detail": "backend=pgvector"},
+                {"name": "query", "ok": True, "detail": "hits=1"},
+            ],
+            "error": None,
+        }
+        result = runner.invoke(app, ["rag", "smoke"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Smoke Test" in result.stdout
+    assert "pgvector" in result.stdout
+    assert "hits=1" in result.stdout
+
+
+def test_rag_migrate_command():
+    """rag migrate should copy vectors from a source backend into the active backend."""
+
+    with patch("cerebro.settings.get_settings") as mock_settings:
+        mock_settings.return_value.vector_store_provider = "pgvector"
+        with patch("cerebro.providers.vector_store_factory.build_vector_store_provider") as mock_builder:
+            mock_source_provider = mock_builder.return_value
+            mock_source_provider.backend_name = "chroma"
+            with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+                mock_engine = mock_engine_cls.return_value
+                mock_engine.migrate_documents.return_value = {
+                    "source_backend": "chroma",
+                    "destination_backend": "pgvector",
+                    "source_namespace": None,
+                    "destination_namespace": "prod",
+                    "source_count": 10,
+                    "migrated_count": 10,
+                    "destination_count_before": 0,
+                    "destination_count_after": 10,
+                    "batch_size": 200,
+                    "batches": 1,
+                    "cleared_destination": False,
+                }
+                result = runner.invoke(app, ["rag", "migrate", "--from-provider", "chroma"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Migration" in result.stdout
+    assert "chroma" in result.stdout
+    assert "pgvector" in result.stdout
+
+
+def test_rag_backends_list_command():
+    """rag backends list should show supported backends and aliases."""
+
+    with patch("cerebro.settings.get_settings") as mock_settings:
+        mock_settings.return_value.vector_store_provider = "pgvector"
+        result = runner.invoke(app, ["rag", "backends", "list"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Backends" in result.stdout
+    assert "pgvector" in result.stdout
+    assert "chroma" in result.stdout
+
+
+def test_rag_backend_info_command():
+    """rag backend info should proxy active backend status details."""
+
+    with patch(
+        "cerebro.core.rag.engine.get_rag_runtime_status_snapshot",
+        return_value={
+            "healthy": True,
+            "mode": "local",
+            "backend": "pgvector",
+            "llm_provider": "llamacpp",
+            "namespace": "prod",
+            "collection_name": "cerebro_documents",
+            "document_count": 42,
+            "details": {"schema": "public", "table_name": "cerebro_documents"},
+            "error": None,
+        },
+    ):
+        result = runner.invoke(app, ["rag", "backend", "info"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Runtime" in result.stdout
+    assert "pgvector" in result.stdout
+
+
+def test_rag_backend_health_command():
+    """rag backend health should summarize backend health and exit zero when healthy."""
+
+    with patch(
+        "cerebro.core.rag.engine.get_rag_runtime_status_snapshot",
+        return_value={
+            "healthy": True,
+            "mode": "local",
+            "backend": "pgvector",
+            "llm_provider": "llamacpp",
+            "namespace": "prod",
+            "collection_name": "cerebro_documents",
+            "document_count": 42,
+            "details": {},
+            "error": None,
+        },
+    ):
+        result = runner.invoke(app, ["rag", "backend", "health"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Backend Health" in result.stdout
+    assert "pgvector" in result.stdout
+
+
+def test_rag_backend_init_command():
+    """rag backend init should delegate to the active backend bootstrap path."""
+
+    with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+        mock_engine = mock_engine_cls.return_value
+        mock_engine.vector_store_provider.backend_name = "pgvector"
+        mock_engine.initialize_runtime.return_value = {
+            "backend": "pgvector",
+            "initialized": True,
+            "table_name": "cerebro_documents",
+        }
+        result = runner.invoke(app, ["rag", "backend", "init"])
+
+    assert result.exit_code == 0
+    assert "Backend initialized: pgvector" in result.stdout
+
+
+def test_rag_backend_smoke_command():
+    """rag backend smoke should expose the integrated smoke workflow."""
+
+    with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+        mock_engine = mock_engine_cls.return_value
+        mock_engine.run_smoke_test.return_value = {
+            "healthy": True,
+            "backend": "pgvector",
+            "namespace": "__cerebro_smoke__",
+            "write_check": True,
+            "document_count": 42,
+            "query_hits": 1,
+            "steps": [
+                {"name": "initialize", "ok": True, "detail": "backend=pgvector"},
+                {"name": "query", "ok": True, "detail": "hits=1"},
+            ],
+            "error": None,
+        }
+        result = runner.invoke(app, ["rag", "backend", "smoke"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Smoke Test" in result.stdout
+
+
+def test_rag_backend_migrate_command():
+    """rag backend migrate should proxy the migration workflow."""
+
+    with patch("cerebro.settings.get_settings") as mock_settings:
+        mock_settings.return_value.vector_store_provider = "pgvector"
+        with patch("cerebro.providers.vector_store_factory.build_vector_store_provider") as mock_builder:
+            mock_source_provider = mock_builder.return_value
+            mock_source_provider.backend_name = "chroma"
+            with patch("cerebro.core.rag.engine.RigorousRAGEngine") as mock_engine_cls:
+                mock_engine = mock_engine_cls.return_value
+                mock_engine.migrate_documents.return_value = {
+                    "source_backend": "chroma",
+                    "destination_backend": "pgvector",
+                    "source_namespace": None,
+                    "destination_namespace": "prod",
+                    "source_count": 10,
+                    "migrated_count": 10,
+                    "destination_count_before": 0,
+                    "destination_count_after": 10,
+                    "batch_size": 200,
+                    "batches": 1,
+                    "cleared_destination": False,
+                }
+                result = runner.invoke(app, ["rag", "backend", "migrate", "--from-provider", "chroma"])
+
+    assert result.exit_code == 0
+    assert "CEREBRO RAG Migration" in result.stdout
 
 
 def test_no_args_shows_help():

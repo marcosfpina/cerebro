@@ -68,6 +68,7 @@
             pyyaml
             click
             chromadb
+            psycopg
             sentence-transformers
             textual
 
