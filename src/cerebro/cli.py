@@ -22,6 +22,8 @@ console = Console()
 knowledge_app = typer.Typer(help="Analysis & Auditing", no_args_is_help=True)
 ops_app = typer.Typer(help="Operational Status", no_args_is_help=True)
 rag_app = typer.Typer(help="RAG & Vectors (LangChain)", no_args_is_help=True)
+rag_backend_app = typer.Typer(help="Active RAG backend operations", no_args_is_help=True)
+rag_backends_app = typer.Typer(help="Available RAG backends", no_args_is_help=True)
 
 # New command groups (Phase 2) — guarded because some deps (google-auth) may be absent
 try:
@@ -53,6 +55,8 @@ except ImportError:
 app.add_typer(knowledge_app, name="knowledge")
 app.add_typer(ops_app, name="ops")
 app.add_typer(rag_app, name="rag")
+rag_app.add_typer(rag_backend_app, name="backend")
+rag_app.add_typer(rag_backends_app, name="backends")
 if metrics_app:
     app.add_typer(metrics_app, name="metrics")
 if gcp_app:
@@ -458,6 +462,392 @@ def rag_ingest(source_file: str = "./data/analyzed/all_artifacts.jsonl"):
             console.print("💡 Monitor at: [link]https://console.cloud.google.com/gen-app-builder/data-stores[/link]")
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
+
+
+@rag_app.command("init")
+def rag_init():
+    """
+    Initialize backend-specific storage structures for the active RAG backend.
+    """
+    try:
+        from cerebro.core.rag.engine import RigorousRAGEngine
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag init[/red]")
+        return
+
+    engine = RigorousRAGEngine()
+    console.print("🧱 [bold]Initializing RAG backend...[/bold]")
+
+    try:
+        details = engine.initialize_runtime()
+        backend = details.get("backend", engine.vector_store_provider.backend_name)
+        console.print(f"[green]✅ Backend initialized: {backend}[/green]")
+
+        details_table = Table(title="RAG Backend Initialization")
+        details_table.add_column("Key", style="cyan")
+        details_table.add_column("Value", style="white")
+        for key in sorted(details):
+            details_table.add_row(str(key), str(details[key]))
+        console.print(details_table)
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+
+@rag_app.command("smoke")
+def rag_smoke(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+    skip_write_check: bool = typer.Option(
+        False,
+        "--skip-write-check",
+        help="Skip the temporary write/read/delete validation cycle",
+    ),
+):
+    """
+    Run a backend smoke test against the active RAG runtime.
+    """
+    try:
+        from cerebro.core.rag.engine import RigorousRAGEngine
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag smoke[/red]")
+        return
+
+    engine = RigorousRAGEngine()
+    result = engine.run_smoke_test(write_check=not skip_write_check)
+
+    if output_format == "json":
+        console.print_json(json.dumps(result))
+        return
+
+    summary = Table(title="CEREBRO RAG Smoke Test")
+    summary.add_column("Field", style="cyan")
+    summary.add_column("Value", style="magenta")
+    summary.add_row("Healthy", "yes" if result["healthy"] else "no")
+    summary.add_row("Backend", str(result["backend"]))
+    summary.add_row("Namespace", str(result.get("namespace") or "-"))
+    summary.add_row("Write Check", "yes" if result.get("write_check") else "no")
+    summary.add_row(
+        "Document Count",
+        str(result["document_count"]) if result.get("document_count") is not None else "-",
+    )
+    summary.add_row("Query Hits", str(result.get("query_hits", 0)))
+    if result.get("error"):
+        summary.add_row("Error", str(result["error"]))
+    console.print(summary)
+
+    steps_table = Table(title="Smoke Steps")
+    steps_table.add_column("Step", style="cyan")
+    steps_table.add_column("Status", style="white")
+    steps_table.add_column("Detail", style="magenta")
+    for step in result.get("steps", []):
+        steps_table.add_row(
+            str(step.get("name", "-")),
+            "ok" if step.get("ok") else "fail",
+            str(step.get("detail", "")),
+        )
+    console.print(steps_table)
+
+
+@rag_app.command("migrate")
+def rag_migrate(
+    from_provider: str = typer.Option("chroma", "--from-provider", help="Source vector store backend"),
+    from_collection: str | None = typer.Option(None, "--from-collection", help="Source collection/table name"),
+    from_namespace: str | None = typer.Option(None, "--from-namespace", help="Source namespace override"),
+    from_persist_directory: str | None = typer.Option(
+        None,
+        "--from-persist-directory",
+        help="Source local persistence path for embedded backends",
+    ),
+    from_url: str | None = typer.Option(None, "--from-url", help="Source DSN/URL for remote backends"),
+    from_schema: str | None = typer.Option(None, "--from-schema", help="Source SQL schema for pgvector"),
+    batch_size: int = typer.Option(200, "--batch-size", help="Documents per migration batch"),
+    clear_destination: bool = typer.Option(
+        False,
+        "--clear-destination",
+        help="Clear the active destination namespace before copying data",
+    ),
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    Migrate stored vectors from a source backend into the active RAG backend.
+    """
+    try:
+        from cerebro.core.rag.engine import RigorousRAGEngine
+        from cerebro.providers.vector_store_factory import build_vector_store_provider
+        from cerebro.providers.vector_store_factory import resolve_vector_store_provider_alias
+        from cerebro.settings import get_settings
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag migrate[/red]")
+        return
+
+    settings = get_settings()
+    destination_provider_name = resolve_vector_store_provider_alias(settings.vector_store_provider)
+    source_provider_name = resolve_vector_store_provider_alias(from_provider)
+    same_backend_without_overrides = (
+        source_provider_name == destination_provider_name
+        and from_collection is None
+        and from_namespace is None
+        and from_persist_directory is None
+        and from_url is None
+        and from_schema is None
+    )
+    if same_backend_without_overrides:
+        console.print(
+            "[red]❌ Source backend matches the active destination backend with no override. "
+            "Provide explicit source parameters or choose a different --from-provider.[/red]"
+        )
+        return
+
+    engine = RigorousRAGEngine()
+    source_provider = build_vector_store_provider(
+        provider_name=from_provider,
+        persist_directory=from_persist_directory,
+        collection_name=from_collection,
+        namespace=from_namespace,
+        url=from_url,
+        schema=from_schema,
+    )
+
+    result = engine.migrate_documents(
+        source_provider,
+        source_namespace=from_namespace,
+        batch_size=batch_size,
+        clear_destination=clear_destination,
+    )
+
+    if output_format == "json":
+        console.print_json(json.dumps(result))
+        return
+
+    table = Table(title="CEREBRO RAG Migration")
+    table.add_column("Field", style="cyan")
+    table.add_column("Value", style="magenta")
+    table.add_row("Source Backend", str(result["source_backend"]))
+    table.add_row("Destination Backend", str(result["destination_backend"]))
+    table.add_row("Source Namespace", str(result.get("source_namespace") or "-"))
+    table.add_row("Destination Namespace", str(result.get("destination_namespace") or "-"))
+    table.add_row("Source Count", str(result["source_count"]))
+    table.add_row("Migrated Count", str(result["migrated_count"]))
+    table.add_row("Destination Before", str(result["destination_count_before"]))
+    table.add_row("Destination After", str(result["destination_count_after"]))
+    table.add_row("Batch Size", str(result["batch_size"]))
+    table.add_row("Batches", str(result["batches"]))
+    table.add_row("Cleared Destination", "yes" if result["cleared_destination"] else "no")
+    console.print(table)
+
+
+@rag_app.command("status")
+def rag_status(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    Show the configured production RAG runtime status.
+    """
+    try:
+        from cerebro.core.rag.engine import get_rag_runtime_status_snapshot
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag status[/red]")
+        return
+
+    status = get_rag_runtime_status_snapshot()
+
+    if output_format == "json":
+        console.print_json(json.dumps(status))
+        return
+
+    table = Table(title="CEREBRO RAG Runtime")
+    table.add_column("Field", style="cyan")
+    table.add_column("Value", style="magenta")
+
+    table.add_row("Healthy", "yes" if status["healthy"] else "no")
+    table.add_row("Mode", str(status["mode"]))
+    table.add_row("Backend", str(status["backend"]))
+    table.add_row("LLM Provider", str(status["llm_provider"]))
+    table.add_row("Namespace", str(status.get("namespace") or "—"))
+    table.add_row("Collection", str(status.get("collection_name") or "—"))
+    table.add_row(
+        "Document Count",
+        str(status["document_count"]) if status.get("document_count") is not None else "—",
+    )
+    if status.get("error"):
+        table.add_row("Error", str(status["error"]))
+
+    console.print(table)
+
+    details = status.get("details") or {}
+    if details:
+        details_table = Table(title="Vector Store Details")
+        details_table.add_column("Key", style="cyan")
+        details_table.add_column("Value", style="white")
+        for key in sorted(details):
+            details_table.add_row(key, str(details[key]))
+        console.print(details_table)
+
+
+@rag_backends_app.command("list")
+def rag_backends_list(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    List the vector store backends known by the current CLI build.
+    """
+    try:
+        from cerebro.providers.vector_store_factory import (
+            resolve_vector_store_provider_alias,
+            supported_vector_store_aliases,
+        )
+        from cerebro.settings import get_settings
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag backends list[/red]")
+        return
+
+    settings = get_settings()
+    active_backend = resolve_vector_store_provider_alias(settings.vector_store_provider)
+    aliases = supported_vector_store_aliases()
+    backends: dict[str, list[str]] = {}
+    for alias, canonical in aliases.items():
+        backends.setdefault(canonical, []).append(alias)
+
+    payload = [
+        {
+            "backend": backend,
+            "aliases": sorted(backend_aliases),
+            "active": backend == active_backend,
+        }
+        for backend, backend_aliases in sorted(backends.items())
+    ]
+
+    if output_format == "json":
+        console.print_json(json.dumps(payload))
+        return
+
+    table = Table(title="CEREBRO RAG Backends")
+    table.add_column("Backend", style="cyan")
+    table.add_column("Aliases", style="white")
+    table.add_column("Active", style="magenta")
+    for item in payload:
+        table.add_row(
+            item["backend"],
+            ", ".join(item["aliases"]),
+            "yes" if item["active"] else "no",
+        )
+    console.print(table)
+
+
+@rag_backend_app.command("info")
+def rag_backend_info(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    Show detailed information for the active RAG backend.
+    """
+    rag_status(output_format=output_format)
+
+
+@rag_backend_app.command("health")
+def rag_backend_health(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    Report whether the active RAG backend is healthy.
+    """
+    try:
+        from cerebro.core.rag.engine import get_rag_runtime_status_snapshot
+    except ImportError:
+        console.print("[red]❌ RAG dependencies missing. Run: nix develop --command cerebro rag backend health[/red]")
+        return
+
+    status = get_rag_runtime_status_snapshot()
+    payload = {
+        "healthy": status["healthy"],
+        "backend": status["backend"],
+        "namespace": status.get("namespace"),
+        "collection_name": status.get("collection_name"),
+        "document_count": status.get("document_count"),
+        "error": status.get("error"),
+    }
+
+    if output_format == "json":
+        console.print_json(json.dumps(payload))
+    else:
+        table = Table(title="CEREBRO RAG Backend Health")
+        table.add_column("Field", style="cyan")
+        table.add_column("Value", style="magenta")
+        table.add_row("Healthy", "yes" if payload["healthy"] else "no")
+        table.add_row("Backend", str(payload["backend"]))
+        table.add_row("Namespace", str(payload.get("namespace") or "-"))
+        table.add_row("Collection", str(payload.get("collection_name") or "-"))
+        table.add_row(
+            "Document Count",
+            str(payload["document_count"]) if payload.get("document_count") is not None else "-",
+        )
+        if payload.get("error"):
+            table.add_row("Error", str(payload["error"]))
+        console.print(table)
+
+    if not payload["healthy"]:
+        raise typer.Exit(1)
+
+
+@rag_backend_app.command("init")
+def rag_backend_init():
+    """
+    Initialize storage structures for the active RAG backend.
+    """
+    rag_init()
+
+
+@rag_backend_app.command("smoke")
+def rag_backend_smoke(
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+    skip_write_check: bool = typer.Option(
+        False,
+        "--skip-write-check",
+        help="Skip the temporary write/read/delete validation cycle",
+    ),
+):
+    """
+    Run a smoke test against the active RAG backend.
+    """
+    rag_smoke(
+        output_format=output_format,
+        skip_write_check=skip_write_check,
+    )
+
+
+@rag_backend_app.command("migrate")
+def rag_backend_migrate(
+    from_provider: str = typer.Option("chroma", "--from-provider", help="Source vector store backend"),
+    from_collection: str | None = typer.Option(None, "--from-collection", help="Source collection/table name"),
+    from_namespace: str | None = typer.Option(None, "--from-namespace", help="Source namespace override"),
+    from_persist_directory: str | None = typer.Option(
+        None,
+        "--from-persist-directory",
+        help="Source local persistence path for embedded backends",
+    ),
+    from_url: str | None = typer.Option(None, "--from-url", help="Source DSN/URL for remote backends"),
+    from_schema: str | None = typer.Option(None, "--from-schema", help="Source SQL schema for pgvector"),
+    batch_size: int = typer.Option(200, "--batch-size", help="Documents per migration batch"),
+    clear_destination: bool = typer.Option(
+        False,
+        "--clear-destination",
+        help="Clear the active destination namespace before copying data",
+    ),
+    output_format: str = typer.Option("table", "--format", help="Output format: table or json"),
+):
+    """
+    Migrate vectors from a source backend into the active backend.
+    """
+    rag_migrate(
+        from_provider=from_provider,
+        from_collection=from_collection,
+        from_namespace=from_namespace,
+        from_persist_directory=from_persist_directory,
+        from_url=from_url,
+        from_schema=from_schema,
+        batch_size=batch_size,
+        clear_destination=clear_destination,
+        output_format=output_format,
+    )
 
 
 @rag_app.command("query")

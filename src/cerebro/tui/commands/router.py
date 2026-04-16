@@ -91,7 +91,12 @@ class CommandRouter:
             yield {"status": "running", "progress": 30, "message": f"Searching: {query}"}
 
             if semantic:
-                results = indexer.semantic_query(query=query, top_k=limit)
+                results = indexer.semantic_query(
+                    query=query,
+                    top_k=limit,
+                    types=types,
+                    projects=projects,
+                )
             else:
                 items = cerebro.query_intelligence(
                     query=query, types=types, projects=projects, limit=limit

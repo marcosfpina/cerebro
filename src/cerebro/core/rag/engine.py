@@ -1,14 +1,19 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
+from uuid import uuid4
 
 from cerebro.core.rag.embeddings import EmbeddingSystem
 from cerebro.interfaces.llm import LLMProvider
-from cerebro.interfaces.vector_store import VectorStoreProvider
-from cerebro.providers.chroma.chroma_vector_store import ChromaVectorStoreProvider
+from cerebro.interfaces.vector_store import VectorSearchResult, VectorStoreProvider
 from cerebro.providers.llamacpp import LlamaCppProvider
 from cerebro.providers.openai_compatible import OpenAICompatibleProvider
+from cerebro.providers.vector_store_factory import (
+    build_vector_store_provider,
+    supported_vector_store_aliases,
+)
+from cerebro.settings import get_settings
 
 
 class RigorousRAGEngine:
@@ -19,7 +24,7 @@ class RigorousRAGEngine:
     Defaults to a fully local stack: llama.cpp + ChromaDB.
     """
 
-    LLM_PROVIDER_ALIASES = {
+    LLM_PROVIDER_ALIASES: ClassVar[dict[str, str]] = {
         "llamacpp": "llamacpp",
         "llama.cpp": "llamacpp",
         "local-llm": "llamacpp",
@@ -35,6 +40,14 @@ class RigorousRAGEngine:
         "gemini": "gemini",
         "google-gemini": "gemini",
     }
+    LLM_PROVIDER_CLASS_NAMES: ClassVar[dict[str, str]] = {
+        "LlamaCppProvider": "llamacpp",
+        "OpenAICompatibleProvider": "openai-compatible",
+        "VertexAILLMProvider": "vertex-ai",
+        "AnthropicProvider": "anthropic",
+        "GroqProvider": "groq",
+        "GeminiProvider": "gemini",
+    }
 
     def __init__(
         self,
@@ -42,7 +55,9 @@ class RigorousRAGEngine:
         vector_store_provider: VectorStoreProvider | None = None,
         data_store_id: str | None = None,
         location: str = "global",
-        persist_directory: str = "./data/vector_db",
+        persist_directory: str | None = None,
+        vector_store_namespace: str | None = None,
+        vector_store_collection_name: str | None = None,
     ):
         """
         Initialize RigorousRAGEngine with pluggable providers.
@@ -54,10 +69,20 @@ class RigorousRAGEngine:
             location: GCP location for Vertex mode
             persist_directory: Directory for vector store persistence
         """
+        settings = get_settings()
+
         self.project_id = os.getenv("GCP_PROJECT_ID")
         self.location = location
         self.data_store_id = data_store_id or os.getenv("DATA_STORE_ID")
-        self.persist_directory = persist_directory
+        self.persist_directory = (
+            persist_directory or settings.vector_store_persist_directory
+        )
+        self.vector_store_namespace = (
+            vector_store_namespace or settings.vector_store_namespace
+        )
+        self.vector_store_collection_name = (
+            vector_store_collection_name or settings.vector_store_collection_name
+        )
         self.default_provider_name = os.getenv("CEREBRO_LLM_PROVIDER", "llamacpp").strip().lower()
 
         if llm_provider is None:
@@ -66,8 +91,10 @@ class RigorousRAGEngine:
             self.llm_provider = llm_provider
 
         if vector_store_provider is None:
-            self.vector_store_provider = ChromaVectorStoreProvider(
-                persist_directory=persist_directory,
+            self.vector_store_provider = build_vector_store_provider(
+                persist_directory=self.persist_directory,
+                collection_name=self.vector_store_collection_name,
+                namespace=self.vector_store_namespace,
             )
         else:
             self.vector_store_provider = vector_store_provider
@@ -129,6 +156,10 @@ class RigorousRAGEngine:
     def supported_llm_provider_aliases(cls) -> dict[str, str]:
         return dict(cls.LLM_PROVIDER_ALIASES)
 
+    @staticmethod
+    def supported_vector_store_provider_aliases() -> dict[str, str]:
+        return supported_vector_store_aliases()
+
     @classmethod
     def _resolve_llm_provider_alias(cls, provider_name: str) -> str:
         resolved = cls.LLM_PROVIDER_ALIASES.get(provider_name)
@@ -145,6 +176,12 @@ class RigorousRAGEngine:
 
     def _uses_vertex_backend(self) -> bool:
         return self.llm_provider.__class__.__name__ == "VertexAILLMProvider"
+
+    def _get_llm_provider_name(self) -> str:
+        return self.LLM_PROVIDER_CLASS_NAMES.get(
+            self.llm_provider.__class__.__name__,
+            self.llm_provider.__class__.__name__,
+        )
 
     def _load_documents(self, jsonl_path: str) -> list[dict[str, Any]]:
         path = Path(jsonl_path)
@@ -201,12 +238,14 @@ class RigorousRAGEngine:
         if not documents:
             return 0
 
+        self.vector_store_provider.initialize_schema()
         texts = [document["content"] for document in documents]
-        if self._embedding_system is not None:
-            embeddings = self._embedding_system.embed(texts).vectors
-        else:
-            embeddings = self.llm_provider.embed_batch(texts)
-        return self.vector_store_provider.add_documents(documents, embeddings)
+        embeddings = self._embed_document_texts(texts)
+        return self.vector_store_provider.upsert_documents(
+            documents,
+            embeddings,
+            namespace=self.vector_store_namespace,
+        )
 
     def _ingest_vertex(self, jsonl_path: str) -> int:
         if not self.project_id or not self.data_store_id:
@@ -251,43 +290,385 @@ class RigorousRAGEngine:
             return self._ingest_vertex(jsonl_path)
         return self._ingest_local(jsonl_path)
 
-    def _has_local_documents(self) -> bool:
+    def initialize_runtime(self) -> dict[str, Any]:
+        """Initialize backend-specific runtime structures for the active vector store."""
+
+        return self.vector_store_provider.initialize_schema()
+
+    def run_smoke_test(
+        self,
+        *,
+        write_check: bool = True,
+        query_text: str = "cerebro smoke test",
+    ) -> dict[str, Any]:
+        """Run a lightweight write/read/delete validation against the active backend."""
+
+        smoke_namespace = self.vector_store_namespace or "__cerebro_smoke__"
+        steps: list[dict[str, Any]] = []
+        smoke_doc_id: str | None = None
+        smoke_source = f"cerebro://smoke/{uuid4().hex}"
+        query_hits = 0
+        error: str | None = None
+
         try:
-            return self.vector_store_provider.get_document_count() > 0
-        except Exception:
-            return False
+            init_details = self.initialize_runtime()
+            steps.append(
+                {
+                    "name": "initialize",
+                    "ok": True,
+                    "detail": f"backend={init_details.get('backend', self.vector_store_provider.backend_name)}",
+                }
+            )
+        except Exception as exc:
+            return {
+                "healthy": False,
+                "backend": self.vector_store_provider.backend_name,
+                "namespace": smoke_namespace,
+                "write_check": write_check,
+                "query_hits": 0,
+                "steps": [
+                    {
+                        "name": "initialize",
+                        "ok": False,
+                        "detail": str(exc),
+                    }
+                ],
+                "error": str(exc),
+            }
 
-    def _retrieve_local_context(self, query: str, k: int) -> list[dict[str, Any]]:
+        provider_status = self.vector_store_provider.health_status()
+        steps.append(
+            {
+                "name": "health",
+                "ok": provider_status.healthy,
+                "detail": provider_status.backend,
+            }
+        )
+
+        try:
+            document_count = self._get_local_document_count()
+            steps.append(
+                {
+                    "name": "count",
+                    "ok": True,
+                    "detail": str(document_count),
+                }
+            )
+        except Exception as exc:
+            document_count = None
+            error = str(exc)
+            steps.append(
+                {
+                    "name": "count",
+                    "ok": False,
+                    "detail": str(exc),
+                }
+            )
+
+        if write_check:
+            try:
+                smoke_doc_id = f"__cerebro_smoke__:{uuid4().hex}"
+                smoke_content = (
+                    "Cerebro smoke test document. "
+                    "This payload validates write, read, and cleanup paths."
+                )
+                smoke_embedding = self._embed_document_texts([smoke_content])[0]
+                self.vector_store_provider.upsert_documents(
+                    [
+                        {
+                            "id": smoke_doc_id,
+                            "title": "Cerebro Smoke Test",
+                            "content": smoke_content,
+                            "source": smoke_source,
+                            "type": "smoke",
+                            "namespace": smoke_namespace,
+                        }
+                    ],
+                    [smoke_embedding],
+                    namespace=smoke_namespace,
+                )
+                steps.append(
+                    {
+                        "name": "write",
+                        "ok": True,
+                        "detail": smoke_doc_id,
+                    }
+                )
+
+                smoke_results = self.vector_store_provider.search(
+                    self._embed_query_text(query_text),
+                    top_k=3,
+                    namespace=smoke_namespace,
+                )
+                query_hits = len(smoke_results)
+                matched = any(result.id == smoke_doc_id for result in smoke_results)
+                steps.append(
+                    {
+                        "name": "query",
+                        "ok": matched,
+                        "detail": f"hits={query_hits}",
+                    }
+                )
+            except Exception as exc:
+                error = str(exc)
+                steps.append(
+                    {
+                        "name": "write_read_cycle",
+                        "ok": False,
+                        "detail": str(exc),
+                    }
+                )
+            finally:
+                if smoke_doc_id is not None:
+                    try:
+                        deleted = self.vector_store_provider.delete_documents(
+                            [smoke_doc_id],
+                            namespace=smoke_namespace,
+                        )
+                        steps.append(
+                            {
+                                "name": "cleanup",
+                                "ok": deleted >= 1,
+                                "detail": f"deleted={deleted}",
+                            }
+                        )
+                    except Exception as exc:
+                        error = error or str(exc)
+                        steps.append(
+                            {
+                                "name": "cleanup",
+                                "ok": False,
+                                "detail": str(exc),
+                            }
+                        )
+
+        healthy = all(step["ok"] for step in steps)
+        return {
+            "healthy": healthy,
+            "backend": self.vector_store_provider.backend_name,
+            "namespace": smoke_namespace,
+            "write_check": write_check,
+            "document_count": document_count,
+            "query_hits": query_hits,
+            "steps": steps,
+            "error": error,
+        }
+
+    def migrate_documents(
+        self,
+        source_provider: VectorStoreProvider,
+        *,
+        source_namespace: str | None = None,
+        batch_size: int = 200,
+        clear_destination: bool = False,
+    ) -> dict[str, Any]:
+        """Copy stored documents and embeddings from a source backend into the active backend."""
+
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than zero.")
+
+        self.initialize_runtime()
+        destination_count_before = self._get_local_document_count()
+        source_count = source_provider.get_document_count(namespace=source_namespace)
+
+        if clear_destination:
+            self.vector_store_provider.clear(namespace=self.vector_store_namespace)
+
+        migrated_count = 0
+        batches = 0
+        offset = 0
+        while True:
+            exported_batch = source_provider.export_documents(
+                namespace=source_namespace,
+                limit=batch_size,
+                offset=offset,
+            )
+            if not exported_batch:
+                break
+
+            migrated_count += self.vector_store_provider.upsert_documents(
+                [document.to_document() for document in exported_batch],
+                [document.embedding for document in exported_batch],
+                namespace=self.vector_store_namespace,
+            )
+            offset += len(exported_batch)
+            batches += 1
+
+        destination_count_after = self._get_local_document_count()
+        return {
+            "source_backend": source_provider.backend_name,
+            "destination_backend": self.vector_store_provider.backend_name,
+            "source_namespace": source_namespace,
+            "destination_namespace": self.vector_store_namespace,
+            "source_count": source_count,
+            "migrated_count": migrated_count,
+            "destination_count_before": destination_count_before,
+            "destination_count_after": destination_count_after,
+            "batch_size": batch_size,
+            "batches": batches,
+            "cleared_destination": clear_destination,
+        }
+
+    def _get_local_document_count(self) -> int:
+        return self.vector_store_provider.get_document_count(
+            namespace=self.vector_store_namespace,
+        )
+
+    def _retrieve_local_context(self, query: str, k: int) -> list[VectorSearchResult]:
+        query_embedding = self._embed_query_text(query)
+        raw_results = self.vector_store_provider.search(
+            query_embedding,
+            top_k=k,
+            namespace=self.vector_store_namespace,
+        )
+        return [self._normalize_match(match) for match in raw_results]
+
+    def _embed_document_texts(self, texts: list[str]) -> list[list[float]]:
         if self._embedding_system is not None:
-            query_embedding = self._embedding_system.embed_query(query)
-        else:
-            query_embedding = self.llm_provider.embed(query)
-        return self.vector_store_provider.search(query_embedding, top_k=k)
+            return self._embedding_system.embed(texts).vectors
+        return self.llm_provider.embed_batch(texts)
 
-    def _extract_citations(self, matches: list[dict[str, Any]]) -> list[str]:
+    def _embed_query_text(self, query: str) -> list[float]:
+        if self._embedding_system is not None:
+            return self._embedding_system.embed_query(query)
+        return self.llm_provider.embed(query)
+
+    def _extract_citations(self, matches: list[VectorSearchResult]) -> list[str]:
         citations: list[str] = []
         for match in matches:
-            metadata = match.get("metadata", {})
+            metadata = match.metadata
             source = (
-                metadata.get("source")
-                or match.get("source")
+                match.source
+                or metadata.get("source")
+                or match.title
                 or metadata.get("title")
-                or match.get("id")
+                or match.id
                 or "N/A"
             )
             citations.append(str(source))
         return citations
+
+    def _normalize_match(self, match: VectorSearchResult | dict[str, Any]) -> VectorSearchResult:
+        if isinstance(match, VectorSearchResult):
+            return match
+
+        metadata = dict(match.get("metadata", {}))
+        return VectorSearchResult(
+            id=str(match.get("id", metadata.get("id", ""))),
+            content=str(match.get("content", match.get("text", ""))),
+            metadata=metadata,
+            score=float(match.get("score", match.get("similarity", 0.0))),
+            distance=match.get("distance"),
+            namespace=metadata.get("namespace"),
+            title=match.get("title") or metadata.get("title"),
+            source=match.get("source") or metadata.get("source"),
+        )
+
+    def _no_context_response(self, k: int, reason: str) -> dict[str, Any]:
+        return {
+            "answer": "No relevant information found in the indexed corpus.",
+            "error": False,
+            "metrics": {
+                "avg_confidence": 0.0,
+                "hit_rate_k": f"0/{k} (0%)" if k > 0 else "0%",
+                "retrieved_docs": 0,
+                "top_source": "N/A",
+                "citations": [],
+                "snippets": [],
+                "cost_estimate_usd": 0.0,
+                "grounded": False,
+                "reason": reason,
+                "vector_store_backend": self.vector_store_provider.backend_name,
+            },
+        }
+
+    def get_runtime_status(self) -> dict[str, Any]:
+        """Return structured runtime status for observability surfaces."""
+
+        mode = "vertex-ai" if self._uses_vertex_backend() else "local"
+        provider_status = self.vector_store_provider.health_status()
+        backend_details = dict(provider_status.details)
+        collection_name = backend_details.get("collection_name") or self.vector_store_collection_name
+        namespace = backend_details.get("default_namespace") or self.vector_store_namespace
+        document_count: int | None = None
+        error: str | None = None
+
+        if not self._uses_vertex_backend():
+            try:
+                document_count = self._get_local_document_count()
+            except Exception as exc:
+                provider_status = provider_status.__class__(
+                    healthy=False,
+                    backend=provider_status.backend,
+                    details=backend_details,
+                )
+                error = str(exc)
+
+        return {
+            "healthy": provider_status.healthy,
+            "mode": mode,
+            "backend": provider_status.backend,
+            "llm_provider": self._get_llm_provider_name(),
+            "namespace": namespace,
+            "collection_name": collection_name,
+            "document_count": document_count,
+            "details": backend_details,
+            "error": error,
+        }
 
     def query_with_metrics(self, query: str, k: int = 5) -> dict[str, Any]:
         """
         Execute a grounded query against the active backend.
         """
         try:
-            matches: list[dict[str, Any]] = []
-            if self._has_local_documents():
-                matches = self._retrieve_local_context(query, k)
+            matches: list[VectorSearchResult] = []
+            if self._uses_vertex_backend():
+                result = self.llm_provider.grounded_generate(
+                    query=query,
+                    context=[],
+                    top_k=k,
+                )
+                citations = result.get("citations", [])
+                retrieved = len(citations)
+                hit_rate = (
+                    f"{min(retrieved, k)}/{k} ({int(min(retrieved, k) / k * 100)}%)"
+                    if k > 0
+                    else "0%"
+                )
+                return {
+                    "answer": result.get(
+                        "answer",
+                        "Could not generate a summary from the retrieved documents.",
+                    ),
+                    "error": False,
+                    "metrics": {
+                        "avg_confidence": result.get("confidence", 0.0),
+                        "hit_rate_k": hit_rate,
+                        "retrieved_docs": retrieved,
+                        "top_source": citations[0] if citations else "N/A",
+                        "citations": citations,
+                        "snippets": result.get("snippets", []),
+                        "cost_estimate_usd": result.get("cost_estimate", 0.0),
+                        "grounded": bool(citations),
+                        "vector_store_backend": self.vector_store_provider.backend_name,
+                    },
+                }
 
-            context = [match.get("content", "") for match in matches if match.get("content")]
+            document_count = self._get_local_document_count()
+            if document_count <= 0:
+                return self._no_context_response(
+                    k,
+                    "No indexed documents available for the active vector store.",
+                )
+
+            matches = self._retrieve_local_context(query, k)
+
+            context = [match.content for match in matches if match.content]
+            if not context:
+                return self._no_context_response(
+                    k,
+                    "Retrieval returned no usable document content.",
+                )
             result = self.llm_provider.grounded_generate(
                 query=query,
                 context=context,
@@ -310,11 +691,40 @@ class RigorousRAGEngine:
                     "citations": citations,
                     "snippets": result.get("snippets", context[:k]),
                     "cost_estimate_usd": result.get("cost_estimate", 0.0),
+                    "grounded": bool(context),
+                    "vector_store_backend": self.vector_store_provider.backend_name,
                 },
             }
         except Exception as e:
             return {
                 "answer": f"Error querying RAG engine: {e!s}",
                 "error": True,
-                "metrics": {"hit_rate_k": "ERR", "avg_confidence": 0.0, "top_source": "N/A"},
+                "metrics": {
+                    "hit_rate_k": "ERR",
+                    "avg_confidence": 0.0,
+                    "top_source": "N/A",
+                    "grounded": False,
+                    "vector_store_backend": self.vector_store_provider.backend_name,
+                },
             }
+
+
+def get_rag_runtime_status_snapshot() -> dict[str, Any]:
+    """Build a best-effort RAG runtime status payload for API and CLI surfaces."""
+
+    settings = get_settings()
+
+    try:
+        return RigorousRAGEngine().get_runtime_status()
+    except Exception as exc:
+        return {
+            "healthy": False,
+            "mode": "unavailable",
+            "backend": settings.vector_store_provider.strip().lower(),
+            "llm_provider": os.getenv("CEREBRO_LLM_PROVIDER", "llamacpp").strip().lower(),
+            "namespace": settings.vector_store_namespace,
+            "collection_name": settings.vector_store_collection_name,
+            "document_count": None,
+            "details": {},
+            "error": str(exc),
+        }

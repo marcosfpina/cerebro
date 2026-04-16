@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from cerebro.core.metrics_collector import MetricsCollector
+from cerebro.core.rag.engine import get_rag_runtime_status_snapshot
 from cerebro.core.watcher import RepoWatcher
 from cerebro.intelligence.analyzer import IntelligenceAnalyzer
 from cerebro.intelligence.briefing import BriefingGenerator, BriefingType
@@ -160,6 +161,20 @@ class ChatResponse(BaseModel):
     rag_used: bool = False
 
 
+class RagRuntimeStatusResponse(BaseModel):
+    """Status response for the new pluggable RAG runtime."""
+
+    healthy: bool
+    mode: str
+    backend: str
+    llm_provider: str
+    namespace: str | None = None
+    collection_name: str | None = None
+    document_count: int | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+
+
 # ==================== Lifespan ====================
 
 @asynccontextmanager
@@ -216,8 +231,8 @@ async def lifespan(app: FastAPI):
     await repo_watcher.start()
 
     # Start NATS consumer + publisher
-    from cerebro.nats.publisher import connect as nats_connect, drain as nats_drain
     from cerebro.nats.consumer import start_consumer, stop_consumer as nats_stop_consumer
+    from cerebro.nats.publisher import connect as nats_connect, drain as nats_drain
 
     await nats_connect()
     _nats_consumer_task = asyncio.ensure_future(start_consumer())
@@ -397,6 +412,8 @@ async def query_intelligence(request: QueryRequest):
         results = indexer.semantic_query(
             query=request.query,
             top_k=request.limit,
+            types=types,
+            projects=request.projects,
         )
         search_type = "semantic"
     else:
@@ -623,6 +640,13 @@ async def broadcast(message: dict[str, Any]):
 
 # ==================== AI Features ====================
 
+@app.get("/rag/status", response_model=RagRuntimeStatusResponse)
+async def rag_status():
+    """Report the status of the pluggable RAG runtime configured for production."""
+
+    return RagRuntimeStatusResponse(**get_rag_runtime_status_snapshot())
+
+
 @app.get("/ai/health")
 async def ai_health():
     """Check local LLM (llama.cpp) availability."""
@@ -661,6 +685,7 @@ async def chat(request: ChatRequest):
                 context_items = indexer.semantic_query(
                     query=last_user_msg,
                     top_k=request.max_context_items,
+                    projects=[request.project] if request.project else None,
                 )
                 if context_items:
                     rag_used = True

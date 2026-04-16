@@ -1,263 +1,176 @@
 """
 Knowledge Indexer
 
-Indexes intelligence items into a vector store for semantic search.
-Uses FAISS for efficient similarity search and sentence-transformers for embeddings.
+Indexes intelligence items into the configured vector store for semantic
+search, using the shared provider layer introduced for production RAG.
 """
 
-import json
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from cerebro.core.rag.embeddings import EmbeddingSystem
+from cerebro.intelligence.core import IntelligenceItem, IntelligenceType
+from cerebro.interfaces.vector_store import VectorStoreProvider
+from cerebro.providers.vector_store_factory import build_vector_store_provider
+from cerebro.settings import get_settings
+
+if TYPE_CHECKING:
+    from cerebro.intelligence.core import CerebroIntelligence
 
 logger = logging.getLogger("cerebro.indexer")
-
-# Lazy imports for heavy dependencies
-_faiss = None
-_sentence_transformer = None
-
-
-def get_faiss():
-    """Lazy load FAISS."""
-    global _faiss
-    if _faiss is None:
-        try:
-            import faiss
-            _faiss = faiss
-        except ImportError:
-            logger.warning("FAISS not available. Vector search disabled.")
-            return None
-    return _faiss
-
-
-def get_sentence_transformer():
-    """Lazy load sentence-transformers."""
-    global _sentence_transformer
-    if _sentence_transformer is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            _sentence_transformer = SentenceTransformer
-        except ImportError:
-            logger.warning("sentence-transformers not available. Embeddings disabled.")
-            return None
-    return _sentence_transformer
 
 
 class KnowledgeIndexer:
     """
-    Indexes knowledge into a vector store for semantic search.
+    Indexes knowledge into the configured vector store for semantic search.
 
-    Features:
-    - Semantic similarity search
-    - Hybrid search (keyword + semantic)
-    - Incremental indexing
-    - Persistent storage
+    The old FAISS-only path has been replaced by the provider layer so API chat,
+    semantic search, and production RAG can converge on the same backend.
     """
 
-    DEFAULT_MODEL = "all-MiniLM-L6-v2"  # Fast, good quality
-    EMBEDDING_DIM = 384  # Dimension for MiniLM
+    DEFAULT_MODEL = "code-aware-auto"
 
     def __init__(
         self,
-        cerebro: "CerebroIntelligence",
+        cerebro: CerebroIntelligence,
         model_name: str = DEFAULT_MODEL,
         cache_dir: str = "./data/embeddings",
+        vector_store_provider: VectorStoreProvider | None = None,
+        vector_store_namespace: str | None = None,
     ):
         self.cerebro = cerebro
         self.model_name = model_name
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize embedder lazily
-        self._embedder = None
-
-        # FAISS index
-        self._index = None
-        self._id_map: list[str] = []  # Maps FAISS index to item IDs
-
-        # Load existing index if available
-        self._load_index()
-
-    @property
-    def embedder(self):
-        """Lazy load the sentence transformer model."""
-        if self._embedder is None:
-            SentenceTransformer = get_sentence_transformer()
-            if SentenceTransformer:
-                logger.info(f"Loading embedding model: {self.model_name}")
-                self._embedder = SentenceTransformer(self.model_name)
-        return self._embedder
+        settings = get_settings()
+        if vector_store_namespace is not None:
+            self.vector_store_namespace = vector_store_namespace
+        elif vector_store_provider is not None:
+            self.vector_store_namespace = getattr(
+                vector_store_provider,
+                "default_namespace",
+                None,
+            )
+        else:
+            self.vector_store_namespace = settings.vector_store_namespace
+        self.vector_store_provider = vector_store_provider or build_vector_store_provider(
+            collection_name=settings.vector_store_collection_name,
+            namespace=self.vector_store_namespace,
+        )
+        self._embedding_system = EmbeddingSystem(strategy="code")
 
     @property
-    def index(self):
-        """Get or create FAISS index."""
-        if self._index is None:
-            faiss = get_faiss()
-            if faiss:
-                # Create a flat inner product index (cosine similarity)
-                self._index = faiss.IndexFlatIP(self.EMBEDDING_DIM)
-        return self._index
+    def embedder(self) -> EmbeddingSystem:
+        """Compatibility shim for older call sites."""
 
-    def _get_index_path(self) -> Path:
-        """Get path to index file."""
-        return self.cache_dir / "faiss_index.bin"
-
-    def _get_id_map_path(self) -> Path:
-        """Get path to ID map file."""
-        return self.cache_dir / "id_map.json"
-
-    def _load_index(self) -> bool:
-        """Load index from disk."""
-        index_path = self._get_index_path()
-        id_map_path = self._get_id_map_path()
-
-        if not index_path.exists() or not id_map_path.exists():
-            return False
-
-        try:
-            faiss = get_faiss()
-            if faiss is None:
-                return False
-
-            self._index = faiss.read_index(str(index_path))
-            with open(id_map_path) as f:
-                self._id_map = json.load(f)
-
-            logger.info(f"Loaded index with {len(self._id_map)} items")
-            return True
-        except Exception as e:
-            logger.warning(f"Failed to load index: {e}")
-            return False
-
-    def _save_index(self) -> bool:
-        """Save index to disk."""
-        if self._index is None:
-            return False
-
-        try:
-            faiss = get_faiss()
-            if faiss is None:
-                return False
-
-            faiss.write_index(self._index, str(self._get_index_path()))
-            with open(self._get_id_map_path(), "w") as f:
-                json.dump(self._id_map, f)
-
-            logger.info(f"Saved index with {len(self._id_map)} items")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save index: {e}")
-            return False
+        return self._embedding_system
 
     def embed_text(self, text: str) -> list[float] | None:
-        """Generate embedding for a single text."""
-        if self.embedder is None:
+        """Generate an embedding for a single text payload."""
+
+        if not text:
             return None
 
         try:
-            embedding = self.embedder.encode(text, normalize_embeddings=True)
-            return embedding.tolist()
-        except Exception as e:
-            logger.error(f"Embedding failed: {e}")
+            return self._embedding_system.embed([text], content_type="code").vectors[0]
+        except Exception as exc:
+            logger.error("Embedding failed: %s", exc)
             return None
 
     def embed_texts(self, texts: list[str]) -> list[list[float]] | None:
         """Generate embeddings for multiple texts."""
-        if self.embedder is None:
-            return None
+
+        if not texts:
+            return []
 
         try:
-            embeddings = self.embedder.encode(texts, normalize_embeddings=True)
-            return embeddings.tolist()
-        except Exception as e:
-            logger.error(f"Batch embedding failed: {e}")
+            return self._embedding_system.embed(texts, content_type="code").vectors
+        except Exception as exc:
+            logger.error("Batch embedding failed: %s", exc)
             return None
 
     def index_item(self, item_id: str, content: str) -> bool:
         """Index a single intelligence item."""
-        if self.index is None or self.embedder is None:
-            return False
-
-        # Check if already indexed
-        if item_id in self._id_map:
-            return True
 
         try:
-            import numpy as np
-
             embedding = self.embed_text(content)
             if embedding is None:
                 return False
 
-            # Add to FAISS
-            embedding_array = np.array([embedding], dtype="float32")
-            self.index.add(embedding_array)
-            self._id_map.append(item_id)
+            item = self.cerebro.get_intelligence(item_id)
+            document = (
+                self._item_to_document(item)
+                if item is not None
+                else {"id": item_id, "title": item_id, "content": content, "source": "unknown"}
+            )
 
+            self.vector_store_provider.initialize_schema()
+            self.vector_store_provider.upsert_documents(
+                [document],
+                [embedding],
+                namespace=self.vector_store_namespace,
+            )
             return True
-        except Exception as e:
-            logger.error(f"Failed to index item {item_id}: {e}")
+        except Exception as exc:
+            logger.error("Failed to index item %s: %s", item_id, exc)
             return False
 
     def index_all(self, batch_size: int = 100) -> int:
         """
         Index all intelligence items in Cerebro.
 
-        Args:
-            batch_size: Number of items to process at once
-
-        Returns:
-            Number of items indexed
+        Returns the net number of newly indexed items when the backend can
+        report counts; otherwise it falls back to the number of processed rows.
         """
-        if self.embedder is None:
-            logger.warning("Embedder not available, skipping indexing")
-            return 0
 
         items = list(self.cerebro._intelligence.values())
-        indexed = 0
+        if not items:
+            return 0
 
-        # Process in batches
-        for i in range(0, len(items), batch_size):
-            batch = items[i:i + batch_size]
+        try:
+            self.vector_store_provider.initialize_schema()
+        except Exception as exc:
+            logger.error("Vector store bootstrap failed: %s", exc)
+            return 0
 
-            # Filter out already indexed items
-            new_items = [
-                item for item in batch
-                if item.id not in self._id_map
-            ]
+        before_count = self._safe_document_count()
+        processed = 0
 
-            if not new_items:
-                continue
-
-            # Generate embeddings
-            texts = [
-                f"{item.title}. {item.content[:500]}"
-                for item in new_items
-            ]
-
+        for offset in range(0, len(items), batch_size):
+            batch = items[offset:offset + batch_size]
+            texts = [self._item_to_index_text(item) for item in batch]
             embeddings = self.embed_texts(texts)
             if embeddings is None:
                 continue
 
-            # Add to index
+            documents = [self._item_to_document(item) for item in batch]
             try:
-                import numpy as np
+                processed += self.vector_store_provider.upsert_documents(
+                    documents,
+                    embeddings,
+                    namespace=self.vector_store_namespace,
+                )
+            except Exception as exc:
+                logger.error("Failed to upsert intelligence batch: %s", exc)
 
-                embedding_array = np.array(embeddings, dtype="float32")
-                self.index.add(embedding_array)
+        after_count = self._safe_document_count()
+        if before_count is not None and after_count is not None:
+            newly_indexed = max(after_count - before_count, 0)
+        else:
+            newly_indexed = processed
 
-                for item in new_items:
-                    self._id_map.append(item.id)
-                    indexed += 1
-
-            except Exception as e:
-                logger.error(f"Failed to add batch to index: {e}")
-
-        # Save index
-        self._save_index()
-
-        logger.info(f"Indexed {indexed} new items. Total: {len(self._id_map)}")
-        return indexed
+        logger.info(
+            "Indexed %s items via %s (processed=%s, total=%s)",
+            newly_indexed,
+            self.vector_store_provider.backend_name,
+            processed,
+            after_count if after_count is not None else "unknown",
+        )
+        return newly_indexed
 
     def search(
         self,
@@ -265,44 +178,26 @@ class KnowledgeIndexer:
         top_k: int = 10,
         min_score: float = 0.3,
     ) -> list[tuple[str, float]]:
-        """
-        Search for similar items.
+        """Search for similar items."""
 
-        Args:
-            query: Search query
-            top_k: Number of results to return
-            min_score: Minimum similarity score (0-1)
+        if top_k <= 0:
+            return []
 
-        Returns:
-            List of (item_id, score) tuples
-        """
-        if self.index is None or self.embedder is None or len(self._id_map) == 0:
+        document_count = self._safe_document_count()
+        if document_count is not None and document_count <= 0:
             return []
 
         try:
-            import numpy as np
-
-            # Generate query embedding
-            query_embedding = self.embed_text(query)
-            if query_embedding is None:
-                return []
-
-            query_array = np.array([query_embedding], dtype="float32")
-
-            # Search
-            scores, indices = self.index.search(query_array, min(top_k, len(self._id_map)))
-
-            # Map indices to item IDs
-            results = []
-            for score, idx in zip(scores[0], indices[0]):
-                if idx >= 0 and score >= min_score:
-                    item_id = self._id_map[idx]
-                    results.append((item_id, float(score)))
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Search failed: {e}")
+            query_embedding = self._embedding_system.embed_query(query)
+            matches = self.vector_store_provider.search(
+                query_embedding,
+                top_k=top_k,
+                namespace=self.vector_store_namespace,
+                min_score=min_score,
+            )
+            return [(match.id, float(match.score)) for match in matches]
+        except Exception as exc:
+            logger.error("Search failed: %s", exc)
             return []
 
     def semantic_query(
@@ -310,25 +205,26 @@ class KnowledgeIndexer:
         query: str,
         top_k: int = 10,
         min_score: float = 0.3,
+        types: list[IntelligenceType] | None = None,
+        projects: list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Semantic search with full item details.
+        """Semantic search with full item details and optional scope filters."""
 
-        Args:
-            query: Search query
-            top_k: Number of results
-            min_score: Minimum score threshold
+        search_window = self._resolve_search_window(top_k, types, projects)
+        results = self.search(query, search_window, min_score)
 
-        Returns:
-            List of intelligence items with scores
-        """
-        results = self.search(query, top_k, min_score)
-
-        items = []
+        items: list[dict[str, Any]] = []
         for item_id, score in results:
             item = self.cerebro.get_intelligence(item_id)
-            if item:
-                items.append({
+            if item is None:
+                continue
+            if types and item.type not in types:
+                continue
+            if projects and not any(project in item.related_projects for project in projects):
+                continue
+
+            items.append(
+                {
                     "id": item.id,
                     "type": item.type.value,
                     "title": item.title,
@@ -337,25 +233,88 @@ class KnowledgeIndexer:
                     "score": round(score, 3),
                     "tags": item.tags,
                     "related_projects": item.related_projects,
-                })
+                }
+            )
+            if len(items) >= top_k:
+                break
 
         return items
 
     def get_stats(self) -> dict[str, Any]:
         """Get indexer statistics."""
+
+        backend_info = self.vector_store_provider.get_backend_info()
         return {
             "model": self.model_name,
-            "embedding_dim": self.EMBEDDING_DIM,
-            "indexed_items": len(self._id_map),
-            "index_size_mb": self._get_index_path().stat().st_size / 1024 / 1024
-            if self._get_index_path().exists() else 0,
+            "embedding_strategy": "code",
+            "backend": self.vector_store_provider.backend_name,
+            "namespace": self.vector_store_namespace,
+            "indexed_items": self._safe_document_count(fallback=0),
+            "index_size_mb": self._resolve_index_size_mb(backend_info),
+            **backend_info,
         }
 
     def clear(self) -> None:
-        """Clear the index."""
-        faiss = get_faiss()
-        if faiss:
-            self._index = faiss.IndexFlatIP(self.EMBEDDING_DIM)
-        self._id_map = []
-        self._save_index()
-        logger.info("Index cleared")
+        """Clear the current vector namespace."""
+
+        self.vector_store_provider.clear(namespace=self.vector_store_namespace)
+        logger.info("Index cleared for namespace=%s", self.vector_store_namespace)
+
+    def _item_to_index_text(self, item: IntelligenceItem) -> str:
+        return f"{item.title}. {item.content[:500]}"
+
+    def _item_to_document(self, item: IntelligenceItem) -> dict[str, Any]:
+        return {
+            "id": item.id,
+            "type": item.type.value,
+            "source": item.source,
+            "title": item.title,
+            "content": item.content,
+            "tags": item.tags,
+            "related_projects": item.related_projects,
+            "threat_level": item.threat_level.value,
+            "timestamp": item.timestamp.isoformat(),
+            **{
+                key: value
+                for key, value in item.metadata.items()
+                if isinstance(value, (str, int, float, bool)) or value is None
+            },
+        }
+
+    def _resolve_search_window(
+        self,
+        top_k: int,
+        types: list[IntelligenceType] | None,
+        projects: list[str] | None,
+    ) -> int:
+        if not types and not projects:
+            return top_k
+
+        available = self._safe_document_count(fallback=top_k * 5)
+        if available is None:
+            return max(top_k * 5, top_k)
+        return min(max(top_k * 5, top_k), max(available, top_k))
+
+    def _safe_document_count(self, fallback: int | None = None) -> int | None:
+        try:
+            return self.vector_store_provider.get_document_count(
+                namespace=self.vector_store_namespace,
+            )
+        except Exception as exc:
+            logger.warning("Failed to get index document count: %s", exc)
+            return fallback
+
+    @staticmethod
+    def _resolve_index_size_mb(backend_info: dict[str, Any]) -> float:
+        persist_directory = backend_info.get("persist_directory")
+        if not isinstance(persist_directory, str):
+            return 0.0
+
+        path = Path(persist_directory)
+        if not path.exists():
+            return 0.0
+
+        if path.is_file():
+            return path.stat().st_size / 1024 / 1024
+
+        return sum(child.stat().st_size for child in path.rglob("*") if child.is_file()) / 1024 / 1024
