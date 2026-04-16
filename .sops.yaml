@@ -1,0 +1,22 @@
+keys:
+  # Replace this mock Age public key with your real administrator or CI key
+  # Generate via: age-keygen -o keys.txt
+  - &admin_age age1y8mlpqkuzq548wqydv4zuzthudq4n3v7aqaeqczlksymw87m3uhqu4f4cw
+
+  # Replace with target host keys if using sops-nix dynamically on nodes:
+  # - &host_machine age1hostnamekeyplaceholder...
+
+creation_rules:
+  # Encrypt all secrets matching any files within secrets/ directories
+  # or specifically named secrets.yaml/secrets.enc.env
+  - path_regex: secrets/.*\.(yaml|json|env|ini)$
+    key_groups:
+      - age: >-
+          - age1h0m5uwsjq9twc0rvpm3nv2uqtwarxpq6mq5uqxsxwu6tgzgwcagqw3d0xn,
+            age176ca9a693ujm2d6fmqm6ezuwy0ka2fm39u5gu9tvr7njlzps6qhqqfnecn
+
+  - path_regex: kubernetes/.*secret.*\.yaml$
+    key_groups:
+      - age: >-
+          - *age1h0m5uwsjq9twc0rvpm3nv2uqtwarxpq6mq5uqxsxwu6tgzgwcagqw3d0xn,
+             age176ca9a693ujm2d6fmqm6ezuwy0ka2fm39u5gu9tvr7njlzps6qhqqfnecn

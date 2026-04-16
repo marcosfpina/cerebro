@@ -9,6 +9,10 @@
       url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       flake-utils,
       spider-nix,
       poetry2nix,
+      sops-nix,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -124,6 +129,8 @@
           pkgs.uv # Fast Python package installer
           pkgs.just
           pkgs.git
+          pkgs.sops
+          pkgs.age
           pkgs.gum  # Charmbracelet UI styling for premium terminal DX
           pkgs.stdenv.cc.cc.lib
           pkgs.zlib
@@ -308,5 +315,7 @@ Or type $(gum style --foreground 42 'chelp') for the quick reference guide."
         };
 
       }
-    );
+    ) // {
+      nixosModules.default = import ./nix/module.nix;
+    };
 }
