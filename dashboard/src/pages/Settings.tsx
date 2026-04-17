@@ -42,321 +42,247 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Configure your Cerebro Intelligence Dashboard
+    <div className="max-w-4xl mx-auto space-y-8 pb-10">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-4xl font-extrabold tracking-tight flex items-center gap-3">
+          <Database className="h-9 w-9 text-primary" />
+          System Settings
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Configure and maintain your CEREBRO intelligence environment
         </p>
-      </div>
+      </motion.div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Display Settings */}
-        <Card>
+      <div className="grid gap-8">
+        {/* Display & Experience */}
+        <Card className="glass border-border/50 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sun className="h-5 w-5" />
-              Display
+              <Sun className="h-5 w-5 text-primary" />
+              Appearance & Experience
             </CardTitle>
             <CardDescription>
-              Configure appearance and display preferences
+              Configure how you interact with the CEREBRO interface
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+          <CardContent className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border/20">
               <div>
-                <p className="font-medium">Theme</p>
-                <p className="text-sm text-muted-foreground">
-                  Choose light or dark mode
+                <p className="font-bold text-sm">Visual Theme</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Switch between light and high-contrast dark modes
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/30 glass">
                 <Button
-                  variant={theme === 'light' ? 'default' : 'outline'}
+                  variant={theme === 'light' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setTheme('light')}
+                  className="h-8 px-4 text-[10px] font-bold uppercase tracking-wider"
                 >
-                  <Sun className="h-4 w-4 mr-2" />
+                  <Sun className="h-3.5 w-3.5 mr-2" />
                   Light
                 </Button>
                 <Button
-                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  variant={theme === 'dark' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setTheme('dark')}
+                  className="h-8 px-4 text-[10px] font-bold uppercase tracking-wider"
                 >
-                  <Moon className="h-4 w-4 mr-2" />
+                  <Moon className="h-3.5 w-3.5 mr-2" />
                   Dark
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Default Time Range</p>
-                <p className="text-sm text-muted-foreground">
-                  Default filter for dashboards
-                </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="flex flex-col justify-between p-4 rounded-xl bg-muted/30 border border-border/20">
+                <div className="mb-3">
+                  <p className="font-bold text-sm">Default Time Range</p>
+                  <p className="text-xs text-muted-foreground italic">Filter dashboards by time</p>
+                </div>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value as any)}
+                  className="w-full rounded-lg border border-border/30 bg-background/50 px-3 py-2 text-xs font-bold outline-none glass"
+                >
+                  {TIME_RANGES.map((range) => (
+                    <option key={range.value} value={range.value}>
+                      {range.label.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
-                className="rounded-md border bg-background px-3 py-2"
-              >
-                {TIME_RANGES.map((range) => (
-                  <option key={range.value} value={range.value}>
-                    {range.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Auto Refresh Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Auto Refresh
-            </CardTitle>
-            <CardDescription>
-              Configure automatic data refresh
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Enable Auto Refresh</p>
-                <p className="text-sm text-muted-foreground">
-                  Automatically update data
-                </p>
-              </div>
-              <Button
-                variant={autoRefresh ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setAutoRefresh(!autoRefresh)}
-              >
-                {autoRefresh ? 'Enabled' : 'Disabled'}
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Refresh Interval</p>
-                <p className="text-sm text-muted-foreground">
-                  Time between updates (seconds)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={refreshInterval / 1000}
-                  onChange={(e) => setRefreshInterval(Number(e.target.value) * 1000)}
-                  className="w-20"
-                  min={5}
-                  max={300}
-                />
-                <span className="text-sm text-muted-foreground">sec</span>
+              <div className="flex flex-col justify-between p-4 rounded-xl bg-muted/30 border border-border/20">
+                <div className="mb-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm">Auto Refresh</p>
+                    <Switch
+                      checked={autoRefresh}
+                      onCheckedChange={setAutoRefresh}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">Sync data in the background</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={refreshInterval / 1000}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value) * 1000)}
+                    disabled={!autoRefresh}
+                    className="h-8 glass bg-background/50 font-mono text-xs font-bold"
+                    min={5}
+                  />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Seconds</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Indexer Stats */}
-        <Card>
+        {/* Intelligence Index */}
+        <Card className="glass border-border/50 shadow-lg overflow-hidden relative">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-primary">
               <Database className="h-5 w-5" />
               Intelligence Index
             </CardTitle>
             <CardDescription>
-              Vector store and embedding statistics
+              Semantic storage and embedding statistics
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {stats?.indexer_stats ? (
-              <IndexerStatsPanel stats={stats} />
-            ) : (
-              <p className="text-muted-foreground">Loading stats...</p>
-            )}
-          </CardContent>
-        </Card>
+          <CardContent className="space-y-6">
+            <div className="rounded-xl bg-card/30 p-6 border border-border/30 glass">
+              {stats?.indexer_stats ? (
+                <IndexerStatsPanel stats={stats} />
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary/50" />
+                </div>
+              )}
+            </div>
 
-        {/* Local LLM Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5" />
-              Local LLM
-            </CardTitle>
-            <CardDescription>
-              llama.cpp status (port 8081)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Status</p>
-                <p className="text-sm text-muted-foreground font-mono">
-                  {aiHealth?.url ?? 'http://localhost:8081'}
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border/20">
+              <div className="space-y-1">
+                <p className="font-bold text-sm">Maintenance Operations</p>
+                <p className="text-xs text-muted-foreground italic">Trigger re-scans or purge the entire semantic base</p>
               </div>
-              <Badge variant={aiHealth?.available ? 'default' : 'destructive'}>
-                {aiHealth?.available ? 'Online' : 'Offline'}
-              </Badge>
-            </div>
-            {aiHealth?.available && aiHealth.model && (
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">Model</p>
-                <p className="font-mono text-sm">{aiHealth.model}</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleFullScan}
+                  disabled={scanMutation.isPending}
+                  className="glass hover:bg-primary/10 font-bold text-[10px] tracking-wider h-9"
+                  variant="outline"
+                >
+                  {scanMutation.isPending ? (
+                    <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" />
+                  ) : (
+                    <Scan className="h-3.5 w-3.5 mr-2" />
+                  )}
+                  FULL ECOSYSTEM SCAN
+                </Button>
+                <Button variant="destructive" size="sm" className="font-bold text-[10px] tracking-wider h-9">
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  PURGE INDEX
+                </Button>
               </div>
-            )}
-            {!aiHealth?.available && (
-              <p className="text-sm text-muted-foreground">
-                Start with: <span className="font-mono">llama-server --embeddings --port 8081</span>
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* RAG Runtime Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              RAG Runtime
-            </CardTitle>
-            <CardDescription>
-              New provider-based retrieval runtime for production backends
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Backend</p>
-                <p className="text-sm text-muted-foreground font-mono">
-                  {ragStatus?.backend ?? 'loading'}
-                </p>
-              </div>
-              <Badge variant={ragBadgeVariant}>
-                {ragBadgeLabel}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">Mode</p>
-                <p className="font-mono text-sm">{ragStatus?.mode ?? '—'}</p>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">Documents</p>
-                <p className="font-semibold">
-                  {ragStatus?.document_count != null ? ragStatus.document_count : '—'}
-                </p>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">Namespace</p>
-                <p className="font-mono text-sm">{ragStatus?.namespace ?? 'default'}</p>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">Collection</p>
-                <p className="font-mono text-sm">{ragStatus?.collection_name ?? '—'}</p>
-              </div>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-sm text-muted-foreground">LLM Provider</p>
-              <p className="font-mono text-sm">{ragStatus?.llm_provider ?? '—'}</p>
-            </div>
-            {ragStatus?.error && (
-              <p className="text-sm text-red-500">
-                {ragStatus.error}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scan className="h-5 w-5" />
-              Actions
-            </CardTitle>
-            <CardDescription>
-              Manage ecosystem scanning and indexing
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Full Ecosystem Scan</p>
-                <p className="text-sm text-muted-foreground">
-                  Re-scan all projects and collect intelligence
-                </p>
-              </div>
-              <Button
-                onClick={handleFullScan}
-                disabled={scanMutation.isPending}
-              >
-                {scanMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <Scan className="h-4 w-4 mr-2" />
-                    Start Scan
-                  </>
-                )}
-              </Button>
             </div>
 
             {scanMutation.data && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                <p className="font-medium mb-1">Last Scan Results</p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>Projects found: {scanMutation.data.projects_found}</li>
-                  <li>Intelligence collected: {scanMutation.data.intelligence_collected}</li>
-                  <li>Items indexed: {scanMutation.data.indexed_items}</li>
-                  <li>Duration: {scanMutation.data.duration_seconds?.toFixed(1)}s</li>
-                </ul>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="rounded-xl bg-primary/5 p-4 border border-primary/20 text-xs"
+              >
+                <p className="font-black mb-2 uppercase tracking-[0.2em] text-primary/70 text-[10px]">Registry Results</p>
+                <div className="grid grid-cols-2 gap-y-2 font-medium">
+                  <div className="text-muted-foreground">Projects Identified:</div>
+                  <div className="text-right tabular-nums">{scanMutation.data.projects_found}</div>
+                  <div className="text-muted-foreground">Intelligence Harvested:</div>
+                  <div className="text-right tabular-nums">{scanMutation.data.intelligence_collected}</div>
+                  <div className="text-muted-foreground">Semantic Mappings:</div>
+                  <div className="text-right tabular-nums">{scanMutation.data.indexed_items}</div>
+                  <div className="text-muted-foreground">Dispatch Duration:</div>
+                  <div className="text-right tabular-nums">{scanMutation.data.duration_seconds?.toFixed(1)}s</div>
+                </div>
+              </motion.div>
             )}
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-red-500">Clear Index</p>
-                <p className="text-sm text-muted-foreground">
-                  Remove all indexed intelligence (requires re-scan)
-                </p>
-              </div>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* About */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About CEREBRO</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <p>
-              <strong>CEREBRO Intelligence System</strong> is the central brain of the ~/master ecosystem.
-              It provides unified intelligence gathering, analysis, and dissemination across all your projects.
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Version 1.0.0 | Built with React, TypeScript, and FastAPI
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        {/* System Health */}
+        <div className="grid md:grid-cols-2 gap-8">
+          <Card className="glass border-border/50 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-primary" />
+                Local LLM Health
+              </CardTitle>
+              <CardDescription>Status of the inference engine (llama.cpp)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/20">
+                <div className="space-y-1">
+                  <p className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Endpoint</p>
+                  <p className="font-mono text-sm">{aiHealth?.url ?? 'http://localhost:8081'}</p>
+                </div>
+                <Badge variant={aiHealth?.available ? 'default' : 'destructive'} className="glass py-1">
+                  {aiHealth?.available ? 'ONLINE' : 'OFFLINE'}
+                </Badge>
+              </div>
+              {aiHealth?.available && aiHealth.model && (
+                <div className="rounded-xl bg-primary/5 p-4 border border-primary/10">
+                  <p className="text-[10px] font-bold text-primary/70 uppercase tracking-widest mb-1">Loaded Model</p>
+                  <p className="font-mono text-sm font-bold truncate">{aiHealth.model}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="glass border-border/50 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                RAG Persistence
+              </CardTitle>
+              <CardDescription>Vector store runtime configuration</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/20">
+                <div className="space-y-1">
+                  <p className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Backend</p>
+                  <p className="font-mono text-sm">{ragStatus?.backend ?? 'loading'}</p>
+                </div>
+                <Badge variant={ragBadgeVariant} className="glass py-1">
+                  {ragBadgeLabel.toUpperCase()}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-background/50 p-3 border border-border/30 text-center">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Documents</p>
+                  <p className="text-lg font-black">{ragStatus?.document_count ?? '—'}</p>
+                </div>
+                <div className="rounded-xl bg-background/50 p-3 border border-border/30 text-center">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Provider</p>
+                  <p className="text-sm font-bold truncate">{ragStatus?.llm_provider ?? '—'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-6 text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">
+            CEREBRO Intelligence System v1.0.0 · ~/master
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -364,38 +290,35 @@ export function Settings() {
 function IndexerStatsPanel({ stats }: { stats: IntelligenceStats }) {
   const idx = stats.indexer_stats
   return (
-    <>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Model</p>
-          <p className="font-mono text-sm">{idx.model ?? '—'}</p>
-        </div>
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Dimensions</p>
-          <p className="font-semibold">{idx.embedding_dim ?? '—'}</p>
-        </div>
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Indexed Items</p>
-          <p className="font-semibold">{idx.indexed_items ?? '—'}</p>
-        </div>
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Index Size</p>
-          <p className="font-semibold">
-            {idx.index_size_mb != null ? `${(idx.index_size_mb as number).toFixed(2)} MB` : '—'}
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatsBadge label="Model" value={String(idx.model ?? '—')} />
+        <StatsBadge label="Dimensions" value={String(idx.embedding_dim ?? '—')} />
+        <StatsBadge label="Indexed" value={String(idx.indexed_items ?? '—')} />
+        <StatsBadge label="Index Size" value={idx.index_size_mb != null ? `${(idx.index_size_mb as number).toFixed(1)} MB` : '—'} />
       </div>
 
       <div>
-        <p className="text-sm font-medium mb-2">Intelligence by Type</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-3 ml-1">Composition by Intelligence Type</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(stats.by_type || {}).map(([type, count]) => (
-            <Badge key={type} variant={type as any}>
-              {type}: {count}
+            <Badge key={type} variant={type as any} className="glass py-1 px-3 border-border/30">
+              <span className="opacity-70 mr-1">{type.toUpperCase()}:</span> {count}
             </Badge>
           ))}
         </div>
       </div>
-    </>
+    </div>
   )
 }
+
+function StatsBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
+      <span className="text-sm font-black tracking-tight truncate">{value}</span>
+    </div>
+  )
+}
+
+import { Switch } from '@/components/ui/switch'

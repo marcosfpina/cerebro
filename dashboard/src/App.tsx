@@ -8,7 +8,7 @@ import { Briefing } from '@/pages/Briefing'
 import { Settings } from '@/pages/Settings'
 import { Metrics } from '@/pages/Metrics'
 import { Chat } from '@/pages/Chat'
-import { Agents } from '@/pages/Agents'
+import { ControlPlane } from '@/pages/ControlPlane'
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
           <Route path="/intelligence" element={<Intelligence />} />
           <Route path="/briefing" element={<Briefing />} />
           <Route path="/metrics" element={<Metrics />} />
-          <Route path="/agents" element={<Agents />} />
+          <Route path="/control-plane" element={<ControlPlane />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

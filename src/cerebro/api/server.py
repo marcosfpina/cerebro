@@ -11,6 +11,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -18,8 +19,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from cerebro.core.extraction.analyze_code import (
+    HermeticAnalyzer,
+    validate_repository_path,
+)
 from cerebro.core.metrics_collector import MetricsCollector
-from cerebro.core.rag.engine import get_rag_runtime_status_snapshot
+from cerebro.core.rag.engine import (
+    RigorousRAGEngine,
+    get_rag_runtime_status_snapshot,
+)
 from cerebro.core.watcher import RepoWatcher
 from cerebro.intelligence.analyzer import IntelligenceAnalyzer
 from cerebro.intelligence.briefing import BriefingGenerator, BriefingType
@@ -173,6 +181,12 @@ class RagRuntimeStatusResponse(BaseModel):
     document_count: int | None = None
     details: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
+
+
+class ControlActionRequest(BaseModel):
+    """Request for a Control Plane action."""
+    action: str
+    params: dict[str, Any] = Field(default_factory=dict)
 
 
 # ==================== Lifespan ====================
@@ -801,6 +815,116 @@ async def summarize_project(project_name: str):
     if project.health_score < 50:
         lines.append("Recommendation: improve documentation and test coverage.")
     return {"summary": "\n".join(lines), "source": "static"}
+
+
+# ==================== Control Plane Actions ====================
+
+@app.post("/actions/rag/{action}")
+async def rag_action(action: str, request: ControlActionRequest):
+    """Execute a RAG action (ingest, smoke, migrate, init)."""
+    engine = RigorousRAGEngine()
+
+    if action == "ingest":
+        source_file = request.params.get("source_file", "./data/analyzed/all_artifacts.jsonl")
+        loop = asyncio.get_running_loop()
+        count = await loop.run_in_executor(None, engine.ingest, source_file)
+        return {"status": "success", "detail": f"Ingested {count} artifacts"}
+
+    elif action == "smoke":
+        skip_write_check = request.params.get("skip_write_check", False)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None, engine.run_smoke_test, not skip_write_check
+        )
+        return result
+
+    elif action == "init":
+        loop = asyncio.get_running_loop()
+        details = await loop.run_in_executor(None, engine.initialize_runtime)
+        return details
+
+    elif action == "migrate":
+        from cerebro.providers.vector_store_factory import build_vector_store_provider
+
+        from_provider = request.params.get("from_provider", "chroma")
+        from_persist = request.params.get("from_persist_directory")
+        from_namespace = request.params.get("from_namespace")
+
+        source_provider = build_vector_store_provider(
+            provider_name=from_provider,
+            persist_directory=from_persist,
+            namespace=from_namespace,
+        )
+
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            engine.migrate_documents,
+            source_provider,
+            from_namespace,
+        )
+        return result
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown RAG action: {action}")
+
+
+@app.post("/actions/knowledge/{action}")
+async def knowledge_action(action: str, request: ControlActionRequest):
+    """Execute a Knowledge action (analyze, index, etl)."""
+    if action == "analyze":
+        repo_path = request.params.get("repo_path")
+        if not repo_path:
+            raise HTTPException(status_code=400, detail="repo_path is required")
+
+        analyzer_instance = HermeticAnalyzer()
+        target = Path(repo_path).expanduser().resolve()
+        validate_repository_path(target)
+
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, analyzer_instance.analyze_repo, target)
+
+        # Save results
+        out = Path("./data/analyzed") / target.name
+        out.mkdir(parents=True, exist_ok=True)
+        with open(out / "metrics.json", "w") as f:
+            json.dump(result["metrics"], f, indent=2)
+
+        return {"status": "success", "repo": target.name, "metrics": result["metrics"]}
+
+    elif action == "index":
+        if not indexer:
+            raise HTTPException(status_code=503, detail="Indexer not initialized")
+
+        loop = asyncio.get_running_loop()
+        count = await loop.run_in_executor(None, indexer.index_all)
+        return {"status": "success", "indexed_items": count}
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown Knowledge action: {action}")
+
+
+@app.post("/actions/ops/health")
+async def ops_health():
+    """Execute a full system health check."""
+    results = []
+
+    # FS
+    try:
+        Path("./data").mkdir(exist_ok=True)
+        results.append(
+            {"check": "File System", "status": "OK", "detail": "./data is writable"}
+        )
+    except Exception as e:
+        results.append({"check": "File System", "status": "FAIL", "detail": str(e)})
+
+    # AI
+    if llama and llama.health_check():
+        results.append({"check": "Local LLM", "status": "OK", "detail": llama.model})
+    else:
+        results.append({"check": "Local LLM", "status": "FAIL", "detail": "Offline"})
+
+    return {"results": results}
 
 
 # ==================== Metrics ====================

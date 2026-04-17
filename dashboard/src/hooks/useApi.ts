@@ -144,6 +144,55 @@ export function useSummarizeProject() {
   })
 }
 
+// Control Plane Mutations
+export function useRagAction() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: ({ action, params }: { action: string; params?: any }) =>
+      api.ragAction(action, params),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ragStatus })
+      toast({ title: `RAG ${variables.action} complete`, description: 'Action executed successfully' })
+    },
+    onError: (err: Error) => {
+      toast({ variant: 'destructive', title: 'RAG action failed', description: err.message })
+    },
+  })
+}
+
+export function useKnowledgeAction() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: ({ action, params }: { action: string; params?: any }) =>
+      api.knowledgeAction(action, params),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.intelligenceStats })
+      toast({ title: `Knowledge ${variables.action} complete`, description: 'Action executed successfully' })
+    },
+    onError: (err: Error) => {
+      toast({ variant: 'destructive', title: 'Knowledge action failed', description: err.message })
+    },
+  })
+}
+
+export function useOpsHealth() {
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: () => api.opsHealth(),
+    onSuccess: () => {
+      toast({ title: 'Health check complete', description: 'System diagnostics finished' })
+    },
+    onError: (err: Error) => {
+      toast({ variant: 'destructive', title: 'Health check failed', description: err.message })
+    },
+  })
+}
+
 // Metrics
 export function useMetrics() {
   const { autoRefresh, refreshInterval } = useDashboardStore()

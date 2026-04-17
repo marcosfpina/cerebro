@@ -38,7 +38,7 @@ const navGroups = [
   {
     label: 'AI',
     items: [
-      { title: 'Agents', href: '/agents', icon: Bot },
+      { title: 'Control Plane', href: '/control-plane', icon: Zap },
       { title: 'Chat', href: '/chat', icon: MessageSquare },
     ],
   },

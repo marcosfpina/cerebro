@@ -47,7 +47,7 @@ export function Dashboard() {
       </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Projects"
           value={status?.total_projects || 0}
@@ -82,8 +82,11 @@ export function Dashboard() {
         />
       </div>
 
-      <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <Card className="border-border/50 shadow-lg glass overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative">
+          {/* Subtle glow background */}
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-32 w-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
           <div className="space-y-1">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />
@@ -94,16 +97,16 @@ export function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={ragBadgeVariant}>
+            <Badge variant={ragBadgeVariant} className="glass">
               {ragBadgeLabel}
             </Badge>
-            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10">
+            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 glass">
               <Link to="/settings">Details</Link>
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-4">
             <RuntimeMetric
               label="Backend"
               value={ragStatus?.backend ?? 'loading'}
@@ -123,24 +126,27 @@ export function Dashboard() {
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium text-foreground/80">LLM:</span>
-            <Badge variant="outline">{ragStatus?.llm_provider ?? 'loading'}</Badge>
+            <Badge variant="outline" className="glass">{ragStatus?.llm_provider ?? 'loading'}</Badge>
             {ragStatus?.collection_name && (
               <>
-                <span className="font-medium text-foreground/80">Collection:</span>
-                <span className="font-mono">{ragStatus.collection_name}</span>
+                <span className="font-medium text-foreground/80 ml-2">Collection:</span>
+                <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded">{ragStatus.collection_name}</span>
               </>
             )}
             {ragStatus?.error && (
-              <span className="text-red-500">{ragStatus.error}</span>
+              <span className="text-red-500 ml-auto flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {ragStatus.error}
+              </span>
             )}
           </div>
         </CardContent>
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Projects Needing Attention */}
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <Card className="border-border/50 shadow-lg glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div className="space-y-1">
               <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -158,9 +164,9 @@ export function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {projectsLoading ? (
-                <div className="text-center text-muted-foreground">Loading...</div>
+                <div className="text-center text-muted-foreground py-8 shimmer rounded-lg">Loading...</div>
               ) : topProjects.length === 0 ? (
-                <div className="text-center text-muted-foreground">
+                <div className="text-center text-muted-foreground py-8">
                   All projects are healthy!
                 </div>
               ) : (
@@ -171,30 +177,30 @@ export function Dashboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     whileHover={{ x: 4, scale: 1.01 }}
-                    className="group relative flex items-center justify-between rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm p-4 hover:border-primary/30 hover:bg-card/80 transition-all duration-200 cursor-pointer"
+                    className="group relative flex items-center justify-between rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm p-4 hover:border-primary/30 hover:bg-card/50 transition-all duration-300 cursor-pointer"
                   >
                     {/* Left accent bar */}
                     <div
                       className={cn(
-                        'absolute left-0 top-0 bottom-0 w-1 rounded-l-lg transition-all duration-300',
+                        'absolute left-0 top-0 bottom-0 w-1 rounded-l-xl transition-all duration-300',
                         project.health_score >= 70
-                          ? 'bg-green-500 group-hover:w-1.5'
+                          ? 'bg-green-500 group-hover:w-1.5 glow-success'
                           : project.health_score >= 50
-                          ? 'bg-yellow-500 group-hover:w-1.5'
-                          : 'bg-red-500 group-hover:w-1.5'
+                          ? 'bg-yellow-500 group-hover:w-1.5 glow-warning'
+                          : 'bg-red-500 group-hover:w-1.5 glow-danger'
                       )}
                     />
 
                     <div className="flex-1 ml-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">
                           {project.name}
                         </span>
-                        <Badge variant={project.status as any} className="shadow-sm">
+                        <Badge variant={project.status as any} className="shadow-sm glass text-[10px] uppercase font-bold tracking-wider">
                           {project.status}
                         </Badge>
                       </div>
-                      <div className="mt-1.5 flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="mt-1.5 flex items-center gap-4 text-xs text-muted-foreground font-medium">
                         <span className="flex items-center gap-1">
                           {project.languages.slice(0, 2).join(', ')}
                         </span>
@@ -207,22 +213,22 @@ export function Dashboard() {
                       <div className="text-right">
                         <div
                           className={cn(
-                            'text-2xl font-bold tabular-nums tracking-tight',
+                            'text-2xl font-black tabular-nums tracking-tighter',
                             getHealthColor(project.health_score)
                           )}
                         >
                           {project.health_score.toFixed(0)}
                         </div>
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                           Health
                         </div>
                       </div>
                       <div className="w-24">
                         <Progress
                           value={project.health_score}
-                          className="h-2"
+                          className="h-2 glass"
                           indicatorClassName={cn(
-                            'transition-all duration-300',
+                            'transition-all duration-500',
                             project.health_score >= 70
                               ? 'bg-gradient-to-r from-green-500 to-emerald-500'
                               : project.health_score >= 50
@@ -240,7 +246,7 @@ export function Dashboard() {
         </Card>
 
         {/* Recent Alerts */}
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <Card className="border-border/50 shadow-lg glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div className="space-y-1">
               <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -251,14 +257,14 @@ export function Dashboard() {
                 System notifications and warnings
               </p>
             </div>
-            <Badge variant="outline" className="shadow-sm">
+            <Badge variant="outline" className="shadow-sm glass">
               {alerts?.length || 0} total
             </Badge>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentAlerts.length === 0 ? (
-                <div className="text-center text-muted-foreground py-4">
+                <div className="text-center text-muted-foreground py-8 italic">
                   No alerts - system is healthy
                 </div>
               ) : (
@@ -269,20 +275,17 @@ export function Dashboard() {
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     transition={{ delay: i * 0.05, type: "spring", stiffness: 200 }}
                     whileHover={{ scale: 1.02, x: 4 }}
-                    className="group relative flex items-start gap-3 rounded-lg border border-red-500/20 bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent p-4 hover:border-red-500/30 transition-all duration-200"
+                    className="group relative flex items-start gap-4 rounded-xl border border-red-500/20 bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent p-4 hover:border-red-500/40 transition-all duration-300"
                   >
-                    {/* Pulse indicator */}
-                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-
-                    <div className="rounded-lg bg-red-500/10 p-2 group-hover:bg-red-500/20 transition-colors">
+                    <div className="rounded-lg bg-red-500/10 p-2 group-hover:bg-red-500/20 transition-colors shadow-inner">
                       <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
                     </div>
                     <div className="flex-1 text-sm">
-                      <p className="font-medium text-foreground">{alert.message}</p>
+                      <p className="font-bold text-foreground leading-tight">{alert.message}</p>
                       {alert.project && (
-                        <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
-                          <span className="text-red-500">•</span>
-                          Project: <span className="font-medium">{alert.project}</span>
+                        <p className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1 uppercase tracking-widest font-bold">
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                          Project: <span className="text-foreground">{alert.project}</span>
                         </p>
                       )}
                     </div>
@@ -294,7 +297,7 @@ export function Dashboard() {
         </Card>
 
         {/* Daily Briefing Summary */}
-        <Card className="lg:col-span-2 border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <Card className="lg:col-span-2 border-border/50 shadow-lg glass">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div className="space-y-1">
               <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -305,30 +308,30 @@ export function Dashboard() {
                 Today's key insights and developments
               </p>
             </div>
-            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10">
+            <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 glass">
               <Link to="/briefing">Full Briefing</Link>
             </Button>
           </CardHeader>
           <CardContent>
             {briefing ? (
               <div className="space-y-4">
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <p className="text-sm">{briefing.summary}</p>
+                <div className="rounded-xl bg-card/50 p-6 border border-border/30 shadow-inner">
+                  <p className="text-sm leading-relaxed text-foreground/90">{briefing.summary}</p>
                 </div>
 
                 {briefing.key_developments && briefing.key_developments.length > 0 && (
                   <div>
-                    <h4 className="mb-2 text-sm font-medium">Key Developments</h4>
-                    <div className="grid gap-2 md:grid-cols-2">
+                    <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Key Developments</h4>
+                    <div className="grid gap-3 md:grid-cols-2">
                       {briefing.key_developments.slice(0, 4).map((dev, i) => (
                         <div
                           key={i}
-                          className="flex items-center gap-2 rounded border p-2 text-sm"
+                          className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/40 p-3 text-sm hover:border-primary/20 transition-all cursor-default"
                         >
-                          <Badge variant={dev.threat_level as any} className="shrink-0">
+                          <Badge variant={dev.threat_level as any} className="shrink-0 glass text-[10px] h-5">
                             {dev.type}
                           </Badge>
-                          <span className="truncate">{dev.title}</span>
+                          <span className="truncate font-medium">{dev.title}</span>
                         </div>
                       ))}
                     </div>
@@ -336,8 +339,8 @@ export function Dashboard() {
                 )}
               </div>
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                Loading briefing...
+              <div className="text-center text-muted-foreground py-12 shimmer rounded-xl">
+                Synthesizing briefing data...
               </div>
             )}
           </CardContent>
@@ -350,45 +353,37 @@ export function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+        <Card className="border-border/50 shadow-xl glass overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
           <CardHeader className="space-y-1">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Quick Actions
+              <Zap className="h-5 w-5 text-primary" />
+              Rapid Access
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Common tasks and navigation shortcuts
+              Direct dispatchers and system navigation
             </p>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
-                  <Link to="/intelligence" className="flex flex-col items-center gap-2">
-                    <Search className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold">Search Intelligence</span>
-                    <span className="text-xs text-muted-foreground">Query knowledge base</span>
-                  </Link>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
-                  <Link to="/briefing" className="flex flex-col items-center gap-2">
-                    <TrendingUp className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold">Executive Summary</span>
-                    <span className="text-xs text-muted-foreground">View insights</span>
-                  </Link>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" asChild className="w-full h-auto py-4 hover:bg-primary/5 hover:border-primary/30 transition-all group">
-                  <Link to="/projects" className="flex flex-col items-center gap-2">
-                    <FolderKanban className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold">Browse Projects</span>
-                    <span className="text-xs text-muted-foreground">Explore ecosystem</span>
-                  </Link>
-                </Button>
-              </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <QuickActionLink
+                to="/intelligence"
+                icon={Search}
+                title="Search Intel"
+                description="Query knowledge base"
+              />
+              <QuickActionLink
+                to="/control-plane"
+                icon={Zap}
+                title="Control Plane"
+                description="Dispatch operations"
+              />
+              <QuickActionLink
+                to="/projects"
+                icon={FolderKanban}
+                title="Browse Projects"
+                description="Explore ecosystem"
+              />
             </div>
           </CardContent>
         </Card>
@@ -397,11 +392,29 @@ export function Dashboard() {
   )
 }
 
+function QuickActionLink({ to, icon: Icon, title, description }: { to: string, icon: any, title: string, description: string }) {
+  return (
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+      <Button variant="outline" asChild className="w-full h-auto py-5 glass hover:bg-primary/5 hover:border-primary/30 transition-all group border-border/50 shadow-sm">
+        <Link to={to} className="flex flex-col items-center gap-3">
+          <div className="rounded-xl bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
+            <Icon className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div className="text-center">
+            <span className="font-bold block text-sm">{title}</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{description}</span>
+          </div>
+        </Link>
+      </Button>
+    </motion.div>
+  )
+}
+
 function RuntimeMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-card/50 p-3">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-sm">{value}</p>
+    <div className="rounded-xl border border-border/50 bg-card/50 p-4 shadow-inner">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{label}</p>
+      <p className="mt-1 font-mono text-sm font-bold truncate">{value}</p>
     </div>
   )
 }
@@ -429,29 +442,26 @@ function StatCard({
       whileHover={{ y: -4, scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-shadow duration-300">
-        {/* Gradient background accent */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
-
+      <Card className="relative overflow-hidden border-border/50 shadow-lg glass hover:shadow-2xl transition-all duration-300">
         <CardContent className="p-6 relative">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] font-black text-muted-foreground/70 uppercase tracking-[0.2em]">
                 {title}
               </p>
-              <p className={cn('text-4xl font-bold tracking-tight', valueClassName)}>
+              <p className={cn('text-4xl font-black tracking-tighter tabular-nums', valueClassName)}>
                 {loading ? (
                   <span className="inline-block animate-pulse">...</span>
                 ) : value}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 font-medium">{description}</p>
             </div>
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4"
+              className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 shadow-inner border border-primary/10"
               whileHover={{ rotate: 5, scale: 1.1 }}
               transition={{ duration: 0.2 }}
             >
-              <Icon className="h-7 w-7 text-primary" />
+              <Icon className="h-8 w-8 text-primary glow-primary rounded-full" />
             </motion.div>
           </div>
         </CardContent>

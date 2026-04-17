@@ -116,6 +116,25 @@ class ApiClient {
         })
     }
 
+    // Control Plane Actions
+    async ragAction(action: string, params: Record<string, any> = {}): Promise<any> {
+        return this.fetch(`/actions/rag/${action}`, {
+            method: 'POST',
+            body: JSON.stringify({ action, params }),
+        })
+    }
+
+    async knowledgeAction(action: string, params: Record<string, any> = {}): Promise<any> {
+        return this.fetch(`/actions/knowledge/${action}`, {
+            method: 'POST',
+            body: JSON.stringify({ action, params }),
+        })
+    }
+
+    async opsHealth(): Promise<any> {
+        return this.fetch('/actions/ops/health', { method: 'POST' })
+    }
+
     // Metrics
     async getMetrics(): Promise<MetricsSnapshot> {
         return this.fetch<MetricsSnapshot>('/metrics')

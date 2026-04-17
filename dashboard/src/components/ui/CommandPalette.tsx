@@ -47,12 +47,12 @@ export function CommandPalette() {
     { id: 'nav-metrics', label: 'Metrics', description: 'View code metrics', icon: BarChart3, action: () => navigate('/metrics'), group: 'Navigate' },
     { id: 'nav-intel', label: 'Intelligence Search', description: 'Semantic search', icon: Search, action: () => navigate('/intelligence'), group: 'Navigate' },
     { id: 'nav-briefing', label: 'Briefing', description: 'Daily & executive summaries', icon: FileText, action: () => navigate('/briefing'), group: 'Navigate' },
-    { id: 'nav-agents', label: 'Agents', description: 'AI agent launcher', icon: Bot, action: () => navigate('/agents'), group: 'Navigate' },
+    { id: 'nav-control', label: 'Control Plane', description: 'System operations & dispatchers', icon: Zap, action: () => navigate('/control-plane'), group: 'Navigate' },
     { id: 'nav-chat', label: 'AI Chat', description: 'Chat with CEREBRO', icon: MessageSquare, action: () => navigate('/chat'), group: 'Navigate' },
     { id: 'nav-settings', label: 'Settings', description: 'Dashboard settings', icon: Settings, action: () => navigate('/settings'), group: 'Navigate' },
-    { id: 'agent-scan', label: 'Run Ecosystem Scan', description: 'Scan all projects', icon: ScanEye, action: () => scanMutation.mutate(undefined), group: 'Agents' },
-    { id: 'agent-metrics', label: 'Collect Metrics', description: 'Re-scan all repo metrics', icon: BarChart3, action: () => metricsMutation.mutate(), group: 'Agents' },
-    { id: 'agent-briefing', label: 'Open Daily Briefing', description: 'View today\'s briefing', icon: Newspaper, action: () => navigate('/briefing'), group: 'Agents' },
+    { id: 'op-scan', label: 'Run Ecosystem Scan', description: 'Scan all projects', icon: ScanEye, action: () => scanMutation.mutate(undefined), group: 'Control Plane' },
+    { id: 'op-metrics', label: 'Collect Metrics', description: 'Re-scan all repo metrics', icon: BarChart3, action: () => metricsMutation.mutate(), group: 'Control Plane' },
+    { id: 'op-briefing', label: 'Open Daily Briefing', description: 'View today\'s briefing', icon: Newspaper, action: () => navigate('/briefing'), group: 'Control Plane' },
   ]
 
   const filtered = query
