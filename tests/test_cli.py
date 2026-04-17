@@ -1,6 +1,7 @@
 """Tests for the Cerebro CLI."""
 
 import importlib.util
+import json
 from unittest.mock import patch
 
 from typer.testing import CliRunner
@@ -70,6 +71,68 @@ def test_knowledge_help():
     result = runner.invoke(app, ["knowledge", "--help"])
     assert result.exit_code == 0
     assert "analyze" in result.stdout
+
+
+def test_knowledge_docs_command_generates_markdown(tmp_path):
+    """knowledge docs should generate grouped markdown and a JSON catalog."""
+
+    project_dir = tmp_path / "demo"
+    cli_dir = project_dir / "src" / "cerebro"
+    cli_dir.mkdir(parents=True)
+    (cli_dir / "cli.py").write_text(
+        '\n'.join(
+            [
+                'import typer',
+                'app = typer.Typer()',
+                'rag_app = typer.Typer()',
+                'rag_backend_app = typer.Typer()',
+                'app.add_typer(rag_app, name="rag")',
+                'rag_app.add_typer(rag_backend_app, name="backend")',
+                '',
+                '@app.command("hello")',
+                'def hello(name: str = typer.Option("world", "--name", help="Who to greet")):',
+                '    """Say hello."""',
+                '    return None',
+                '',
+                '@rag_backend_app.command("health")',
+                'def health(output_format: str = typer.Option("table", "--format", help="Output format")):',
+                '    """Show backend health.',
+                '',
+                '    Example:',
+                '        cerebro rag backend health --format json',
+                '    """',
+                '    return None',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    output_dir = tmp_path / "generated-docs"
+    result = runner.invoke(
+        app,
+        [
+            "knowledge",
+            "docs",
+            str(project_dir),
+            "--output",
+            str(output_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Generated 2 pages" in result.stdout
+    assert "cerebro_hello.md" in (output_dir / "commands" / "README.md").read_text(encoding="utf-8")
+    assert (output_dir / "commands" / "README.md").exists()
+    assert (output_dir / "commands" / "cerebro_hello.md").exists()
+    assert (output_dir / "commands" / "cerebro_rag_backend_health.md").exists()
+
+    health_doc = (output_dir / "commands" / "cerebro_rag_backend_health.md").read_text(encoding="utf-8")
+    assert "cerebro rag backend health --format json" in health_doc
+    assert "`--format`" in health_doc
+
+    catalog = json.loads((output_dir / "commands" / "catalog.json").read_text(encoding="utf-8"))
+    assert catalog["total_commands"] == 2
+    assert any(command["name"] == "cerebro rag backend health" for command in catalog["commands"])
 
 
 def test_ops_help():
