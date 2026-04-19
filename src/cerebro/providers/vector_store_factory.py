@@ -25,6 +25,7 @@ VECTOR_STORE_PROVIDER_ALIASES: dict[str, str] = {
     "open-search": "opensearch",
     "elasticsearch": "opensearch",
     "elastic": "opensearch",
+    "weaviate": "weaviate",
 }
 
 
@@ -74,6 +75,9 @@ def build_vector_store_provider(
     opensearch_api_key: str | None = None,
     opensearch_enable_hybrid: bool = False,
     opensearch_es_compat: bool = False,
+    # Weaviate specific
+    weaviate_grpc_port: int | None = None,
+    weaviate_enable_hybrid: bool = False,
 ) -> VectorStoreProvider:
     """Build the configured vector store provider."""
 
@@ -154,6 +158,23 @@ def build_vector_store_provider(
             ),
             enable_hybrid_search=opensearch_enable_hybrid or settings.opensearch_enable_hybrid,
             es_compat=opensearch_es_compat or settings.opensearch_es_compat,
+        )
+
+    if canonical_name == "weaviate":
+        from cerebro.providers.weaviate import WeaviateVectorStoreProvider
+
+        return WeaviateVectorStoreProvider(
+            url=url or settings.weaviate_url,
+            api_key=settings.weaviate_api_key,
+            grpc_port=weaviate_grpc_port or settings.weaviate_grpc_port,
+            collection_name=collection_name or settings.vector_store_collection_name,
+            default_namespace=namespace or settings.vector_store_namespace,
+            embedding_dimensions=(
+                embedding_dimensions
+                if embedding_dimensions is not None
+                else settings.vector_store_embedding_dimensions
+            ),
+            enable_hybrid=weaviate_enable_hybrid or settings.weaviate_enable_hybrid,
         )
 
     raise ValueError(

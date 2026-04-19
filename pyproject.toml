@@ -96,6 +96,37 @@ optional = true
 [tool.poetry.group.azure.dependencies]
 langchain-openai = "0.2.14"
 
+[tool.poetry.group.rag-pgvector]
+optional = true
+
+[tool.poetry.group.rag-pgvector.dependencies]
+psycopg = ">=3.2,<4.0"
+
+[tool.poetry.group.rag-qdrant]
+optional = true
+
+[tool.poetry.group.rag-qdrant.dependencies]
+qdrant-client = ">=1.9,<2.0"
+
+[tool.poetry.group.rag-opensearch]
+optional = true
+
+[tool.poetry.group.rag-opensearch.dependencies]
+opensearch-py = ">=2.7,<3.0"
+
+[tool.poetry.group.rag-azure-search]
+optional = true
+
+[tool.poetry.group.rag-azure-search.dependencies]
+azure-search-documents = ">=11.6,<12.0"
+azure-identity = ">=1.17,<2.0"
+
+[tool.poetry.group.rag-weaviate]
+optional = true
+
+[tool.poetry.group.rag-weaviate.dependencies]
+weaviate-client = ">=4.9,<5.0"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.4"
 pytest-cov = "6.0.0"

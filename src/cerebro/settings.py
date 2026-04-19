@@ -42,6 +42,12 @@ class CerebroSettings:
     opensearch_enable_hybrid: bool = False
     opensearch_es_compat: bool = False
 
+    # Weaviate
+    weaviate_url: str = "http://localhost:8080"
+    weaviate_grpc_port: int = 50051
+    weaviate_api_key: str | None = None
+    weaviate_enable_hybrid: bool = False
+
     # LLM provider
     llm_provider: str = "llamacpp"
 
@@ -86,6 +92,10 @@ class CerebroSettings:
             opensearch_api_key=os.getenv("OPENSEARCH_API_KEY"),
             opensearch_enable_hybrid=os.getenv("OPENSEARCH_ENABLE_HYBRID", "").lower() == "true",
             opensearch_es_compat=os.getenv("OPENSEARCH_ES_COMPAT", "").lower() == "true",
+            weaviate_url=os.getenv("WEAVIATE_URL", "http://localhost:8080").strip(),
+            weaviate_grpc_port=int(os.getenv("WEAVIATE_GRPC_PORT", "50051")),
+            weaviate_api_key=os.getenv("WEAVIATE_API_KEY"),
+            weaviate_enable_hybrid=os.getenv("WEAVIATE_ENABLE_HYBRID", "").lower() == "true",
             llm_provider=os.getenv("CEREBRO_LLM_PROVIDER", "llamacpp").strip().lower(),
         )
 

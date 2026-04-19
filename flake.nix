@@ -415,6 +415,52 @@
           echo "  az account show"
         '';
 
+        ragPgvectorShellHook = ''
+          export CEREBRO_VECTOR_STORE_PROVIDER=pgvector
+          export PGHOST="''${PGHOST:-localhost}"
+          export PGPORT="''${PGPORT:-5432}"
+          export PGDATABASE="''${PGDATABASE:-cerebro}"
+          export PGUSER="''${PGUSER:-cerebro}"
+
+          echo ""
+          echo "RAG backend shell: pgvector"
+          echo "  Set CEREBRO_VECTOR_STORE_URL=postgresql+psycopg://user:pass@host/db"
+          echo "  Run integration tests: CEREBRO_RUN_INTEGRATION=1 pytest tests/integration -m integration"
+        '';
+
+        ragQdrantShellHook = ''
+          export CEREBRO_VECTOR_STORE_PROVIDER=qdrant
+          export QDRANT_URL="''${QDRANT_URL:-http://localhost:6333}"
+
+          echo ""
+          echo "RAG backend shell: qdrant"
+          echo "  Qdrant server: qdrant (port 6333)"
+          echo "  Run integration tests: CEREBRO_RUN_INTEGRATION=1 pytest tests/integration -m integration"
+        '';
+
+        ragOpensearchShellHook = ''
+          export CEREBRO_VECTOR_STORE_PROVIDER=opensearch
+          export OPENSEARCH_URL="''${OPENSEARCH_URL:-http://localhost:9200}"
+
+          echo ""
+          echo "RAG backend shell: opensearch"
+          echo "  OpenSearch server: opensearch (port 9200)"
+          echo "  Hybrid search: export OPENSEARCH_ENABLE_HYBRID=true"
+          echo "  Run integration tests: CEREBRO_RUN_INTEGRATION=1 pytest tests/integration -m integration"
+        '';
+
+        ragWeaviateShellHook = ''
+          export CEREBRO_VECTOR_STORE_PROVIDER=weaviate
+          export WEAVIATE_URL="''${WEAVIATE_URL:-http://localhost:8080}"
+          export WEAVIATE_GRPC_PORT="''${WEAVIATE_GRPC_PORT:-50051}"
+
+          echo ""
+          echo "RAG backend shell: weaviate"
+          echo "  Weaviate server: weaviate (HTTP 8080 / gRPC 50051)"
+          echo "  Hybrid search: export WEAVIATE_ENABLE_HYBRID=true"
+          echo "  Run integration tests: CEREBRO_RUN_INTEGRATION=1 pytest tests/integration -m integration"
+        '';
+
       in
       {
         # Installable package — enables `nix build` and `nix run`
@@ -455,6 +501,42 @@
           ]
           ++ commonBuildInputs;
           shellHook = baseShellHook + azureShellHook;
+        };
+
+        devShells.rag-pgvector = pkgs.mkShell {
+          buildInputs = [
+            (pkgs.python313.withPackages (ps: (corePythonPackages ps) ++ [ ps.psycopg ]))
+            pkgs.postgresql
+          ]
+          ++ commonBuildInputs;
+          shellHook = baseShellHook + ragPgvectorShellHook;
+        };
+
+        devShells.rag-qdrant = pkgs.mkShell {
+          buildInputs = [
+            (pkgs.python313.withPackages (ps: (corePythonPackages ps) ++ [ ps."qdrant-client" ]))
+            pkgs.qdrant
+          ]
+          ++ commonBuildInputs;
+          shellHook = baseShellHook + ragQdrantShellHook;
+        };
+
+        devShells.rag-opensearch = pkgs.mkShell {
+          buildInputs = [
+            (pkgs.python313.withPackages (ps: (corePythonPackages ps) ++ [ ps."opensearch-py" ]))
+            pkgs.opensearch
+          ]
+          ++ commonBuildInputs;
+          shellHook = baseShellHook + ragOpensearchShellHook;
+        };
+
+        devShells.rag-weaviate = pkgs.mkShell {
+          buildInputs = [
+            (pkgs.python313.withPackages (ps: (corePythonPackages ps) ++ [ ps."weaviate-client" ]))
+            pkgs.weaviate
+          ]
+          ++ commonBuildInputs;
+          shellHook = baseShellHook + ragWeaviateShellHook;
         };
 
       }

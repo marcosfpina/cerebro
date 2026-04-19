@@ -11,6 +11,7 @@
 |---------|------|---------|
 | v0.1 | 2026-04-08 | Initial planning document |
 | v0.2 | 2026-04-19 | Audit pass — mark completed work; align with actual codebase state |
+| v0.3 | 2026-04-19 | Weaviate provider; all 4 Nix backend dev shells; weaviate poetry group |
 
 ---
 
@@ -31,6 +32,12 @@
 - `registry/indexer.py` FAISS path replaced — now uses `build_vector_store_provider()`.
 - Central settings module (`settings.py`) drives all provider selection via env vars.
 - Azure Pipelines CI with Postgres + NATS sidecars, Trivy, Trufflehog, load test.
+
+**State at v0.3 (2026-04-19) — current:**
+
+- 6 vector store providers: added `weaviate` — cloud-native, local-first, hybrid BM25+vector.
+- All 4 backend Nix dev shells added: `.#rag-pgvector`, `.#rag-qdrant`, `.#rag-opensearch`, `.#rag-weaviate`.
+- Per-backend Poetry optional groups: `rag-pgvector`, `rag-qdrant`, `rag-opensearch`, `rag-azure-search`, `rag-weaviate`.
 
 ---
 
@@ -60,7 +67,7 @@ Deliver a production-capable RAG platform with:
 - [x] **Priority 2: Qdrant** — `providers/qdrant/` — collection bootstrap, UUID5 ID mapping, payload filters, cosine search, full export with embeddings.
 - [x] **Priority 3: OpenSearch / Elasticsearch** — `providers/opensearch/` — knn_vector HNSW, bool+knn+filter query, hybrid search via `query_text` kwarg, ES 8.x compat mode, `delete_by_query`.
 - [x] **Priority 4 (bonus): Azure AI Search** — `providers/azure_search/` — HNSW index bootstrap, OData filters, namespace isolation, content-only export.
-- [ ] **Priority 5: Weaviate** — optional enterprise backend; deferred until concrete adoption need.
+- [x] **Priority 5: Weaviate** — `providers/weaviate/` — HNSW COSINE, UUID5 mapping, property filters, hybrid BM25+vector, full export with vectors.
 
 ### Existing optional cloud path
 
@@ -77,14 +84,14 @@ Python packages in `pyproject.toml` (runtime groups):
 - [x] `qdrant-client` — Qdrant backend
 - [x] `opensearch-py` — OpenSearch backend
 - [x] `azure-search-documents` — Azure AI Search backend
-- [ ] `weaviate-client` — pending Weaviate provider
+- [x] `weaviate-client` — Weaviate backend (`rag-weaviate` Poetry group)
 
 Nix dev shell backend tracks (`flake.nix`):
 
-- [ ] `.#rag-pgvector` — includes `postgresql` + `python313Packages.psycopg`
-- [ ] `.#rag-qdrant` — includes `qdrant` + `python313Packages."qdrant-client"`
-- [ ] `.#rag-opensearch` — includes `opensearch` + `python313Packages."opensearch-py"`
-- [ ] Verify Weaviate server packaging in `nixpkgs` before adding `.#rag-weaviate`
+- [x] `.#rag-pgvector` — includes `postgresql` + `python313Packages.psycopg`
+- [x] `.#rag-qdrant` — includes `qdrant` + `python313Packages."qdrant-client"`
+- [x] `.#rag-opensearch` — includes `opensearch` + `python313Packages."opensearch-py"`
+- [x] `.#rag-weaviate` — includes `weaviate` + `python313Packages."weaviate-client"`
 
 ---
 
@@ -164,11 +171,17 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] Content-only export (Azure Search does not return stored vectors via search API — documented).
 - [ ] Operational runbook (index backup, rollback, namespace audit).
 
-### 6.5 Weaviate
+### 6.6 Weaviate
 
-- [ ] `src/cerebro/providers/weaviate/` — not started; deferred.
-- [ ] Decide on external cluster vs. in-tree Nix package.
-- [ ] Collection/class bootstrap, object upsert, hybrid filters, health checks.
+- [x] `src/cerebro/providers/weaviate/` — full implementation with `weaviate-client>=4.9`.
+- [x] `pkgs.weaviate` server in `.#rag-weaviate` Nix shell — local-first, no cloud required.
+- [x] Collection bootstrap: COSINE HNSW via `Configure.VectorIndex.hnsw`, bring-your-own-vectors mode.
+- [x] UUID5 ID mapping; original ID preserved in `_cerebro_id` property.
+- [x] Property-based filters: `namespace`, `source`, `title`, `repo`, `git_commit`, `_cerebro_id`.
+- [x] Dense search: `near_vector` with certainty-based score in `[0, 1]`.
+- [x] Hybrid search: `query.hybrid()` (BM25 + vector RRF) via `WEAVIATE_ENABLE_HYBRID=true` + `query_text` kwarg.
+- [x] Full export with stored vectors via `fetch_objects(include_vector=True)`.
+- [ ] Operational runbook (snapshot, restore, tenant migration).
 
 ---
 
@@ -176,7 +189,7 @@ Nix dev shell backend tracks (`flake.nix`):
 
 - [x] Metadata-aware filters implemented in all 5 backends.
 - [x] Namespace-aware retrieval in all 5 backends.
-- [x] Hybrid search available in OpenSearch (dense + BM25); other backends dense-only.
+- [x] Hybrid search available in OpenSearch and Weaviate (BM25 + vector); other backends dense-only.
 - [x] Score normalisation per backend — all return `[0, 1]`.
 - [ ] Chunk provenance in citations — answers reference title/source but not stable `chunk_id`.
 - [ ] Grounded generation refusal — `RigorousRAGEngine` should return an explicit no-context signal rather than a hallucinated answer when retrieval returns zero useful results.
@@ -301,13 +314,13 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] `Azure AI Search` implemented.
 - [ ] Integration tests, operational runbook — pending.
 
-### Phase 4: Optional enterprise backend
+### Phase 4: Cloud-native local-first backend ✅ (code complete)
 
-- [ ] `Weaviate` — deferred. Revisit when there is a concrete adoption need.
+- [x] `Weaviate` implemented — HNSW COSINE, hybrid BM25+vector, local Nix shell.
 
 ### Phase 5: Production polish
 
-- [ ] Nix dev shells per backend track.
+- [x] Nix dev shells per backend track — `.#rag-pgvector`, `.#rag-qdrant`, `.#rag-opensearch`, `.#rag-weaviate`.
 - [ ] Integration test suites gated behind backend shells.
 - [ ] Provider contract tests for all backends.
 - [ ] CLI `cerebro rag backends` introspection commands.
@@ -321,20 +334,21 @@ Nix dev shell backend tracks (`flake.nix`):
 
 A backend is production-ready when **all** of the following are true:
 
-| Criterion | chroma | pgvector | qdrant | opensearch | azure_search |
-|-----------|:------:|:--------:|:------:|:----------:|:------------:|
-| Selected via shared factory/config | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Ingestion is idempotent | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Metadata filters work | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Namespaces work | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Health check returns actionable detail | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Integration tests pass in Nix shell | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Benchmark data exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Operational runbook exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Rollback procedure exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Docs state when to choose / not choose | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Criterion | chroma | pgvector | qdrant | opensearch | azure_search | weaviate |
+|-----------|:------:|:--------:|:------:|:----------:|:------------:|:--------:|
+| Selected via shared factory/config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Ingestion is idempotent | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Metadata filters work | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Namespaces work | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Health check returns actionable detail | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Nix dev shell exists | ⬜ | ✅ | ✅ | ✅ | ⬜ | ✅ |
+| Integration tests pass in Nix shell | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Benchmark data exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Operational runbook exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Docs state when to choose / not choose | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-`chroma` is intentionally development-only and exempt from the integration test, benchmark, and runbook criteria.
+`chroma` is intentionally development-only and exempt from the Nix shell, integration test, benchmark, and runbook criteria.
+`azure_search` has no Nix server package — use the Azure-hosted service directly.
 
 ---
 
@@ -342,10 +356,10 @@ A backend is production-ready when **all** of the following are true:
 
 Priority order based on Definition of Done gaps:
 
-1. **Nix dev shells** (§12) — unblocks CI integration tests for pgvector, Qdrant, OpenSearch.
-2. **Provider contract tests** (§13) — Qdrant, OpenSearch, Azure Search missing test coverage.
-3. **CLI `cerebro rag backends`** (§9) — list, info, health introspection.
-4. **Grounded/no-context refusal** (§14 Phase 0) — last remaining Phase 0 item.
-5. **Operational runbooks** (§10) — required for Definition of Done on all production backends.
-6. **Content hashing** (§8) — skip re-embedding unchanged chunks.
-7. **Weaviate** (§6.5) — only if a concrete adoption need materialises.
+1. **Provider contract tests** (§13) — Qdrant, OpenSearch, Azure Search, Weaviate missing test coverage.
+2. **CLI `cerebro rag backends`** (§9) — list, info, health introspection commands.
+3. **Grounded/no-context refusal** (§14 Phase 0) — last remaining Phase 0 item.
+4. **Operational runbooks** (§10) — required for Definition of Done on all production backends.
+5. **Content hashing** (§8) — skip re-embedding unchanged chunks.
+6. **Dashboard backend selector** (§5.2) — surface active backend in Control Plane panel.
+7. **Agent pipeline primitives** — structured multi-step agent flows on top of the RAG layer; reflect in dashboard with per-agent views.
