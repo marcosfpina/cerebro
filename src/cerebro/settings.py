@@ -25,6 +25,14 @@ class CerebroSettings:
     vector_store_embedding_dimensions: int | None = None
     vector_store_index_type: str = "hnsw"
 
+    # Azure AI Search
+    azure_search_endpoint: str | None = None
+    azure_search_index_name: str | None = None
+    azure_search_api_key: str | None = None
+
+    # LLM provider
+    llm_provider: str = "llamacpp"
+
     @classmethod
     def from_env(cls) -> CerebroSettings:
         return cls(
@@ -55,6 +63,10 @@ class CerebroSettings:
             )
             .strip()
             .lower(),
+            azure_search_endpoint=os.getenv("AZURE_SEARCH_ENDPOINT"),
+            azure_search_index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
+            azure_search_api_key=os.getenv("AZURE_SEARCH_API_KEY"),
+            llm_provider=os.getenv("CEREBRO_LLM_PROVIDER", "llamacpp").strip().lower(),
         )
 
 

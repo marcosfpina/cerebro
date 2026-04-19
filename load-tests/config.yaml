@@ -1,0 +1,32 @@
+# =============================================================================
+# cerebro/load-tests/config.yaml
+# Azure Load Testing config — RAG API endpoints
+# =============================================================================
+version: v0.1
+testName: cerebro-rag-api
+testPlan: cerebro.jmx
+description: "RAG API sustained load — /chat, /intelligence/query, /rag/status"
+
+engineInstances: 2
+
+configurationFiles:
+  - cerebro.jmx
+
+failureCriteria:
+  - avg(response_time_ms) > 500
+  - percentage(error) > 5
+  - p99(response_time_ms) > 200
+
+env:
+  - name: TARGET_URL
+    value: $(STAGING_URL)
+  - name: THREADS
+    value: "40"
+  - name: RAMP_UP_SECONDS
+    value: "30"
+  - name: DURATION_SECONDS
+    value: "120"
+
+autoStop:
+  errorPercentage: 20
+  timeWindow: 30

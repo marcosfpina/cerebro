@@ -237,7 +237,7 @@
           pkgs.gitleaks
           pkgs.syft
           pkgs.pip-audit
-          pkgs.nodejs_20
+          pkgs.nodejs_24
           pkgs.gum  # Charmbracelet UI styling for premium terminal DX
           pkgs.stdenv.cc.cc.lib
           pkgs.zlib

@@ -1,130 +1,397 @@
 <div align="center">
 
-# 🧠 CEREBRO
+# Cerebro
 
 **Enterprise Knowledge Extraction & Distributed RAG Platform**
 
-[![Python 3.13+](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Nix Reproducible](https://img.shields.io/badge/Nix-Reproducible-5277C3?style=for-the-badge&logo=nixos&logoColor=white)](https://nixos.org/)
-[![React Dashboard](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Kubernetes Ready](https://img.shields.io/badge/Kubernetes-Native-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Python 3.13+](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Nix](https://img.shields.io/badge/Nix-Reproducible-5277C3?style=flat-square&logo=nixos&logoColor=white)](https://nixos.org/)
+[![React](https://img.shields.io/badge/React-Dashboard-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Native-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Azure Pipelines](https://img.shields.io/badge/Azure-Pipelines-0078D4?style=flat-square&logo=azurepipelines&logoColor=white)](https://azure.microsoft.com/en-us/products/devops/pipelines)
+
+`v1.0.0b1` · `cerebro` CLI · Python 3.13+ · Nix-first
 
 </div>
 
 ---
 
-**Cerebro** is a highly modular, standalone, hermetic knowledge and repository intelligence platform. It seamlessly bridges deep static analysis, state-of-the-art Retrieval Augmented Generation (RAG), and extensive Cloud integration, accessible through a powerful **triple-interface design**.
+Cerebro is a modular, hermetic knowledge extraction and RAG platform. It combines deep static code analysis, retrieval-augmented generation with pluggable backends, real-time repository intelligence, and enterprise cloud integrations — all accessible through a unified triple-interface design (CLI, TUI, and web dashboard).
 
-Built strictly around **Nix-first** reproducibility, the core runtime guarantees that what runs on your local machine scales flawlessly to your production Kubernetes clusters and Enterprise cloud environments.
+The runtime is built Nix-first: what runs locally runs identically in CI and on Kubernetes.
 
-## ✨ Core Capabilities
+---
 
-*   **Rigorous RAG Engine:** At its core, the `RigorousRAGEngine` handles complex context retrieval from multiple sources, generating highly precise, grounded answers.
-*   **Triple-Interface Architecture:**
-    *   💻 **CLI (Command Line):** Built with Typer, perfect for automation, CI/CD, and fast interactions (`knowledge`, `ops`, `rag`, `metrics`).
-    *   🖥️ **TUI (Textual UI):** A rich, interactive terminal interface for immediate deep-dives into your codebase.
-    *   🌐 **GUI / Dashboard:** A modern React/Vite dashboard built with TypeScript and TailwindCSS for visual system management.
-*   **Intelligence & Analysis:** Built-in capability to analyze codebases (`analyzer`), extract knowledge (`briefing`), and compute repository metrics (zero-token analysis).
-*   **Cloud & DevOps Native:** Deploy effortlessly with robust Kubernetes manifests, Docker containers, and CI/CD pipelines targeting Azure and GCP.
-
-## 🔌 Pluggable Providers & Integrations
-
-Cerebro utilizes a strict Factory pattern, ensuring seamless drop-in support for your preferred AI models and Vector Stores.
-
-**Supported LLM Backends:**
-*   Google Gemini
-*   Anthropic Claude
-*   OpenAI (and OpenAI-compatible endpoints)
-*   Groq
-*   Llama.cpp (for air-gapped/local execution)
-
-**Supported Vector Stores:**
-*   PGVector (PostgreSQL)
-*   ChromaDB
-*   Elasticsearch (Hybrid RRF)
-
-## ⚡ 1-Minute Quickstart
-
-> [!TIP]
-> The fastest way to get started is via the Nix hermetic shell. No virtual environments, no hidden global dependencies.
+## Quickstart
 
 ```bash
-# 1. Enter the hermetic development environment
+# Enter the hermetic dev environment
 nix develop
 
-# 2. Run the interactive setup to configure your Cloud and LLM settings
+# Configure cloud and LLM settings
 cerebro setup
 
-# 3. Use the CLI to ingest knowledge
-cerebro knowledge analyze . "General codebase review"
+# Ingest a codebase into the knowledge base
+cerebro knowledge analyze . "Initial analysis"
 cerebro rag ingest ./data/analyzed/all_artifacts.jsonl
 
-# 4. Query your intelligence engine
-cerebro rag query "Explain the architecture of the Core Services"
+# Query
+cerebro rag query "Explain the RAG pipeline architecture"
+
+# Launch the full API + dashboard
+cerebro serve
 ```
 
-## 🏗️ Architecture Layout
+---
+
+## Interfaces
+
+Cerebro exposes three fully-featured entry points sharing the same backend:
+
+| Interface | Command | Description |
+|-----------|---------|-------------|
+| **CLI** | `cerebro` / `phantom` | Typer-based CLI for automation, CI/CD, and scripting |
+| **TUI** | `cerebro tui` | Textual interactive terminal UI |
+| **Dashboard** | `cerebro serve` then open `localhost:3000` | React/Vite/TypeScript web dashboard |
+
+### CLI Command Groups
+
+| Group | Commands | Purpose |
+|-------|----------|---------|
+| `cerebro rag` | `ingest`, `query`, `status`, `init`, `smoke`, `migrate` | RAG pipeline control |
+| `cerebro knowledge` | `analyze`, `index`, `generate-docs` | Knowledge extraction and ETL |
+| `cerebro ops` | `health`, `scan` | System health and ecosystem scan |
+| `cerebro metrics` | `collect`, `watch`, `report` | Repository metrics |
+| `cerebro gcp` | `validate`, `datastores-list`, `search` | GCP / Vertex AI operations |
+| `cerebro content` | — | Content generation helpers |
+| `cerebro strategy` | — | Strategic analysis commands |
+| `cerebro setup` | — | Interactive environment setup |
+
+### Dashboard Pages
+
+`Dashboard` · `Projects` · `Intelligence` · `Briefing` · `Chat` · `Metrics` · `Control Plane` · `Settings`
+
+---
+
+## Architecture
 
 ```mermaid
 graph TD
-    classDef default fill:#1e1e1e,stroke:#4a4a4a,stroke-width:2px,color:#fff;
-    classDef highlight fill:#5277c3,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef adapter fill:#0078d4,stroke:#fff,stroke-width:2px,color:#fff;
-
-    subgraph "Cerebro Unified Surface"
-        CLI("Interactive CLI (Typer)")
-        CDASH("React Dashboard")
-        CTUI("Textual TUI")
+    subgraph "Interfaces"
+        CLI["CLI (Typer)"]
+        TUI["TUI (Textual)"]
+        DASH["Dashboard (React)"]
     end
 
-    subgraph "Core Intelligence Engine"
-        AST["Static Analysis (AST)"]
-        Metrics["Repo Metrics"]
-        RAG["Rigorous RAG Engine"]
+    subgraph "API Layer"
+        API["FastAPI — port 8000"]
+        WS["WebSocket — real-time"]
     end
 
-    subgraph "Pluggable Storage"
-        PG["PGVector"]
-        Chroma["Local ChromaDB"]
+    subgraph "Core Intelligence"
+        RAG["RigorousRAGEngine"]
+        INTEL["CerebroIntelligence"]
+        BRIEF["BriefingGenerator"]
+        METRICS["MetricsCollector"]
+        WATCHER["RepoWatcher"]
+        RERANK["CerebroRerankerClient"]
     end
 
-    subgraph "Pluggable Compute"
-        Llama["Llama.cpp (Local)"]
-        Azure["Azure OpenAI"]:::adapter
-        Gemini["Google Gemini"]
-        Claude["Anthropic Claude"]
+    subgraph "LLM Providers"
+        LLAMA["Llama.cpp (local)"]
+        AZURE_LLM["Azure OpenAI"]
+        CLAUDE["Anthropic Claude"]
+        GEMINI["Google Gemini"]
+        GROQ["Groq"]
+        OAI["OpenAI-compatible"]
+        VERTEX["GCP Vertex AI"]
     end
 
-    CLI --> AST
-    CDASH --> RAG
-    CTUI --> Metrics
+    subgraph "Vector Store Providers"
+        CHROMA["ChromaDB (dev)"]
+        PG["pgvector (prod)"]
+        AZSEARCH["Azure AI Search (prod)"]
+    end
 
-    AST --> RAG
-    Metrics --> RAG
+    subgraph "Event Bus"
+        NATS["NATS JetStream"]
+    end
 
+    CLI --> API
+    TUI --> API
+    DASH --> API
+    API --> WS
+
+    API --> RAG
+    API --> INTEL
+    API --> BRIEF
+    API --> METRICS
+    API --> WATCHER
+
+    RAG --> RERANK
+    RAG --> CHROMA
     RAG --> PG
-    RAG --> Chroma
+    RAG --> AZSEARCH
 
-    RAG --> Llama
-    RAG --> Azure
-    RAG --> Gemini
-    RAG --> Claude
+    RAG --> LLAMA
+    RAG --> AZURE_LLM
+    RAG --> CLAUDE
+    RAG --> GEMINI
+    RAG --> GROQ
+    RAG --> OAI
+    RAG --> VERTEX
+
+    INTEL --> NATS
+    WATCHER --> NATS
 ```
 
-## 🚀 Deployment & Operations
+---
 
-Cerebro is enterprise-ready and built to scale:
-*   **Kubernetes Orchestration:** Check the `/kubernetes` directory for production-grade `Deployment`, `Service`, and `Ingress` YAML definitions (optimized for AKS).
-*   **CI/CD Pipelines:** Out-of-the-box workflows for GitHub Actions, GitLab CI, and Azure Pipelines.
-*   **Operational Arsenal:** The `/scripts` directory includes a suite of utility tools for load testing, ETL docs parsing, grounded search evaluations, and billing monitors.
+## Providers
 
-## 🛠️ Developer Guidelines
+All providers implement abstract interfaces defined in `src/cerebro/interfaces/`. Selection is driven entirely by environment variables — no code changes required to switch backends.
 
-1. **Always use Nix.** Never `pip install` globally. Manage dependencies explicitly via `flake.nix` and `poetry2nix`.
-2. **Interface First:** Any new AI provider or Vector Store must implement the abstract interfaces defined in the core (`src/cerebro/providers/`).
-3. **Command Discovery:** Use `cerebro --help` or type `chelp` inside the Nix shell to explore the extensive command capabilities.
+### LLM Providers
+
+Set via `CEREBRO_LLM_PROVIDER`.
+
+| Alias | Provider | Notes |
+|-------|----------|-------|
+| `llamacpp` | Llama.cpp | Default. Local inference, air-gapped friendly. Port 8081. |
+| `anthropic` | Anthropic Claude | Requires `ANTHROPIC_API_KEY` |
+| `azure` | Azure OpenAI | Requires `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+| `gemini` | Google Gemini | Requires `GOOGLE_API_KEY` |
+| `groq` | Groq | Requires `GROQ_API_KEY` |
+| `openai_compatible` | Any OpenAI-compatible endpoint | Set `OPENAI_API_BASE` |
+| `gcp` / `vertex` | GCP Vertex AI | Uses Application Default Credentials |
+
+### Vector Store Providers
+
+Set via `CEREBRO_VECTOR_STORE_PROVIDER`.
+
+| Alias | Provider | Production? | Notes |
+|-------|----------|:-----------:|-------|
+| `chroma` | ChromaDB | Dev only | Local embedded. Default. |
+| `pgvector` | PostgreSQL + pgvector | Yes | Requires `CEREBRO_VECTOR_STORE_URL` (DSN). HNSW index, full namespace support, idempotent upsert. |
+| `azure_search` | Azure AI Search | Yes | Requires `AZURE_SEARCH_ENDPOINT` + `AZURE_SEARCH_API_KEY`. HNSW, OData filters, namespace isolation. |
+
+#### pgvector bootstrap
+
+```bash
+# Initialize schema (creates extension, table, indexes)
+cerebro rag init
+
+# Or via CLI flag
+CEREBRO_VECTOR_STORE_PROVIDER=pgvector \
+CEREBRO_VECTOR_STORE_URL=postgresql://user:pass@host/dbname \
+cerebro rag init
+```
+
+#### Azure AI Search bootstrap
+
+```bash
+CEREBRO_VECTOR_STORE_PROVIDER=azure_search \
+AZURE_SEARCH_ENDPOINT=https://my-service.search.windows.net \
+AZURE_SEARCH_API_KEY=<key> \
+cerebro rag init
+```
 
 ---
+
+## Core Intelligence Engine
+
+### RigorousRAGEngine
+
+The central retrieval-augmented generation engine. Features:
+
+- Pluggable LLM and vector store via factory injection
+- Multi-stage embedding (Jina → MPNET → MiniLM fallback chain)
+- Namespace-scoped retrieval and ingestion
+- Idempotent upsert with content hashing
+- Prompt injection protection (regex heuristics + control character sanitization)
+- Grounded generation — refuses to label answers as grounded when retrieval fails
+
+### CerebroIntelligence
+
+Hermetic static analyzer operating on codebases without executing them:
+
+- AST-based code extraction
+- Zero-token repository health scoring: **activity (30%)** + **docs (20%)** + **testing (20%)** + **security (30%)**
+- Language detection: Python, Rust, TypeScript, JavaScript, Nix, Go, and more
+- Dependency graph extraction (nodes + edges)
+
+### Intelligence Registry
+
+Dual semantic search paths:
+
+| Path | Backend | Purpose |
+|------|---------|---------|
+| `core/rag/engine.py` | Pluggable vector store | RAG queries, chat, grounded generation |
+| `registry/indexer.py` | FAISS | Intelligence / threat / alert search |
+
+### BriefingGenerator
+
+Produces AI-generated briefings from collected intelligence:
+
+- `GET /briefing/daily` — daily summary
+- `GET /briefing/executive` — executive summary with threat levels
+
+### MetricsCollector + RepoWatcher
+
+- Zero-token metrics: git log, filesystem, config parsing, regex security patterns
+- `RepoWatcher` polls repositories every 10 seconds and broadcasts changes over WebSocket
+
+---
+
+## Event Bus (NATS JetStream)
+
+Cerebro publishes and consumes events via NATS for async intelligence processing.
+
+| Topic | Direction | Payload |
+|-------|-----------|---------|
+| `cognition.insight.generated.v1` | Publish | Extracted insight after code analysis |
+| `ingest.file.sanitized.v1` | Subscribe | Sanitized file ready for ingestion |
+
+Configure with `NATS_URL` (default: `nats://localhost:4222`).
+
+---
+
+## Security
+
+- **SOPS + age** — secrets encrypted at rest via `sops-nix` (NixOS module)
+- **Trufflehog** — git history secret scanning in CI (only-verified mode)
+- **Trivy** — container image and filesystem vulnerability scanning (CRITICAL/HIGH exit-code 1)
+- **Prompt injection filtering** — content validation on all RAG inputs
+- **Namespace isolation** — tenant boundaries enforced at the storage layer
+
+---
+
+## Cloud Integration
+
+### Azure
+
+| Service | Usage |
+|---------|-------|
+| Azure OpenAI | LLM inference and embeddings |
+| Azure AI Search | Production vector store with HNSW and OData filters |
+| Azure Kubernetes Service (AKS) | Production workload deployment |
+| Azure Container Registry (ACR) | Container image registry |
+| Azure Load Testing | JMeter-based load validation (p99 < 200ms, error < 5%) |
+
+Config snapshot: `AzureDeploymentConfig.from_env()` reads all Azure settings from environment variables. No values are hardcoded.
+
+### GCP
+
+| Service | Usage |
+|---------|-------|
+| Vertex AI Search | Optional fallback retrieval backend |
+| Dialogflow CX | Conversational interface |
+| BigQuery | Billing and usage analytics |
+| Cloud Run | Serverless deployment |
+| Artifact Registry | Container images |
+
+Config snapshot: `GcpDeploymentConfig.from_env()`.
+
+---
+
+## CI/CD
+
+Cerebro uses the shared `voidnx-pipeline.yml` template from `VoidNxSEC/.azure-pipelines`.
+
+**Pipeline stages:** `Validate` → `Test` → `Build` → `LoadTest` → `Deploy`
+
+| Stage | What runs |
+|-------|-----------|
+| Validate | `nix flake check`, `ruff`, `mypy` |
+| Test (unit) | `pytest tests/unit` |
+| Test (integration) | `pytest tests/integration` with Postgres 16 + NATS 2.10 sidecars |
+| Test (security) | Trufflehog secret scan + Trivy filesystem scan |
+| Build | Docker multi-stage → ACR push + Trivy image scan |
+| LoadTest | Azure Load Testing: `/chat`, `/intelligence/query`, `/rag/status` |
+| Deploy | `KubernetesManifest` → AKS namespace `cerebro` (main branch only, approval gate) |
+
+---
+
+## Configuration Reference
+
+All settings are environment-driven. No values should be hardcoded.
+
+### Vector Store
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CEREBRO_VECTOR_STORE_PROVIDER` | `chroma` | Provider alias |
+| `CEREBRO_VECTOR_STORE_URL` | — | DSN for pgvector |
+| `CEREBRO_VECTOR_STORE_NAMESPACE` | — | Default namespace |
+| `CEREBRO_VECTOR_STORE_COLLECTION_NAME` | `cerebro_documents` | Collection / table name |
+| `CEREBRO_VECTOR_STORE_EMBEDDING_DIMENSIONS` | — | Required for pgvector index |
+| `CEREBRO_VECTOR_STORE_INDEX_TYPE` | `hnsw` | `hnsw`, `ivfflat`, or `none` |
+
+### Azure AI Search
+
+| Variable | Description |
+|----------|-------------|
+| `AZURE_SEARCH_ENDPOINT` | `https://<name>.search.windows.net` |
+| `AZURE_SEARCH_SERVICE_NAME` | Alternative to endpoint — name is used to derive URL |
+| `AZURE_SEARCH_API_KEY` | Admin or query key |
+| `AZURE_SEARCH_INDEX_NAME` | Index name (default: `cerebro-documents`) |
+
+### LLM
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CEREBRO_LLM_PROVIDER` | `llamacpp` | Provider alias |
+| `AZURE_OPENAI_ENDPOINT` | — | Azure OpenAI service URL |
+| `AZURE_OPENAI_API_KEY` | — | Azure OpenAI key |
+| `AZURE_OPENAI_CHAT_DEPLOYMENT` | `gpt-4o` | Chat model deployment |
+| `AZURE_OPENAI_EMBED_DEPLOYMENT` | `text-embedding-3-small` | Embeddings deployment |
+| `ANTHROPIC_API_KEY` | — | Anthropic key |
+| `GOOGLE_API_KEY` | — | Gemini key |
+| `GROQ_API_KEY` | — | Groq key |
+
+### GCP
+
+| Variable | Description |
+|----------|-------------|
+| `GCP_PROJECT_ID` | GCP project (never hardcode) |
+| `DATA_STORE_ID` | Vertex AI Search data store (never hardcode) |
+
+### Runtime
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NATS_URL` | `nats://localhost:4222` | NATS JetStream URL |
+| `CEREBRO_RERANKER_URL` | `http://localhost:8090` | cerebro-reranker endpoint |
+
+---
+
+## Companion Service: cerebro-reranker
+
+Repo: `~/master/cerebro-reranker`
+
+A dedicated reranking microservice using a HybridEngine pipeline:
+
+```
+MiniLM (fast pass) → Electra (precision) → DeBERTa (final score)
+```
+
+API: `POST /v1/rerank` — used by `CerebroRerankerClient` in `src/cerebro/core/rerank_client.py`.
+
+GCP Vertex AI reranking is the fallback when the service is unavailable.
+
+---
+
+## Developer Guidelines
+
+1. **Always use Nix.** Enter the shell with `nix develop` before any command. Never `pip install` globally.
+2. **Interface first.** Any new LLM or vector store provider must implement the abstract interface in `src/cerebro/interfaces/` and register itself in the corresponding factory (`llm_factory.py` or `vector_store_factory.py`).
+3. **No hardcoded IDs.** GCP project IDs, data store IDs, Azure resource names — always via environment variables.
+4. **English only.** All user-facing strings, CLI output, TUI labels, and docstrings must be in English.
+5. **API endpoints go in `src/cerebro/api/server.py`.** The `dashboard_server.py` file is a legacy stub — do not extend it.
+6. **Secrets via SOPS.** Never commit plaintext secrets. Use `sops`-encrypted files and the `age` key.
+
+---
+
 <div align="center">
-<i>Proprietary internal architecture. Built tightly, hermetically mapped, and highly scalable.</i>
+<sub>Built by VoidNxLabs · Enterprise-grade · Hermetically sealed · Production-ready</sub>
 </div>

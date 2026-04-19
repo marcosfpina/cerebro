@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0">
+  <hashTree>
+    <TestPlan testname="Cerebro RAG API Load Test" enabled="true">
+      <stringProp name="TestPlan.comments">Targets /rag/status, /chat, /intelligence/query</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <hashTree>
+
+        <!-- Thread Group -->
+        <ThreadGroup testname="Cerebro API Users" enabled="true">
+          <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+          <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+            <boolProp name="LoopController.continue_forever">false</boolProp>
+            <intProp name="LoopController.loops">-1</intProp>
+          </elementProp>
+          <stringProp name="ThreadGroup.num_threads">${THREADS}</stringProp>
+          <stringProp name="ThreadGroup.ramp_time">${RAMP_UP_SECONDS}</stringProp>
+          <longProp name="ThreadGroup.duration">${DURATION_SECONDS}</longProp>
+          <boolProp name="ThreadGroup.scheduler">true</boolProp>
+          <hashTree>
+
+            <!-- HTTP Defaults -->
+            <ConfigTestElement testname="HTTP Defaults" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments"/>
+              <stringProp name="HTTPSampler.domain">${TARGET_URL}</stringProp>
+              <stringProp name="HTTPSampler.port">8000</stringProp>
+              <stringProp name="HTTPSampler.protocol">http</stringProp>
+            </ConfigTestElement>
+            <hashTree/>
+
+            <!-- /rag/status — health / status check -->
+            <HTTPSamplerProxy testname="GET /rag/status" enabled="true">
+              <stringProp name="HTTPSampler.path">/rag/status</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <ResponseAssertion testname="Assert 200" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp>200</stringProp>
+                </collectionProp>
+                <intProp name="Assertion.test_type">2</intProp>
+                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              </ResponseAssertion>
+              <hashTree/>
+            </hashTree>
+
+            <!-- /intelligence/query — semantic search -->
+            <HTTPSamplerProxy testname="POST /intelligence/query" enabled="true">
+              <stringProp name="HTTPSampler.path">/intelligence/query</stringProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp elementType="HTTPArgument">
+                    <stringProp name="Argument.value">{"query": "architecture overview", "top_k": 5}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.mimetype">application/json</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree/>
+
+            <!-- /chat — RAG-grounded chat -->
+            <HTTPSamplerProxy testname="POST /chat" enabled="true">
+              <stringProp name="HTTPSampler.path">/chat</stringProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp elementType="HTTPArgument">
+                    <stringProp name="Argument.value">{"message": "What is the current RAG backend?", "use_rag": true}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.mimetype">application/json</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree/>
+
+            <!-- Pacing: ~1s think time between requests -->
+            <ConstantTimer testname="Think Time" enabled="true">
+              <stringProp name="ConstantTimer.delay">1000</stringProp>
+            </ConstantTimer>
+            <hashTree/>
+
+          </hashTree>
+        </ThreadGroup>
+
+        <!-- Summary Report -->
+        <ResultCollector testname="Summary Report" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>true</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>true</dataType>
+              <encoding>false</encoding>
+              <assertions>true</assertions>
+              <subresults>true</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <bytesThreshold>0</bytesThreshold>
+              <threadCounts>true</threadCounts>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename">results.jtl</stringProp>
+        </ResultCollector>
+        <hashTree/>
+
+      </hashTree>
+    </TestPlan>
+  </hashTree>
+</jmeterTestPlan>

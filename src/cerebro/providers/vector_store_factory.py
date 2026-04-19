@@ -15,6 +15,11 @@ VECTOR_STORE_PROVIDER_ALIASES: dict[str, str] = {
     "pgvector": "pgvector",
     "postgres": "pgvector",
     "postgresql": "pgvector",
+    "azure_search": "azure_search",
+    "azure-search": "azure_search",
+    "azuresearch": "azure_search",
+    "cognitive-search": "azure_search",
+    "azure-cognitive-search": "azure_search",
 }
 
 
@@ -52,6 +57,10 @@ def build_vector_store_provider(
     schema: str | None = None,
     embedding_dimensions: int | None = None,
     index_type: str | None = None,
+    # Azure AI Search specific
+    azure_search_endpoint: str | None = None,
+    azure_search_index_name: str | None = None,
+    azure_search_api_key: str | None = None,
 ) -> VectorStoreProvider:
     """Build the configured vector store provider."""
 
@@ -83,6 +92,21 @@ def build_vector_store_provider(
                 else settings.vector_store_embedding_dimensions
             ),
             index_type=index_type or settings.vector_store_index_type,
+        )
+
+    if canonical_name == "azure_search":
+        from cerebro.providers.azure_search import AzureSearchVectorStoreProvider
+
+        return AzureSearchVectorStoreProvider(
+            service_endpoint=azure_search_endpoint or settings.azure_search_endpoint,
+            index_name=azure_search_index_name or settings.azure_search_index_name,
+            api_key=azure_search_api_key or settings.azure_search_api_key,
+            default_namespace=namespace or settings.vector_store_namespace,
+            embedding_dimensions=(
+                embedding_dimensions
+                if embedding_dimensions is not None
+                else settings.vector_store_embedding_dimensions
+            ),
         )
 
     raise ValueError(
