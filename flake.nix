@@ -74,6 +74,9 @@
             psycopg
             sentence-transformers
             textual
+            mkdocs
+            mkdocs-material
+            pymdown-extensions
 
             # Web Framework
             fastapi
@@ -238,139 +241,139 @@
           pkgs.syft
           pkgs.pip-audit
           pkgs.nodejs_24
-          pkgs.gum  # Charmbracelet UI styling for premium terminal DX
+          pkgs.gum # Charmbracelet UI styling for premium terminal DX
           pkgs.stdenv.cc.cc.lib
           pkgs.zlib
           # pkgs.llama-cpp  # Removido: puxa CUDA pesado, instalar separado se necessário
         ];
 
         baseShellHook = ''
-          export PYTHONPATH="$PWD/src:$PYTHONPATH"
+                    export PYTHONPATH="$PWD/src:$PYTHONPATH"
 
-          # Add cerebro script to PATH
-          export PATH="$PWD:$PATH"
+                    # Add cerebro script to PATH
+                    export PATH="$PWD:$PATH"
 
-          # System libraries for compiled extensions
-          export LD_LIBRARY_PATH="${
-            pkgs.lib.makeLibraryPath [
-              pkgs.stdenv.cc.cc.lib
-              pkgs.zlib
-              pkgs.stdenv.cc.libc
-            ]
-          }:$LD_LIBRARY_PATH"
+                    # System libraries for compiled extensions
+                    export LD_LIBRARY_PATH="${
+                      pkgs.lib.makeLibraryPath [
+                        pkgs.stdenv.cc.cc.lib
+                        pkgs.zlib
+                        pkgs.stdenv.cc.libc
+                      ]
+                    }:$LD_LIBRARY_PATH"
 
-          # Create necessary directories
-          mkdir -p ./data/analyzed ./data/vector_db ./data/reports ./config/gitlab-duo
+                    # Create necessary directories
+                    mkdir -p ./data/analyzed ./data/vector_db ./data/reports ./config/gitlab-duo
 
-          # GitLab Duo Configuration
-          export GITLAB_DUO_ENABLED=true
-          export GITLAB_DUO_ENDPOINT="https://gitlab.com/api/v4"
-          export GITLAB_DUO_FEATURES_CODE_COMPLETION=true
-          export GITLAB_DUO_FEATURES_CODE_REVIEW=true
-          export GITLAB_DUO_FEATURES_SECURITY_SCANNING=true
-          export GITLAB_DUO_FEATURES_DOCUMENTATION=true
-          export GITLAB_DUO_MODEL_CODE_GENERATION="claude-3-5-sonnet"
-          export GITLAB_DUO_MODEL_CODE_REVIEW="claude-3-5-sonnet"
-          export GITLAB_DUO_MODEL_SECURITY="claude-3-5-sonnet"
-          export GITLAB_DUO_RATE_LIMIT_RPM=60
-          export GITLAB_DUO_RATE_LIMIT_TPM=90000
-          export GITLAB_DUO_CACHE_ENABLED=true
-          export GITLAB_DUO_CACHE_TTL=3600
-          export GITLAB_DUO_LOG_LEVEL="info"
-          export GITLAB_DUO_LOG_FORMAT="json"
+                    # GitLab Duo Configuration
+                    export GITLAB_DUO_ENABLED=true
+                    export GITLAB_DUO_ENDPOINT="https://gitlab.com/api/v4"
+                    export GITLAB_DUO_FEATURES_CODE_COMPLETION=true
+                    export GITLAB_DUO_FEATURES_CODE_REVIEW=true
+                    export GITLAB_DUO_FEATURES_SECURITY_SCANNING=true
+                    export GITLAB_DUO_FEATURES_DOCUMENTATION=true
+                    export GITLAB_DUO_MODEL_CODE_GENERATION="claude-3-5-sonnet"
+                    export GITLAB_DUO_MODEL_CODE_REVIEW="claude-3-5-sonnet"
+                    export GITLAB_DUO_MODEL_SECURITY="claude-3-5-sonnet"
+                    export GITLAB_DUO_RATE_LIMIT_RPM=60
+                    export GITLAB_DUO_RATE_LIMIT_TPM=90000
+                    export GITLAB_DUO_CACHE_ENABLED=true
+                    export GITLAB_DUO_CACHE_TTL=3600
+                    export GITLAB_DUO_LOG_LEVEL="info"
+                    export GITLAB_DUO_LOG_FORMAT="json"
 
-          # Load API key from secure location if available
-          if [ -f ~/.config/gitlab-duo/api-key ]; then
-            export GITLAB_DUO_API_KEY=$(cat ~/.config/gitlab-duo/api-key)
-          fi
+                    # Load API key from secure location if available
+                    if [ -f ~/.config/gitlab-duo/api-key ]; then
+                      export GITLAB_DUO_API_KEY=$(cat ~/.config/gitlab-duo/api-key)
+                    fi
 
-          # Project environment variables
-          export CEREBRO_DATA_DIR="$PWD/data"
-          export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
+                    # Project environment variables
+                    export CEREBRO_DATA_DIR="$PWD/data"
+                    export CEREBRO_VECTOR_DB="$PWD/data/vector_db"
 
-          # ── Interface shortcuts ─────────────────────────────────────────────
-          cdash() { cerebro dashboard "$@"; }   # React GUI → http://localhost:18321
-          ctui()  { cerebro tui "$@"; }         # TUI Textual (terminal)
+                    # ── Interface shortcuts ─────────────────────────────────────────────
+                    cdash() { cerebro dashboard "$@"; }   # React GUI → http://localhost:18321
+                    ctui()  { cerebro tui "$@"; }         # TUI Textual (terminal)
 
-          # ── chelp: referência rápida ────────────────────────────────────────
-          chelp() {
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "🧠 CEREBRO — Quick Reference"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            echo "INTERFACES:"
-            echo "  cerebro <command>            CLI  (principal — cerebro --help)"
-            echo "  cdash                        Dashboard GUI  → http://localhost:18321"
-            echo "  ctui                         TUI Textual    (terminal interativo)"
-            echo ""
-            echo "CEREBRO COMMANDS:"
-            echo "  cerebro knowledge analyze <path>   Extrair AST do código"
-            echo "  cerebro metrics scan               Métricas zero-token"
-            echo "  cerebro rag ingest                 Ingerir no backend RAG configurado"
-            echo "  cerebro rag query \"<question>\"    Query RAG com grounded generation"
-            echo "  cerebro rag rerank <query>         Rerankar documentos"
-            echo "  cerebro strategy optimize          Otimização de carreira/tech"
-            echo "  cerebro ops health                 Health check completo"
-            echo ""
-            echo "OPTIONAL CLOUD:"
-            echo "  nix develop .#gcp --command cerebro gcp status"
-            echo ""
-            echo "JUST TARGETS:"
-            echo "  just test          Unit tests"
-            echo "  just lint          Ruff linter"
-            echo "  just pipeline      CI pipeline completo"
-            echo "  just dashboard     Subir Dashboard GUI"
-            echo "  just tui           Subir TUI"
-            echo ""
-            echo "  cerebro --help     Referência completa"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          }
+                    # ── chelp: referência rápida ────────────────────────────────────────
+                    chelp() {
+                      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                      echo "🧠 CEREBRO — Quick Reference"
+                      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                      echo ""
+                      echo "INTERFACES:"
+                      echo "  cerebro <command>            CLI  (principal — cerebro --help)"
+                      echo "  cdash                        Dashboard GUI  → http://localhost:18321"
+                      echo "  ctui                         TUI Textual    (terminal interativo)"
+                      echo ""
+                      echo "CEREBRO COMMANDS:"
+                      echo "  cerebro knowledge analyze <path>   Extrair AST do código"
+                      echo "  cerebro metrics scan               Métricas zero-token"
+                      echo "  cerebro rag ingest                 Ingerir no backend RAG configurado"
+                      echo "  cerebro rag query \"<question>\"    Query RAG com grounded generation"
+                      echo "  cerebro rag rerank <query>         Rerankar documentos"
+                      echo "  cerebro strategy optimize          Otimização de carreira/tech"
+                      echo "  cerebro ops health                 Health check completo"
+                      echo ""
+                      echo "OPTIONAL CLOUD:"
+                      echo "  nix develop .#gcp --command cerebro gcp status"
+                      echo ""
+                      echo "JUST TARGETS:"
+                      echo "  just test          Unit tests"
+                      echo "  just lint          Ruff linter"
+                      echo "  just pipeline      CI pipeline completo"
+                      echo "  just dashboard     Subir Dashboard GUI"
+                      echo "  just tui           Subir TUI"
+                      echo ""
+                      echo "  cerebro --help     Referência completa"
+                      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                    }
 
-          # ── Shell completion para cerebro ───────────────────────────────────
-          if command -v cerebro &>/dev/null; then
-            eval "$(cerebro --show-completion zsh 2>/dev/null)" 2>/dev/null || true
-          fi
+                    # ── Shell completion para cerebro ───────────────────────────────────
+                    if command -v cerebro &>/dev/null; then
+                      eval "$(cerebro --show-completion zsh 2>/dev/null)" 2>/dev/null || true
+                    fi
 
-          # ── Sync do ambiente core (apenas na primeira vez) ──────────────────
-          if [ -z "''${CI:-}" ] && [ ! -f ".nix-installed-core" ]; then
-            gum style --foreground 212 "📥 Syncing Cerebro core dependencies via Poetry..."
-            if [ -f "pyproject.toml" ]; then
-              poetry install --no-root --only main --no-interaction 2>/dev/null || true
-            fi
-            touch .nix-installed-core
-            gum style --foreground 42 "✅ Cerebro core ready!"
-          fi
+                    # ── Sync do ambiente core (apenas na primeira vez) ──────────────────
+                    if [ -z "''${CI:-}" ] && [ ! -f ".nix-installed-core" ]; then
+                      gum style --foreground 212 "📥 Syncing Cerebro core dependencies via Poetry..."
+                      if [ -f "pyproject.toml" ]; then
+                        poetry install --no-root --only main --no-interaction 2>/dev/null || true
+                      fi
+                      touch .nix-installed-core
+                      gum style --foreground 42 "✅ Cerebro core ready!"
+                    fi
 
-          # ── Interface Premium Terminal (DX) ───────────────────────────────
-          if [ -z "''${CI:-}" ]; then
-            clear
-            gum style \
-              --border double --border-foreground 99 --padding "1 2" \
-              --margin "1 1" --align center \
-              "$(gum style --foreground 42 --bold '🧠 CEREBRO')" \
-              "Enterprise Knowledge Extraction & Distributed RAG Platform" \
-              "$(gum style --foreground 240 'Environment: Reproducible Flake')"
-            
-            # Status Board
-            export STATUS_COLOR="42"
-            export ART_COLOR="42"
-            if [ ! -f "./data/metrics/metrics_snapshot.json" ]; then export STATUS_COLOR="204" ; fi
-            if [ ! -f "./data/analyzed/all_artifacts.jsonl" ]; then export ART_COLOR="204" ; fi
+                    # ── Interface Premium Terminal (DX) ───────────────────────────────
+                    if [ -z "''${CI:-}" ]; then
+                      clear
+                      gum style \
+                        --border double --border-foreground 99 --padding "1 2" \
+                        --margin "1 1" --align center \
+                        "$(gum style --foreground 42 --bold '🧠 CEREBRO')" \
+                        "Enterprise Knowledge Extraction & Distributed RAG Platform" \
+                        "$(gum style --foreground 240 'Environment: Reproducible Flake')"
+                      
+                      # Status Board
+                      export STATUS_COLOR="42"
+                      export ART_COLOR="42"
+                      if [ ! -f "./data/metrics/metrics_snapshot.json" ]; then export STATUS_COLOR="204" ; fi
+                      if [ ! -f "./data/analyzed/all_artifacts.jsonl" ]; then export ART_COLOR="204" ; fi
 
-            gum style --margin "0 2" "$(gum style --foreground 81 --bold 'Python:') $(python --version 2>&1)"
-            gum style --margin "0 2" "$(gum style --foreground 81 --bold 'LLM Core:') ''${CEREBRO_LLM_PROVIDER:-llamacpp}"
-            echo ""
-            gum style --margin "0 2" "$(gum style --foreground 220 'System State:')"
-            gum style --margin "0 4" -- "- Metrics:   $(gum style --foreground $STATUS_COLOR 'Snapshot (cerebro metrics scan)')"
-            gum style --margin "0 4" -- "- Artifacts: $(gum style --foreground $ART_COLOR 'Indexed (cerebro knowledge analyze .)')"
-            
-            echo ""
-            gum style --border rounded --border-foreground 81 --padding "1 1" --margin "0 2" "$(gum style --foreground 212 --bold 'Run [ cerebro setup ] to configure models and APIs!')
-Or type $(gum style --foreground 42 'chelp') for the quick reference guide."
-          else
-            echo "CEREBRO dev shell ready (CI mode)"
-            echo "Python: $(python --version 2>&1)"
-          fi
+                      gum style --margin "0 2" "$(gum style --foreground 81 --bold 'Python:') $(python --version 2>&1)"
+                      gum style --margin "0 2" "$(gum style --foreground 81 --bold 'LLM Core:') ''${CEREBRO_LLM_PROVIDER:-llamacpp}"
+                      echo ""
+                      gum style --margin "0 2" "$(gum style --foreground 220 'System State:')"
+                      gum style --margin "0 4" -- "- Metrics:   $(gum style --foreground $STATUS_COLOR 'Snapshot (cerebro metrics scan)')"
+                      gum style --margin "0 4" -- "- Artifacts: $(gum style --foreground $ART_COLOR 'Indexed (cerebro knowledge analyze .)')"
+                      
+                      echo ""
+                      gum style --border rounded --border-foreground 81 --padding "1 1" --margin "0 2" "$(gum style --foreground 212 --bold 'Run [ cerebro setup ] to configure models and APIs!')
+          Or type $(gum style --foreground 42 'chelp') for the quick reference guide."
+                    else
+                      echo "CEREBRO dev shell ready (CI mode)"
+                      echo "Python: $(python --version 2>&1)"
+                    fi
         '';
 
         gcpShellHook = ''
@@ -455,7 +458,8 @@ Or type $(gum style --foreground 42 'chelp') for the quick reference guide."
         };
 
       }
-    ) // {
+    )
+    // {
       nixosModules.default = import ./nix/module.nix;
       nixosModules.azure = import ./nix/azure.nix;
       nixosModules.gcp = import ./nix/gcp.nix;

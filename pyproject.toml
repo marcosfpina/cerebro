@@ -2,7 +2,7 @@
 name = "cerebro-cli"
 version = "1.0.0b1"
 description = "Cerebro - Enterprise Knowledge Extraction Platform"
-authors = [{ name = "voidnxlabs", email = "dev@voidnxlabs.io" }]
+authors = [{ name = "voidnxlabs", email = "sec@voidnxlabs.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -14,7 +14,7 @@ cerebro = "cerebro.launcher:main"
 name = "cerebro-cli"
 version = "1.0.0b1"
 description = "Cerebro - Enterprise Knowledge Extraction Platform"
-authors = ["voidnxlabs <dev@voidnxlabs.io>"]
+authors = ["voidnxlabs <sec@voidnxlabs.com>"]
 packages = [{ include = "cerebro", from = "src" }]
 
 [tool.poetry.dependencies]
@@ -39,10 +39,10 @@ rich = "13.9.4"
 tqdm = "4.67.1"
 python-dotenv = "1.0.1"
 pyyaml = "6.0.2"
-langchain = "0.3.18"
-langchain-chroma = "0.1.4"
-langchain-community = "0.3.30"
-langchain-text-splitters = "0.3.6"
+langchain = ">=0.3.27,<2.0.0"
+langchain-chroma = ">=0.1.4,<0.2.0"
+langchain-community = ">=0.3.27,<2.0.0"
+langchain-text-splitters = ">=0.3.6,<0.4.0"
 click = "8.1.7"
 textual = "0.79.1"
 textual-dev = "1.5.1"
@@ -56,12 +56,12 @@ psycopg = "3.2.1"
 optional = true
 
 [tool.poetry.group.gcp.dependencies]
-google-cloud-discoveryengine = "0.16.0"
-google-cloud-storage = "3.7.0"
-google-cloud-aiplatform = "1.133.0"
-google-cloud-billing = "1.18.0"
-google-cloud-bigquery = "3.40.0"
-google-cloud-dialogflow-cx = "2.1.0"
+google-cloud-discoveryengine = ">=0.16.0,<0.17.0"
+google-cloud-storage = ">=3.7.0,<3.8.0"
+google-cloud-aiplatform = ">=1.133.0,<1.134.0"
+google-cloud-billing = ">=1.18.0,<1.19.0"
+google-cloud-bigquery = ">=3.40.0,<3.41.0"
+google-cloud-dialogflow-cx = ">=2.1.0,<2.2.0"
 google-auth = "2.47.0"
 langchain-google-vertexai = "3.2.0"
 
