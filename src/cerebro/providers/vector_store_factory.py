@@ -21,6 +21,10 @@ VECTOR_STORE_PROVIDER_ALIASES: dict[str, str] = {
     "cognitive-search": "azure_search",
     "azure-cognitive-search": "azure_search",
     "qdrant": "qdrant",
+    "opensearch": "opensearch",
+    "open-search": "opensearch",
+    "elasticsearch": "opensearch",
+    "elastic": "opensearch",
 }
 
 
@@ -64,6 +68,12 @@ def build_vector_store_provider(
     azure_search_api_key: str | None = None,
     # Qdrant specific
     qdrant_api_key: str | None = None,
+    # OpenSearch specific
+    opensearch_username: str | None = None,
+    opensearch_password: str | None = None,
+    opensearch_api_key: str | None = None,
+    opensearch_enable_hybrid: bool = False,
+    opensearch_es_compat: bool = False,
 ) -> VectorStoreProvider:
     """Build the configured vector store provider."""
 
@@ -125,6 +135,25 @@ def build_vector_store_provider(
                 if embedding_dimensions is not None
                 else settings.vector_store_embedding_dimensions
             ),
+        )
+
+    if canonical_name == "opensearch":
+        from cerebro.providers.opensearch import OpenSearchVectorStoreProvider
+
+        return OpenSearchVectorStoreProvider(
+            url=url or settings.opensearch_url,
+            username=opensearch_username or settings.opensearch_username,
+            password=opensearch_password or settings.opensearch_password,
+            api_key=opensearch_api_key or settings.opensearch_api_key,
+            index_name=collection_name or settings.vector_store_collection_name,
+            default_namespace=namespace or settings.vector_store_namespace,
+            embedding_dimensions=(
+                embedding_dimensions
+                if embedding_dimensions is not None
+                else settings.vector_store_embedding_dimensions
+            ),
+            enable_hybrid_search=opensearch_enable_hybrid or settings.opensearch_enable_hybrid,
+            es_compat=opensearch_es_compat or settings.opensearch_es_compat,
         )
 
     raise ValueError(

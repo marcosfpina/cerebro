@@ -34,6 +34,14 @@ class CerebroSettings:
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
 
+    # OpenSearch / Elasticsearch
+    opensearch_url: str = "http://localhost:9200"
+    opensearch_username: str | None = None
+    opensearch_password: str | None = None
+    opensearch_api_key: str | None = None
+    opensearch_enable_hybrid: bool = False
+    opensearch_es_compat: bool = False
+
     # LLM provider
     llm_provider: str = "llamacpp"
 
@@ -72,6 +80,12 @@ class CerebroSettings:
             azure_search_api_key=os.getenv("AZURE_SEARCH_API_KEY"),
             qdrant_url=os.getenv("QDRANT_URL", "http://localhost:6333").strip(),
             qdrant_api_key=os.getenv("QDRANT_API_KEY"),
+            opensearch_url=os.getenv("OPENSEARCH_URL", "http://localhost:9200").strip(),
+            opensearch_username=os.getenv("OPENSEARCH_USERNAME"),
+            opensearch_password=os.getenv("OPENSEARCH_PASSWORD"),
+            opensearch_api_key=os.getenv("OPENSEARCH_API_KEY"),
+            opensearch_enable_hybrid=os.getenv("OPENSEARCH_ENABLE_HYBRID", "").lower() == "true",
+            opensearch_es_compat=os.getenv("OPENSEARCH_ES_COMPAT", "").lower() == "true",
             llm_provider=os.getenv("CEREBRO_LLM_PROVIDER", "llamacpp").strip().lower(),
         )
 
