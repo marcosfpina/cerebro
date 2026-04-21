@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
+from cerebro.core.metadata import CANONICAL_METADATA_VERSION, build_canonical_fields
 from cerebro.core.rag.embeddings import EmbeddingSystem
 from cerebro.interfaces.llm import LLMProvider
 from cerebro.interfaces.vector_store import VectorSearchResult, VectorStoreProvider
@@ -266,19 +267,22 @@ class RigorousRAGEngine:
                 metadata[key] = json.dumps(value, ensure_ascii=True)
 
         try:
-            # Passa pela barreira do Pydantic
             clean_doc = DocumentSchema(
                 id=document_id,
                 title=title,
                 content=content,
                 repo=repo,
-                source=source
+                source=source,
             )
-            # Monta o retorno seguro
-            return clean_doc.model_dump() | metadata 
+            canonical = build_canonical_fields(
+                content=content,
+                doc_id=document_id,
+                namespace=self.vector_store_namespace,
+            )
+            return clean_doc.model_dump() | metadata | canonical
         except ValueError as e:
-            logger.warning(f"Documento rejeitado no Ingest ({source}): {e}")
-            return None # Dropa o documento
+            logger.warning("Document rejected at ingest (%s): %s", source, e)
+            return None
 
     def _ingest_local(self, jsonl_path: str) -> int:
         documents = self._load_documents(jsonl_path)
@@ -651,6 +655,10 @@ class RigorousRAGEngine:
                 )
                 error = str(exc)
 
+        available = sorted(
+            {canonical for canonical in supported_vector_store_aliases().values()}
+        )
+
         return {
             "healthy": provider_status.healthy,
             "mode": mode,
@@ -661,6 +669,10 @@ class RigorousRAGEngine:
             "document_count": document_count,
             "details": backend_details,
             "error": error,
+            "available_backends": available,
+            "supports_filters": bool(backend_details.get("supports_filters", False)),
+            "supports_hybrid": bool(backend_details.get("supports_hybrid", False) or backend_details.get("enable_hybrid", False)),
+            "schema_version": CANONICAL_METADATA_VERSION,
         }
 
     def query_with_metrics(self, query: str, k: int = 5) -> dict[str, Any]:

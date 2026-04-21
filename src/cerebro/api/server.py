@@ -170,7 +170,7 @@ class ChatResponse(BaseModel):
 
 
 class RagRuntimeStatusResponse(BaseModel):
-    """Status response for the new pluggable RAG runtime."""
+    """Status response for the pluggable RAG runtime."""
 
     healthy: bool
     mode: str
@@ -181,6 +181,21 @@ class RagRuntimeStatusResponse(BaseModel):
     document_count: int | None = None
     details: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
+    available_backends: list[str] = Field(default_factory=list)
+    supports_filters: bool = False
+    supports_hybrid: bool = False
+    schema_version: str = "1"
+
+
+class RagBackendCapabilities(BaseModel):
+    """Per-backend capability descriptor."""
+
+    name: str
+    aliases: list[str]
+    active: bool
+    supports_filters: bool
+    supports_hybrid: bool
+    production_ready: bool
 
 
 class ControlActionRequest(BaseModel):
@@ -659,6 +674,43 @@ async def rag_status():
     """Report the status of the pluggable RAG runtime configured for production."""
 
     return RagRuntimeStatusResponse(**get_rag_runtime_status_snapshot())
+
+
+@app.get("/rag/backends", response_model=list[RagBackendCapabilities])
+async def rag_backends():
+    """List all registered vector store backends with their capabilities."""
+
+    from cerebro.providers.vector_store_factory import supported_vector_store_aliases
+    from cerebro.settings import get_settings
+
+    settings = get_settings()
+    try:
+        from cerebro.providers.vector_store_factory import resolve_vector_store_provider_alias
+        active_backend = resolve_vector_store_provider_alias(settings.vector_store_provider)
+    except Exception:
+        active_backend = settings.vector_store_provider
+
+    aliases_map = supported_vector_store_aliases()
+    backends: dict[str, list[str]] = {}
+    for alias, canonical in aliases_map.items():
+        backends.setdefault(canonical, []).append(alias)
+
+    _HYBRID_BACKENDS = frozenset({"opensearch", "weaviate"})
+    _DEV_ONLY_BACKENDS = frozenset({"chroma"})
+
+    result = []
+    for canonical, alias_list in sorted(backends.items()):
+        result.append(
+            RagBackendCapabilities(
+                name=canonical,
+                aliases=sorted(alias_list),
+                active=canonical == active_backend,
+                supports_filters=canonical not in {"chroma"},
+                supports_hybrid=canonical in _HYBRID_BACKENDS,
+                production_ready=canonical not in _DEV_ONLY_BACKENDS,
+            )
+        )
+    return result
 
 
 @app.get("/ai/health")

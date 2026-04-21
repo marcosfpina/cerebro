@@ -1,6 +1,6 @@
 # Cerebro RAG Production Expansion TODO
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-04-21
 **Scope:** Extend Cerebro from a local-first RAG stack into a production-ready, multi-backend retrieval platform.
 
 ---
@@ -12,6 +12,7 @@
 | v0.1 | 2026-04-08 | Initial planning document |
 | v0.2 | 2026-04-19 | Audit pass — mark completed work; align with actual codebase state |
 | v0.3 | 2026-04-19 | Weaviate provider; all 4 Nix backend dev shells; weaviate poetry group |
+| v0.4 | 2026-04-21 | Canonical metadata schema; API /rag/backends + enriched /rag/status; 5 operational runbooks |
 
 ---
 
@@ -102,15 +103,15 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] `VectorStoreProvider` extended with: namespaces, upsert semantics, metadata filters, score threshold, backend info, `initialize_schema()` bootstrap hook, `export_documents()` migration hook.
 - [x] `VectorSearchResult` typed dataclass — no raw dict passing in retrieval results.
 - [x] `StoredVectorDocument` typed dataclass for migration payloads.
-- [ ] Canonical metadata schema fully enforced — fields `content_hash`, `ingested_at`, `chunk_id`, `backend_namespace` not yet populated consistently across all ingestion paths.
+- [x] Canonical metadata schema enforced — `core/metadata.py` defines `CANONICAL_FIELDS` and `build_canonical_fields()`; both `engine._normalize_document()` and `indexer._item_to_document()` populate `content_hash`, `ingested_at`, `chunk_id`, `backend_namespace`, `_cerebro_schema_version` on every ingestion.
 
 ### 5.2 Provider registry and settings
 
 - [x] `src/cerebro/settings.py` — central env-driven config for all providers (`CEREBRO_VECTOR_STORE_PROVIDER`, `CEREBRO_VECTOR_STORE_URL`, `CEREBRO_VECTOR_STORE_NAMESPACE`, plus backend-specific keys).
 - [x] `src/cerebro/providers/vector_store_factory.py` — explicit factory; no implicit defaulting.
 - [x] `src/cerebro/providers/llm_factory.py` — unified LLM provider factory driven by `CEREBRO_LLM_PROVIDER`.
-- [ ] CLI commands not yet wired to factory for provider introspection (see §9).
-- [ ] Dashboard backend selector not yet surfaced.
+- [x] CLI commands wired to factory — `cerebro rag backends list`, `cerebro rag backend info/health/init/smoke/migrate` all route through `build_vector_store_provider()`.
+- [x] Dashboard backend selector — `GET /rag/backends` returns all backends with capabilities (`supports_filters`, `supports_hybrid`, `production_ready`, `active`); `GET /rag/status` enriched with `available_backends`, `supports_hybrid`, `supports_filters`, `schema_version`.
 
 ### 5.3 Semantic paths unification
 
@@ -149,7 +150,7 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] Payload filter builder (`FieldCondition` + `MatchValue`).
 - [x] Namespace-scoped clear via `FilterSelector`; full clear via drop+recreate.
 - [x] Full export with stored embeddings via `scroll`.
-- [ ] Operational runbook (snapshot, restore, collection migration).
+- [x] Operational runbook — `docs/guides/runbooks/qdrant.md` (snapshot, restore, migration, rollback).
 
 ### 6.4 OpenSearch / Elasticsearch
 
@@ -160,7 +161,7 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] Hybrid search: `bool + knn + match` activated via `OPENSEARCH_ENABLE_HYBRID=true` when `query_text` in kwargs.
 - [x] Score normalisation: cosinesimil `[0, 2]` → `[0, 1]` (÷2); `min_score` scaled accordingly.
 - [x] Namespace-scoped `delete_by_query`; full clear via index drop+recreate.
-- [ ] Operational runbook (snapshot repository, index backup, rollback).
+- [x] Operational runbook — `docs/guides/runbooks/opensearch.md` (snapshot repo, index alias rollback, hybrid search).
 
 ### 6.5 Azure AI Search
 
@@ -169,7 +170,7 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] Filterable fields: `namespace`, `repo`, `source`, `git_commit`, `title` (OData term filters).
 - [x] `VectorizedQuery` for dense search; OData filter composition for namespace + metadata.
 - [x] Content-only export (Azure Search does not return stored vectors via search API — documented).
-- [ ] Operational runbook (index backup, rollback, namespace audit).
+- [x] Operational runbook — `docs/guides/runbooks/azure_search.md` (schema export, alias rollback, namespace audit).
 
 ### 6.6 Weaviate
 
@@ -181,7 +182,7 @@ Nix dev shell backend tracks (`flake.nix`):
 - [x] Dense search: `near_vector` with certainty-based score in `[0, 1]`.
 - [x] Hybrid search: `query.hybrid()` (BM25 + vector RRF) via `WEAVIATE_ENABLE_HYBRID=true` + `query_text` kwarg.
 - [x] Full export with stored vectors via `fetch_objects(include_vector=True)`.
-- [ ] Operational runbook (snapshot, restore, tenant migration).
+- [x] Operational runbook — `docs/guides/runbooks/weaviate.md` (backup, restore, multi-tenancy, hybrid, rollback).
 
 ---
 
@@ -226,11 +227,12 @@ Nix dev shell backend tracks (`flake.nix`):
 - [ ] Formal k8s readiness / liveness probes per backend.
 - [ ] Latency histograms and failure counters per provider (OpenTelemetry / Prometheus).
 - [ ] Index / collection size reporting in `/rag/status` for all backends.
-- [ ] Migration runbooks per production backend:
-  - [ ] pgvector — logical backup, schema migration, rollback
-  - [ ] Qdrant — snapshot policy, collection clone, rollback
-  - [ ] OpenSearch — snapshot repository, index backup, rollback
-  - [ ] Azure AI Search — index export, rollback via index alias
+- [x] Operational runbooks per production backend (`docs/guides/runbooks/`):
+  - [x] pgvector — logical backup, HNSW index rebuild, WAL/pgBackRest, rollback
+  - [x] Qdrant — snapshot create/restore, collection migration, rollback
+  - [x] OpenSearch — snapshot repository (fs/S3), index alias rollback, hybrid search
+  - [x] Azure AI Search — index schema export, alias rollback, namespace audit
+  - [x] Weaviate — backup (fs/S3), restore, multi-tenancy, hybrid search, rollback
 - [ ] Backup/restore guidance in `docs/`.
 
 ---
@@ -344,8 +346,9 @@ A backend is production-ready when **all** of the following are true:
 | Nix dev shell exists | ⬜ | ✅ | ✅ | ✅ | ⬜ | ✅ |
 | Integration tests pass in Nix shell | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Benchmark data exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Operational runbook exists | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Docs state when to choose / not choose | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Operational runbook exists | ⬜ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Rollback procedure exists | ⬜ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Docs state when to choose / not choose | ⬜ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 `chroma` is intentionally development-only and exempt from the Nix shell, integration test, benchmark, and runbook criteria.
 `azure_search` has no Nix server package — use the Azure-hosted service directly.
@@ -357,9 +360,8 @@ A backend is production-ready when **all** of the following are true:
 Priority order based on Definition of Done gaps:
 
 1. **Provider contract tests** (§13) — Qdrant, OpenSearch, Azure Search, Weaviate missing test coverage.
-2. **CLI `cerebro rag backends`** (§9) — list, info, health introspection commands.
-3. **Grounded/no-context refusal** (§14 Phase 0) — last remaining Phase 0 item.
-4. **Operational runbooks** (§10) — required for Definition of Done on all production backends.
-5. **Content hashing** (§8) — skip re-embedding unchanged chunks.
-6. **Dashboard backend selector** (§5.2) — surface active backend in Control Plane panel.
-7. **Agent pipeline primitives** — structured multi-step agent flows on top of the RAG layer; reflect in dashboard with per-agent views.
+2. **Grounded/no-context refusal** (§14 Phase 0) — last remaining Phase 0 item; `RigorousRAGEngine` should return explicit no-context signal.
+3. **Content hashing dedup** (§8) — use `content_hash` (now populated) to skip re-embedding unchanged chunks.
+4. **Dashboard backend selector UI** — consume `GET /rag/backends` in the Control Plane panel to surface active backend and capabilities.
+5. **Agent pipeline primitives** — structured multi-step agent flows on top of the RAG layer; reflect in dashboard with per-agent views.
+6. **Integration test suites** (§13) — one per backend, gated behind Nix shells and `CEREBRO_RUN_INTEGRATION=1`.

@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from cerebro.core.metadata import build_canonical_fields
 from cerebro.core.rag.embeddings import EmbeddingSystem
 from cerebro.intelligence.core import IntelligenceItem, IntelligenceType
 from cerebro.interfaces.vector_store import VectorStoreProvider
@@ -298,12 +299,13 @@ class KnowledgeIndexer:
         return f"{item.title}. {item.content[:500]}"
 
     def _item_to_document(self, item: IntelligenceItem) -> dict[str, Any]:
-        return {
+        content = item.content
+        doc = {
             "id": item.id,
             "type": item.type.value,
             "source": item.source,
             "title": item.title,
-            "content": item.content,
+            "content": content,
             "tags": item.tags,
             "related_projects": item.related_projects,
             "threat_level": item.threat_level.value,
@@ -314,6 +316,14 @@ class KnowledgeIndexer:
                 if isinstance(value, (str, int, float, bool)) or value is None
             },
         }
+        doc.update(
+            build_canonical_fields(
+                content=content,
+                doc_id=item.id,
+                namespace=self.vector_store_namespace,
+            )
+        )
+        return doc
 
     def _resolve_search_window(
         self,
