@@ -137,6 +137,7 @@ def test_semantic_query_applies_type_and_project_filters(tmp_path):
     provider.search.assert_called_once_with(
         [0.4, 0.6],
         top_k=3,
+        filters={"type": "techint"},
         namespace=None,
         min_score=0.3,
     )

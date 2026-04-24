@@ -3,7 +3,7 @@
 import os
 import sys
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -135,6 +135,12 @@ def test_ingest_local_success(tmp_path, mock_llm_provider, mock_vector_store_pro
                 "title": "test",
                 "repo": "repo1",
                 "source": "repo1/test",
+                # canonical metadata fields stamped at ingest time
+                "content_hash": ANY,
+                "ingested_at": ANY,
+                "chunk_id": "repo1:test:1",
+                "backend_namespace": "",
+                "_cerebro_schema_version": "1",
             }
         ],
         [[0.1, 0.2, 0.3]],

@@ -38,6 +38,19 @@ def _post(url: str, payload: dict, timeout: float) -> dict:
         return json.loads(resp.read())
 
 
+def _extract_content(data: dict) -> str:
+    """Return the assistant text from a chat/completions response.
+
+    Handles reasoning models (e.g. Qwen3, DeepSeek-R1) that return an empty
+    ``content`` field and place the final answer in ``reasoning_content``.
+    """
+    msg = data["choices"][0]["message"]
+    content = msg.get("content") or ""
+    if not content:
+        content = msg.get("reasoning_content") or ""
+    return content
+
+
 def _get(url: str, timeout: float) -> int:
     req = urllib.request.Request(url, method="GET")
     try:
@@ -101,7 +114,7 @@ class LlamaCppProvider(LLMProvider):
             "max_tokens": kwargs.get("max_tokens", 1024),
         }
         data = _post(f"{self.base_url}/v1/chat/completions", payload, self.timeout)
-        return data["choices"][0]["message"]["content"]
+        return _extract_content(data)
 
     def chat(self, messages: list[dict], **kwargs) -> str:
         """Send a multi-turn conversation and return the assistant reply."""
@@ -112,7 +125,7 @@ class LlamaCppProvider(LLMProvider):
             "max_tokens": kwargs.get("max_tokens", 2048),
         }
         data = _post(f"{self.base_url}/v1/chat/completions", payload, self.timeout)
-        return data["choices"][0]["message"]["content"]
+        return _extract_content(data)
 
     def grounded_generate(
         self,

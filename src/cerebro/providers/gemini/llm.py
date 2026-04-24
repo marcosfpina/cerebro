@@ -2,11 +2,8 @@
 Google Gemini LLM Provider
 
 Implements LLMProvider for the Google Gemini API (Gemini Pro/Flash models).
-Unlike Anthropic/Groq, Gemini provides a native embeddings API
-(models/text-embedding-004) which this provider uses directly.
-
-Note: google.generativeai.configure() sets the API key process-globally.
-Multiple GeminiProvider instances with different API keys are not supported.
+Uses the google-genai SDK (v1+), which is client-based and does not set
+process-global state, so multiple instances with different API keys work.
 
 Env vars:
   GEMINI_API_KEY           Required. Your Google AI API key.
@@ -48,20 +45,19 @@ class GeminiProvider(LLMProvider):
             "GEMINI_EMBEDDING_MODEL", _DEFAULT_EMBEDDING_MODEL
         )
         self.timeout = timeout or float(os.getenv("GEMINI_TIMEOUT", str(_DEFAULT_TIMEOUT)))
-        self._genai = None
+        self._client = None
 
-    def _get_genai(self):
-        if self._genai is None:
+    def _get_client(self):
+        if self._client is None:
             try:
-                import google.generativeai as genai
+                from google import genai
             except ImportError as exc:
                 raise ImportError(
-                    "The 'google-generativeai' package is required for GeminiProvider. "
+                    "The 'google-genai' package is required for GeminiProvider. "
                     "Install it with: poetry install --with gemini"
                 ) from exc
-            genai.configure(api_key=self.api_key)
-            self._genai = genai
-        return self._genai
+            self._client = genai.Client(api_key=self.api_key)
+        return self._client
 
     # ------------------------------------------------------------------
     # Embeddings — Gemini has a native embeddings API
@@ -71,18 +67,19 @@ class GeminiProvider(LLMProvider):
         return self.embed_batch([text])[0]
 
     def embed_batch(self, texts: list[str], batch_size: int = 20) -> list[list[float]]:
-        genai = self._get_genai()
+        from google.genai import types
+
+        client = self._get_client()
         results: list[list[float]] = []
-        # Call per-text to avoid SDK response shape ambiguity (single str vs list)
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
             for text in batch:
-                response = genai.embed_content(
+                response = client.models.embed_content(
                     model=self.embedding_model,
-                    content=text,
-                    task_type="retrieval_document",
+                    contents=text,
+                    config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
                 )
-                results.append(response["embedding"])
+                results.append(list(response.embeddings[0].values))
         return results
 
     # ------------------------------------------------------------------
@@ -90,13 +87,18 @@ class GeminiProvider(LLMProvider):
     # ------------------------------------------------------------------
 
     def generate(self, prompt: str, **kwargs) -> str:
-        genai = self._get_genai()
-        generation_config = {
-            "max_output_tokens": kwargs.get("max_tokens", 1024),
-            "temperature": kwargs.get("temperature", 0.7),
-        }
-        model = genai.GenerativeModel(self.model)
-        response = model.generate_content(prompt, generation_config=generation_config)
+        from google.genai import types
+
+        client = self._get_client()
+        config = types.GenerateContentConfig(
+            max_output_tokens=kwargs.get("max_tokens", 1024),
+            temperature=kwargs.get("temperature", 0.7),
+        )
+        response = client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config=config,
+        )
         return response.text
 
     def grounded_generate(
@@ -138,9 +140,14 @@ class GeminiProvider(LLMProvider):
 
     def health_check(self) -> bool:
         try:
-            genai = self._get_genai()
-            model = genai.GenerativeModel(self.model)
-            model.generate_content("ping", generation_config={"max_output_tokens": 1})
+            from google.genai import types
+
+            client = self._get_client()
+            client.models.generate_content(
+                model=self.model,
+                contents="ping",
+                config=types.GenerateContentConfig(max_output_tokens=1),
+            )
             return True
         except Exception as e:
             logger.warning("GeminiProvider health check failed: %s", e)
