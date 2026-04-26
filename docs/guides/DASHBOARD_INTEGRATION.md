@@ -116,7 +116,7 @@ GET /api/projects?status=active&language=python&sort_by=health_score&order=asc
 [
   {
     "name": "phantom",
-    "path": "/home/kernelcore/arch/phantom",
+    "path": "/path/to/your/project",
     "status": "active",
     "health_score": 72.5,
     "languages": ["python", "nix"],
@@ -165,7 +165,7 @@ GET /api/projects/:name
 ```json
 {
   "name": "phantom",
-  "path": "/home/kernelcore/arch/phantom",
+  "path": "/path/to/your/project",
   "status": "active",
   "health_score": 72.5,
   "languages": ["python", "nix"],
@@ -477,7 +477,7 @@ POST /api/actions/scan
 Content-Type: application/json
 
 {
-  "path": "/home/kernelcore/arch/phantom"
+  "path": "/path/to/your/project"
 }
 ```
 
@@ -630,7 +630,7 @@ if __name__ == "__main__":
 
 Run with:
 ```bash
-cd /home/kernelcore/arch/phantom/src
+cd /path/to/your/project/src
 python3 phantom/api/mock_server.py
 ```
 

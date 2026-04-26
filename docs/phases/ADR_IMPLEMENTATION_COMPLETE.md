@@ -14,7 +14,7 @@ Successfully created and accepted 5 comprehensive Architecture Decision Records 
 
 ### 1. ADR-0019: Textual Framework para TUI
 **Classification:** Major
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0019.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0019.md`
 **Size:** 6.4 KB
 **Status:** ✅ Accepted
 
@@ -31,7 +31,7 @@ Successfully created and accepted 5 comprehensive Architecture Decision Records 
 
 ### 2. ADR-0020: Lazy Loading de Dependências Pesadas
 **Classification:** Major
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0020.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0020.md`
 **Size:** 7.2 KB
 **Status:** ✅ Accepted
 
@@ -48,7 +48,7 @@ Successfully created and accepted 5 comprehensive Architecture Decision Records 
 
 ### 3. ADR-0021: Stack Dupla Poetry + Nix
 **Classification:** Critical
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0021.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0021.md`
 **Size:** 8.8 KB
 **Status:** ✅ Accepted
 
@@ -65,7 +65,7 @@ Successfully created and accepted 5 comprehensive Architecture Decision Records 
 
 ### 4. ADR-0022: Consolidação de Scripts para CLI Typer
 **Classification:** Major
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0022.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0022.md`
 **Size:** 9.5 KB
 **Status:** ✅ Accepted
 
@@ -94,7 +94,7 @@ cerebro (24 commands)
 
 ### 5. ADR-0023: Arquitetura TUI com 6 Screens
 **Classification:** Major
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0023.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0023.md`
 **Size:** 11 KB
 **Status:** ✅ Accepted
 
@@ -120,20 +120,20 @@ cerebro (24 commands)
 ## Files Created
 
 ### ADR Files (5)
-- `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0019.md` (6.4 KB)
-- `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0020.md` (7.2 KB)
-- `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0021.md` (8.8 KB)
-- `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0022.md` (9.5 KB)
-- `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0023.md` (11 KB)
+- `/path/to/adr-ledger/adr/accepted/ADR-0019.md` (6.4 KB)
+- `/path/to/adr-ledger/adr/accepted/ADR-0020.md` (7.2 KB)
+- `/path/to/adr-ledger/adr/accepted/ADR-0021.md` (8.8 KB)
+- `/path/to/adr-ledger/adr/accepted/ADR-0022.md` (9.5 KB)
+- `/path/to/adr-ledger/adr/accepted/ADR-0023.md` (11 KB)
 
 **Total ADR Content:** ~43 KB
 
 ### Documentation Files (2)
-- `/home/kernelcore/arch/cerebro/docs/ADR_SUMMARY.md` (9.8 KB)
-- `/home/kernelcore/arch/cerebro/ADR_IMPLEMENTATION_COMPLETE.md` (this file)
+- `/path/to/cerebro/docs/ADR_SUMMARY.md` (9.8 KB)
+- `/path/to/cerebro/ADR_IMPLEMENTATION_COMPLETE.md` (this file)
 
 ### Modified Files (1)
-- `/home/kernelcore/arch/cerebro/README.md` - Added ADR section
+- `/path/to/cerebro/README.md` - Added ADR section
 
 ---
 
@@ -232,7 +232,7 @@ Each ADR follows comprehensive format:
 - [PHASE3_STATUS.md](docs/PHASE3_STATUS.md) - TUI implementation status
 
 **ADR Ledger:**
-- Location: `/home/kernelcore/arch/adr-ledger/adr/accepted/`
+- Location: `/path/to/adr-ledger/adr/accepted/`
 - Format: Structured YAML frontmatter + Markdown content
 - Tool: `cerebro adr` command (from securellm-mcp)
 

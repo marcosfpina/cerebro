@@ -6,10 +6,10 @@ Provisionar o mínimo para publicar a imagem do Cerebro em um `Azure Container R
 
 ## Arquivos envolvidos
 
-- Bootstrap de infraestrutura: [bootstrap-azure-aks-acr.sh](/home/kernelcore/master/cerebro/scripts/bootstrap-azure-aks-acr.sh:1)
-- Workflow de push para ACR: [deploy-acr.yml](/home/kernelcore/master/cerebro/.github/workflows/deploy-acr.yml:1)
-- Workflow de deploy para AKS: [deploy-aks.yml](/home/kernelcore/master/cerebro/.github/workflows/deploy-aks.yml:1)
-- Manifest AKS: [aks-deployment.yaml](/home/kernelcore/master/cerebro/kubernetes/aks-deployment.yaml:1) e [aks-service.yaml](/home/kernelcore/master/cerebro/kubernetes/aks-service.yaml:1)
+- Bootstrap de infraestrutura: `scripts/bootstrap-azure-aks-acr.sh`
+- Workflow de push para ACR: `.github/workflows/deploy-acr.yml`
+- Workflow de deploy para AKS: `.github/workflows/deploy-aks.yml`
+- Manifest AKS: `kubernetes/aks-deployment.yaml` e `kubernetes/aks-service.yaml`
 
 ## Uso
 
@@ -43,9 +43,9 @@ Ele cria:
 ## Fluxo recomendado de produção
 
 1. Rode o bootstrap Azure para criar `ACR`, `AKS` e popular as vars do GitHub.
-2. Gere sua chave `age`, atualize [.sops.yaml](/home/kernelcore/master/cerebro/.sops.yaml:1) se necessário e versione `secrets/cerebro.enc.env`.
-3. Dispare [deploy-acr.yml](/home/kernelcore/master/cerebro/.github/workflows/deploy-acr.yml:1) para publicar a imagem no `ACR`.
-4. Dispare [deploy-aks.yml](/home/kernelcore/master/cerebro/.github/workflows/deploy-aks.yml:1) com:
+2. Gere sua chave `age`, atualize `.sops.yaml` se necessário e versione `secrets/cerebro.enc.env`.
+3. Dispare `.github/workflows/deploy-acr.yml` para publicar a imagem no `ACR`.
+4. Dispare `.github/workflows/deploy-aks.yml` com:
    - `build_image=true` para pipeline completa
    - `build_image=false` e `image_tag=<tag>` para promover imagem já publicada
 5. Use o resumo do workflow para confirmar `image ref`, namespace e rollout.

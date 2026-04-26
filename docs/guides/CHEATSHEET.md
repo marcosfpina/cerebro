@@ -1,367 +1,162 @@
-# 📋 CHEAT SHEET - Comandos Essenciais
+# Cerebro — Command Cheatsheet
 
-## 🚀 One-Liners Mais Usados
+## Setup
 
 ```bash
-# Setup completo
-export ENGINE_ID=seu-engine-id && ./speedrun.sh all
+# Enter hermetic dev environment
+nix develop
 
-# Gerar + Queimar (rápido)
-./speedrun.sh generate 1000 && ./speedrun.sh burn queries_10k.txt 20
+# Interactive setup wizard
+cerebro setup wizard
 
-# Monitor em background
-./speedrun.sh monitor &
-
-# Status rápido
-./speedrun.sh status
+# Verify configuration
+cerebro ops health
 ```
 
 ---
 
-## 🔥 Speedrun Aliases (adicionar ao ~/.bashrc)
+## RAG Pipeline
 
 ```bash
-# Phoenix aliases
-alias px='cd /home/kernelcore/dev/low-level/phoenix-cloud-run'
-alias pxs='./speedrun.sh'
-alias pxg='./speedrun.sh generate'
-alias pxb='./speedrun.sh burn queries_10k.txt'
-alias pxm='./speedrun.sh monitor'
-alias pxst='./speedrun.sh status'
+# Ingest a codebase analysis output
+cerebro rag ingest ./data/analyzed/all_artifacts.jsonl
 
-# Phantom aliases
-alias ph='nix develop --command python phantom.py'
-alias phq='ph gcp search'
-alias phl='ph gcp datastores-list'
-alias pha='ph credit audit'
+# Ingest with a specific backend
+cerebro rag ingest ./data/analyzed/all_artifacts.jsonl --backend chroma
 
-# Uso:
-# px && pxg 5000 && pxb
-# phq "como configurar nvidia nixos?"
+# Query the knowledge base
+cerebro rag query "Explain the authentication flow"
+
+# Query with a specific backend
+cerebro rag query "How does the RAG pipeline work?" --backend qdrant
+
+# List available backends and capabilities
+cerebro rag backends list
+
+# Check ingest status
+cerebro rag status
 ```
 
 ---
 
-## 📊 Discovery Engine - Parâmetros Críticos
+## Knowledge Extraction
 
-### Máximo Custo (Queimar Rápido)
-```python
-summary_result_count=10          # Máximo docs
-model_spec.version="preview"     # Modelo mais caro
-use_semantic_chunks=True         # Chunks semânticos
-```
+```bash
+# Analyze a repository
+cerebro knowledge analyze /path/to/repo "Initial analysis"
 
-### Balance (Custo vs Qualidade)
-```python
-summary_result_count=5
-model_spec.version="stable"
-```
+# Batch analyze multiple repos
+cerebro knowledge batch-analyze /path/to/repos/
 
-### Mínimo Custo (Teste)
-```python
-summary_result_count=1
-# Sem summary_spec (só search básico)
+# Summarize analysis output
+cerebro knowledge summarize ./data/analyzed/all_artifacts.jsonl
 ```
 
 ---
 
-## 💰 Tabela de Custos
+## Metrics
 
-| Operação | Custo/query | R$/query | 1k queries | 10k queries |
-|----------|-------------|----------|------------|-------------|
-| Search básico | $0.001 | R$ 0.0055 | R$ 5.50 | R$ 55 |
-| Search + Summary | $0.004 | R$ 0.022 | R$ 22 | R$ 220 |
-| Dialogflow msg | $0.007 | R$ 0.0385 | R$ 38.50 | R$ 385 |
-
-**Meta:** R$ 10,079.11 = ~458,686 queries com RAG
-
----
-
-## 🎯 Templates de Queries Prontas
-
-### NixOS (seu contexto)
 ```bash
-cat > nixos_queries.txt <<EOF
-Como configurar nvidia drivers no NixOS 24.11?
-Flake.nix exemplo para development shell Python
-Home-manager configuração completa
-Debug de rebuild loop no NixOS
-NixOS container com PostgreSQL
-Systemd service no NixOS
-Overlays no Nix para pacotes customizados
-EOF
-```
+# Full zero-token scan across all repos
+cerebro metrics scan
 
-### DevOps
-```bash
-cat > devops_queries.txt <<EOF
-CI/CD pipeline com GitHub Actions
-Terraform módulo para Kubernetes
-Monitoring stack com Prometheus e Grafana
-Docker multi-stage build otimizado
-Kubernetes deployment com secrets
-Ansible playbook para configuração de servidor
-EOF
-```
+# Real-time interactive watcher
+cerebro metrics watch
 
-### Code Interview
-```bash
-cat > interview_queries.txt <<EOF
-Algoritmo binary search explicação com exemplo Python
-System design: URL shortener
-LeetCode: Two Sum todas as soluções
-Dynamic programming: explicação e padrões
-Behavioral interview: conflito com colega
-Como demonstrar expertise em Rust no portfolio
-EOF
+# Detailed report for one repo
+cerebro metrics report /path/to/repo
+
+# Compare metrics across repos
+cerebro metrics compare /repo-a /repo-b
+
+# Quick check
+cerebro metrics check
 ```
 
 ---
 
-## 🔧 Scripts Python Standalone
+## Operations
 
-### Query única (copy-paste)
-```python
-from google.cloud import discoveryengine_v1beta as discoveryengine
+```bash
+# System health check
+cerebro ops health
 
-client = discoveryengine.SearchServiceClient()
-serving_config = "projects/gen-lang-client-0530325234/locations/global/collections/default_collection/engines/SEU-ENGINE/servingConfigs/default_config"
-
-request = discoveryengine.SearchRequest(
-    serving_config=serving_config,
-    query="como configurar nvidia no nixos?",
-    content_search_spec=discoveryengine.SearchRequest.ContentSearchSpec(
-        summary_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec(
-            summary_result_count=10,
-            include_citations=True,
-            language_code="pt-BR",
-        ),
-    ),
-)
-
-response = client.search(request)
-print(response.summary.summary_text if response.summary else "No summary")
-```
-
-### Monitor simples (copy-paste)
-```python
-from google.cloud import bigquery
-
-client = bigquery.Client(project="gen-lang-client-0530325234")
-query = """
-SELECT COUNT(*) as queries, SUM(cost) as cost
-FROM `gen-lang-client-0530325234.billing_export.gcp_billing_export_v1_*`
-WHERE service.description = 'Discovery Engine API'
-  AND DATE(usage_start_time) >= CURRENT_DATE()
-"""
-
-for row in client.query(query).result():
-    print(f"Hoje: {row.queries} queries = ${row.cost:.2f} USD")
+# Ops status
+cerebro ops status
 ```
 
 ---
 
-## 📁 Estrutura de Arquivos Gerados
+## Testing & Verification
 
-```
-phoenix-cloud-run/
-├── queries_10k.txt                    # Queries geradas
-├── batch_results_1234567890.json      # Resultados (BACKUP!)
-├── burn.log                           # Logs de execução
-└── knowledge/                         # Criar para organizar
-    ├── nixos/
-    │   ├── queries.txt
-    │   └── results.json
-    ├── devops/
-    └── interview/
+```bash
+# Test grounded search (requires LLM provider)
+cerebro test grounded-search "your query"
+
+# Test grounded generation
+cerebro test grounded-gen "your query"
+
+# Verify API connectivity
+cerebro test verify-api
 ```
 
 ---
 
-## 🚨 Troubleshooting Rápido
+## Interfaces
 
-### Erro: "Default credentials not found"
 ```bash
-gcloud auth application-default login
-```
+# TUI (default when no args)
+cerebro tui
 
-### Erro: "Permission denied"
-```bash
-gcloud projects add-iam-policy-binding gen-lang-client-0530325234 \
-    --member="user:seu-email@gmail.com" \
-    --role="roles/discoveryengine.admin"
-```
+# API server + dashboard
+cerebro serve
+# then open http://localhost:3000
 
-### Erro: "Rate limit exceeded"
-```bash
-# Adicionar delays entre queries
-python scripts/batch_burn.py --file queries.txt --rate-limit 2
-```
-
-### Erro: "Engine not found"
-```bash
-# Listar engines
-gcloud alpha discovery-engine engines list --location=global
-
-# Criar novo engine
-gcloud alpha discovery-engine engines create seu-engine \
-    --display-name="Phoenix KB" \
-    --location=global \
-    --industry-vertical=GENERIC
+# CLI
+cerebro --help
+cerebro rag --help
+cerebro knowledge --help
 ```
 
 ---
 
-## 🎓 Progressão Recomendada
-
-### DIA 1: Validação
-```bash
-./speedrun.sh setup
-./speedrun.sh generate 100
-export ENGINE_ID=xxx
-./speedrun.sh burn queries_10k.txt 5
-./speedrun.sh status
-```
-**Meta:** Validar pipeline completo
-
-### DIA 2-7: Ramp-up
-```bash
-./speedrun.sh generate 1000
-./speedrun.sh burn queries_10k.txt 10
-```
-**Meta:** R$ 100-500 consumidos
-
-### DIA 8-30: Scale
-```bash
-./speedrun.sh generate 10000
-./speedrun.sh burn queries_10k.txt 30
-```
-**Meta:** R$ 2k-5k consumidos
-
-### DIA 31-90: Automation
-```bash
-# Cron job diário
-0 2 * * * cd /home/kernelcore/dev/low-level/phoenix-cloud-run && ./speedrun.sh generate 5000 && ./speedrun.sh burn queries_10k.txt 20
-```
-**Meta:** R$ 10k completo
-
----
-
-## 📊 KPIs para Acompanhar
-
-1. **Queries/dia**: Meta 1k-5k
-2. **Custo/dia**: Meta R$ 20-100
-3. **Taxa de sucesso**: >95%
-4. **Queries com citações**: >80%
-5. **Tempo médio/query**: <2s
-
----
-
-## 🔐 Variáveis de Ambiente
+## GCP Discovery Engine (optional)
 
 ```bash
-# Adicionar ao ~/.bashrc ou .env
-export GOOGLE_CLOUD_PROJECT=gen-lang-client-0530325234
-export GOOGLE_CLOUD_LOCATION=global
-export ENGINE_ID=seu-engine-id
-export DATA_STORE_ID=seu-datastore-id
-export BILLING_DATASET=billing_export
-export BILLING_TABLE=gcp_billing_export_v1_XXXXX
+# Requires: GCP_PROJECT_ID and DATA_STORE_ID env vars
+export GCP_PROJECT_ID=<your-gcp-project-id>
+export DATA_STORE_ID=<your-data-store-id>
+
+cerebro gcp status
+cerebro gcp create-engine
+cerebro gcp monitor
 ```
 
 ---
 
-## 🎯 Comandos de Emergência
+## Environment Variables
 
-### Parar tudo
 ```bash
-pkill -f batch_burn.py
-pkill -f generate_queries.py
+# Copy and fill in
+cp .env.example .env
+$EDITOR .env
 ```
 
-### Limpar arquivos temporários
-```bash
-rm -f queries_*.txt batch_results_*.json burn.log
-```
-
-### Reset completo
-```bash
-git clean -fdx
-nix develop --command python phantom.py gcp validate
-```
-
-### Backup de resultados
-```bash
-tar -czf results_backup_$(date +%Y%m%d).tar.gz batch_results_*.json
-gsutil cp results_backup_*.tar.gz gs://seu-bucket/backups/
-```
+Key variables:
+| Variable | Description |
+|----------|-------------|
+| `CEREBRO_LLM_PROVIDER` | `anthropic`, `gemini`, `groq`, `azure`, `llamacpp`, `vertex-ai` |
+| `CEREBRO_ARCH_PATH` | Root directory for repo discovery (default: `~/master`) |
+| `CEREBRO_VECTOR_DB` | Path to vector store (default: `./data/vectors`) |
+| `GCP_PROJECT_ID` | GCP project (only for GCP features) |
+| `DATA_STORE_ID` | Discovery Engine data store (only for GCP features) |
+| `CEREBRO_RERANKER_URL` | Reranker service URL (default: `http://localhost:8090`) |
 
 ---
 
-## 💡 Pro Tips
+## Nix Shells
 
-1. **Sempre rode monitor em terminal separado**
-   ```bash
-   # Terminal 1
-   ./speedrun.sh burn queries.txt 20
-
-   # Terminal 2
-   watch -n 30 './speedrun.sh status'
-   ```
-
-2. **Gere queries enquanto processa**
-   ```bash
-   ./speedrun.sh burn queries_batch1.txt 20 &
-   ./speedrun.sh generate 10000  # Para próximo batch
-   ```
-
-3. **Use tmux para sessões longas**
-   ```bash
-   tmux new -s phoenix
-   ./speedrun.sh burn queries_100k.txt 50
-   # Ctrl+B D para detach
-   # tmux attach -t phoenix para voltar
-   ```
-
-4. **Backup automático de resultados**
-   ```bash
-   # Adicionar ao cron
-   0 */6 * * * tar -czf /backup/phoenix_$(date +\%Y\%m\%d_\%H\%M).tar.gz /home/kernelcore/dev/low-level/phoenix-cloud-run/batch_results_*.json
-   ```
-
-5. **Log de execução**
-   ```bash
-   ./speedrun.sh burn queries.txt 20 2>&1 | tee -a phoenix_$(date +%Y%m%d).log
-   ```
-
----
-
-## 🎉 Quick Wins
-
-### Win 1: Primeiro R$ 1 consumido
 ```bash
-./speedrun.sh generate 50
-./speedrun.sh burn queries_10k.txt 5
+nix develop            # Default dev shell
+nix develop .#brev-deploy  # GPU/Kubernetes deploy tools
 ```
-**Tempo:** 5min | **Custo:** ~R$ 1
-
-### Win 2: 1k queries processadas
-```bash
-./speedrun.sh generate 1000
-./speedrun.sh burn queries_10k.txt 10
-```
-**Tempo:** 20min | **Custo:** ~R$ 22
-
-### Win 3: R$ 100 consumidos
-```bash
-./speedrun.sh generate 5000
-./speedrun.sh burn queries_10k.txt 20
-```
-**Tempo:** 2h | **Custo:** ~R$ 110
-
----
-
-**ESSE É SEU ARSENAL! Use e abuse. Qualquer dúvida, consulte:**
-- `QUICKSTART_KB.md` - Documentação completa
-- `README_SPEEDRUN.md` - Guia detalhado
-- `CHEATSHEET.md` - Este arquivo

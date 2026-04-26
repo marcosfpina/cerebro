@@ -7,6 +7,7 @@ This is the missing piece to start consuming credits.
 """
 
 import argparse
+import os
 from google.cloud import discoveryengine_v1
 from google.api_core import exceptions
 import time
@@ -166,8 +167,8 @@ def main():
 
     parser.add_argument(
         "--project",
-        default="gen-lang-client-0530325234",
-        help="GCP Project ID"
+        default=os.environ.get("GCP_PROJECT_ID", ""),
+        help="GCP Project ID (or set GCP_PROJECT_ID env var)"
     )
 
     parser.add_argument(

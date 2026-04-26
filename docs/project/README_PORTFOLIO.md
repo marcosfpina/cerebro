@@ -127,7 +127,7 @@ phantom info  # 'phantom' is an alias for 'cerebro'
 ### Option 3: Docker (Coming Soon)
 
 ```bash
-docker run -v $(pwd):/workspace ghcr.io/kernelcore/cerebro:latest \
+docker run -v $(pwd):/workspace ghcr.io/marcosfpina/cerebro:latest \
   analyze /workspace/my-repo
 ```
 

@@ -148,7 +148,7 @@ stages:
 
   - build:
       - nix build .#dockerImage
-      - push to ghcr.io/kernelcore/cerebro:$VERSION
+      - push to ghcr.io/marcosfpina/cerebro:$VERSION
 
   - deploy:
       - terraform plan (if main branch)

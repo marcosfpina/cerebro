@@ -1,6 +1,9 @@
 site_name: Cerebro
 site_description: Enterprise Knowledge Extraction Platform
 site_author: voidnxlabs
+site_url: https://marcosfpina.github.io/cerebro
+repo_url: https://github.com/marcosfpina/cerebro
+repo_name: marcosfpina/cerebro
 docs_dir: docs
 site_dir: site
 
@@ -31,7 +34,7 @@ theme:
     - content.code.copy
     - content.code.annotate
   icon:
-    repo: fontawesome/brands/gitlab
+    repo: fontawesome/brands/github
 
 plugins:
   - search
@@ -73,6 +76,12 @@ nav:
       - cerebro knowledge batch-analyze: commands/cerebro_knowledge_batch-analyze.md
       - cerebro knowledge summarize: commands/cerebro_knowledge_summarize.md
       - cerebro ops health: commands/cerebro_ops_health.md
+      - cerebro setup: commands/cerebro_setup.md
+      - cerebro metrics: commands/cerebro_metrics.md
+      - cerebro content: commands/cerebro_content.md
+      - cerebro strategy: commands/cerebro_strategy.md
+      - cerebro test: commands/cerebro_test.md
+      - cerebro gcp: commands/cerebro_gcp.md
   - Features:
       - Intelligence:
           - Capabilities: features/intelligence/CAPABILITIES.md
@@ -95,10 +104,10 @@ nav:
       - GitLab CI/CD: guides/GITLAB_CI_CD.md
       - GitLab CI Migration: guides/GITLAB_CI_MIGRATION.md
       - Nix + GitLab Duo Setup: guides/NIX_GITLAB_DUO_SETUP.md
-      - Setup Complete: guides/SETUP_COMPLETE.md
       - Contributing to Docs: guides/CONTRIBUTING_DOCS.md
   - Project:
       - Status: project/STATUS.md
+      - Feature Matrix: project/FEATURE_MATRIX.md
       - Master Execution Plan: project/MASTER_EXECUTION_PLAN.md
       - Agentic GPT Roadmap: project/AGENTIC_GPT_ROADMAP.md
       - Next Steps: project/NEXT_STEPS.md

@@ -4,6 +4,7 @@
 
 **Enterprise Knowledge Extraction & Distributed RAG Platform**
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.13+](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Nix](https://img.shields.io/badge/Nix-Reproducible-5277C3?style=flat-square&logo=nixos&logoColor=white)](https://nixos.org/)
 [![React](https://img.shields.io/badge/React-Dashboard-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
@@ -56,16 +57,19 @@ Cerebro exposes three fully-featured entry points sharing the same backend:
 
 ### CLI Command Groups
 
-| Group | Commands | Purpose |
-|-------|----------|---------|
-| `cerebro rag` | `ingest`, `query`, `status`, `init`, `smoke`, `migrate` | RAG pipeline control |
-| `cerebro knowledge` | `analyze`, `index`, `generate-docs` | Knowledge extraction and ETL |
-| `cerebro ops` | `health`, `scan` | System health and ecosystem scan |
-| `cerebro metrics` | `collect`, `watch`, `report` | Repository metrics |
-| `cerebro gcp` | `validate`, `datastores-list`, `search` | GCP / Vertex AI operations |
-| `cerebro content` | — | Content generation helpers |
-| `cerebro strategy` | — | Strategic analysis commands |
-| `cerebro setup` | — | Interactive environment setup |
+45 commands across 12 groups. → [Full command reference](docs/commands/README.md) · [Feature matrix](docs/project/FEATURE_MATRIX.md)
+
+| Group | Key commands | Requires |
+|-------|-------------|---------|
+| `cerebro rag` | `ingest`, `query`, `status`, `init`, `smoke`, `migrate`, `rerank` | — / LLM provider |
+| `cerebro knowledge` | `analyze`, `batch-analyze`, `summarize`, `docs`, `etl` | — |
+| `cerebro ops` | `health`, `status` | — |
+| `cerebro metrics` | `scan`, `watch`, `report`, `compare`, `check` | — |
+| `cerebro setup` | `wizard` | — |
+| `cerebro test` | `grounded-search`, `grounded-gen`, `verify-api` | LLM provider |
+| `cerebro content` | `mine`, `analyze` | LLM provider |
+| `cerebro strategy` | `optimize`, `salary`, `moat`, `trends` | LLM provider |
+| `cerebro gcp` | `status`, `create-engine`, `monitor`, `burn` | GCP credentials |
 
 ### Dashboard Pages
 
@@ -296,7 +300,7 @@ Config snapshot: `GcpDeploymentConfig.from_env()`.
 
 ## CI/CD
 
-Cerebro uses the shared `voidnx-pipeline.yml` template from `VoidNxSEC/.azure-pipelines`.
+Cerebro CI uses a custom Azure Pipelines template. See `.azure-pipelines/` for configuration.
 
 **Pipeline stages:** `Validate` → `Test` → `Build` → `LoadTest` → `Deploy`
 

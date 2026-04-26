@@ -9,7 +9,7 @@
 ## ✅ SETUP COMPLETO
 
 ### Infrastructure
-- [x] GCP Project configurado (`gen-lang-client-0530325234`)
+- [x] GCP Project configurado (`<your-gcp-project-id>`)
 - [x] APIs habilitadas (Discovery Engine, Dialogflow, BigQuery)
 - [x] Billing ativo (VoidNx)
 - [x] Authentication working (ADC)
@@ -118,7 +118,7 @@
    echo "test query" > /tmp/test.txt
    python scripts/batch_burn.py \
      --file /tmp/test.txt \
-     --project gen-lang-client-0530325234 \
+     --project <your-gcp-project-id> \
      --engine phoenix-search-engine \
      --workers 1
 
@@ -154,7 +154,7 @@
 ### Environment Variables
 ```bash
 export ENGINE_ID=phoenix-search-engine
-export GOOGLE_CLOUD_PROJECT=gen-lang-client-0530325234
+export GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
 export GOOGLE_CLOUD_LOCATION=global
 ```
 

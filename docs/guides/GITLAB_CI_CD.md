@@ -43,7 +43,7 @@ This document describes the GitLab CI/CD pipeline for the Cerebro project. The p
 Go to **Project Settings → CI/CD → Variables** and add the following variables:
 
 ```
-GCP_PROJECT_ID = gen-lang-client-0530325234
+GCP_PROJECT_ID = <your-gcp-project-id>
 GCP_REGION = us-central1
 DATA_STORE_ID = <your-data-store-id>
 GCP_SERVICE_ACCOUNT_KEY = <base64-encoded-key>

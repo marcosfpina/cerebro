@@ -214,7 +214,7 @@ async def lifespan(app: FastAPI):
     _nats_consumer_task = None
 
     # Configuration
-    arch_path = os.getenv("CEREBRO_ARCH_PATH", "/home/kernelcore/master")
+    arch_path = os.getenv("CEREBRO_ARCH_PATH", str(Path.home() / "master"))
     data_dir = os.getenv("CEREBRO_DATA_DIR", "./data/intelligence")
 
     logger.info("Initializing Cerebro Intelligence System...")

@@ -8,7 +8,7 @@ Phase 3 implementation is **100% complete**! The Cerebro TUI now features 6 full
 
 ```bash
 # Enter the Nix development environment
-cd /home/kernelcore/arch/cerebro
+cd /path/to/cerebro
 nix develop
 
 # Launch the TUI

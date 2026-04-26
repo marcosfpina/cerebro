@@ -26,7 +26,7 @@ This document provides a summary of the 5 Architecture Decision Records (ADRs) c
 - rich (display-only, not interactive)
 - prompt_toolkit (REPL-focused, limited layout)
 
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0019.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0019.md`
 
 ---
 
@@ -57,7 +57,7 @@ def launch_tui():
 - Accepted: Slight code complexity vs startup performance
 - Benefit: Fast CLI + rich TUI in single package
 
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0020.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0020.md`
 
 ---
 
@@ -92,7 +92,7 @@ cerebro              # Run application
 - Accepted: Two tools vs all-in-one solution
 - Benefit: Python community standard (Poetry) + NixOS synergy
 
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0021.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0021.md`
 
 ---
 
@@ -128,7 +128,7 @@ cerebro (24 commands in 7 groups)
 - Code reuse (shared utilities, config)
 - Integration (commands can call each other)
 
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0022.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0022.md`
 
 ---
 
@@ -168,7 +168,7 @@ cerebro (24 commands in 7 groups)
 - Tab interface (less keyboard-friendly)
 - Split panes (insufficient terminal resolution)
 
-**Location:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-0023.md`
+**Location:** `/path/to/adr-ledger/adr/accepted/ADR-0023.md`
 
 ---
 
@@ -204,7 +204,7 @@ cerebro (24 commands in 7 groups)
 
 ## References
 
-- **Full ADRs:** `/home/kernelcore/arch/adr-ledger/adr/accepted/ADR-00{19,20,21,22,23}.md`
+- **Full ADRs:** `/path/to/adr-ledger/adr/accepted/ADR-00{19,20,21,22,23}.md`
 - **Implementation Plan:** `CEREBRO_OPTIMIZATION_PLAN.md`
 - **Phase 2 Completion Report:** `docs/PHASE2_COMPLETE.md`
 - **Phase 3 Status:** `docs/PHASE3_STATUS.md`

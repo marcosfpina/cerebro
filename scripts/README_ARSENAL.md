@@ -191,7 +191,7 @@ python scripts/generate_queries.py --count 10000 --output queries.txt
 ```bash
 python scripts/batch_burn.py \
     --file queries.txt \
-    --project gen-lang-client-0530325234 \
+    --project <your-gcp-project-id> \
     --engine SEU-ENGINE-ID \
     --workers 20
 ```
@@ -211,10 +211,10 @@ python scripts/batch_burn.py \
 
 ```bash
 # Real-time
-python scripts/monitor_credits.py --project gen-lang-client-0530325234
+python scripts/monitor_credits.py --project <your-gcp-project-id>
 
 # Snapshot
-python scripts/monitor_credits.py --project gen-lang-client-0530325234 --once
+python scripts/monitor_credits.py --project <your-gcp-project-id> --once
 ```
 
 ---

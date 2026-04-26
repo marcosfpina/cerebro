@@ -40,7 +40,7 @@ nix develop --command python phantom.py gcp validate
 ```
 
 **Output esperado:**
-- ✅ Autenticado no projeto gen-lang-client-0530325234
+- ✅ Autenticado no projeto <your-gcp-project-id>
 - ✅ Billing ativo (VoidNx)
 - ✅ APIs habilitadas (Discovery Engine, Dialogflow)
 
@@ -74,7 +74,7 @@ export ENGINE_ID=seu-discovery-engine-id
 nix develop --command python scripts/batch_burn.py \
     --file queries_10k.txt \
     --workers 20 \
-    --project gen-lang-client-0530325234
+    --project <your-gcp-project-id>
 ```
 
 **Output:**
@@ -92,7 +92,7 @@ nix develop --command python scripts/batch_burn.py \
 ./speedrun.sh status
 
 # OU manualmente:
-nix develop --command python scripts/monitor_credits.py --project gen-lang-client-0530325234 --once
+nix develop --command python scripts/monitor_credits.py --project <your-gcp-project-id> --once
 ```
 
 **Output:**
@@ -364,7 +364,7 @@ nix develop --command python phantom.py credit dialogflow --num-conversations 10
 Antes de rodar batches grandes:
 
 - [ ] `ENGINE_ID` definido
-- [ ] Projeto GCP correto (`gen-lang-client-0530325234`)
+- [ ] Projeto GCP correto (`<your-gcp-project-id>`)
 - [ ] Billing ativo e validado
 - [ ] Discovery Engine API habilitada
 - [ ] BigQuery billing export configurado

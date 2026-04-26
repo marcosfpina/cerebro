@@ -77,7 +77,7 @@ EOF
 # 3. Cron job
 cat > /etc/cron.d/phoenix-daily <<EOF
 # Rodar todo dia às 6am
-0 6 * * * cd /home/kernelcore/dev/low-level/phoenix-cloud-run && \
+0 6 * * * cd /path/to/your/project && \
     nix develop --command python scripts/daily_digest.py && \
     nix develop --command python scripts/batch_burn.py \
         --file queries_daily_*.txt --workers 20 && \
@@ -178,7 +178,7 @@ if __name__ == "__main__":
 ### Cron:
 ```bash
 # Todo domingo às 8am
-0 8 * * 0 cd /home/kernelcore/dev/low-level/phoenix-cloud-run && \
+0 8 * * 0 cd /path/to/your/project && \
     python scripts/github_intel.py && \
     ./speedrun.sh burn queries_github_intel_*.txt 20
 ```
@@ -477,7 +477,7 @@ git diff origin/main...HEAD > /tmp/pr_diff.txt
 python scripts/code_review_queries.py /tmp/pr_diff.txt > /tmp/review_queries.txt
 
 # Processa
-cd /home/kernelcore/dev/low-level/phoenix-cloud-run
+cd /path/to/your/project
 ./speedrun.sh burn /tmp/review_queries.txt 5
 
 # Mostra insights
@@ -592,22 +592,22 @@ Meta-sistema que coordena todos os outros.
 ```bash
 # /etc/cron.d/phoenix-master
 # Daily digest (6am)
-0 6 * * * /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/daily_digest.sh
+0 6 * * * /path/to/your/project/scripts/daily_digest.sh
 
 # GitHub intel (Sunday 8am)
-0 8 * * 0 /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/github_intel.sh
+0 8 * * 0 /path/to/your/project/scripts/github_intel.sh
 
 # LinkedIn content (Monday 9am)
-0 9 * * 1 /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/linkedin_factory.sh
+0 9 * * 1 /path/to/your/project/scripts/linkedin_factory.sh
 
 # PKB sync (Every 6h)
-0 */6 * * * /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/pkb_sync.sh
+0 */6 * * * /path/to/your/project/scripts/pkb_sync.sh
 
 # Analytics update (Daily 10pm)
-0 22 * * * /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/update_analytics.sh
+0 22 * * * /path/to/your/project/scripts/update_analytics.sh
 
 # Weekly report (Sunday 8pm)
-0 20 * * 0 /home/kernelcore/dev/low-level/phoenix-cloud-run/scripts/weekly_report.sh
+0 20 * * 0 /path/to/your/project/scripts/weekly_report.sh
 ```
 
 ### Weekly report output:

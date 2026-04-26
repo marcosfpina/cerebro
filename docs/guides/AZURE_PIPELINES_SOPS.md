@@ -47,7 +47,7 @@ mkdir -p ~/.config/sops/age
 nix develop --command age-keygen -o ~/.config/sops/age/keys.txt
 ```
 
-Then inspect the public recipient and add it to [.sops.yaml](/home/kernelcore/master/cerebro/.sops.yaml:1) if needed:
+Then inspect the public recipient and add it to `.sops.yaml` if needed:
 
 ```bash
 nix develop --command age-keygen -y ~/.config/sops/age/keys.txt
@@ -64,6 +64,6 @@ nix develop --command age-keygen -y ~/.config/sops/age/keys.txt
 
 ## Notes
 
-- The flake no longer depends on the local-only `/home/kernelcore/master/spider-nix` path, so remote CI runners can evaluate it.
+- The flake has no local-only path dependencies, so remote CI runners can evaluate it.
 - The dev shell now includes `gitleaks`, `syft`, `pip-audit`, and `nodejs_20`.
 - CI mode suppresses the interactive shell cosmetics to keep logs readable.

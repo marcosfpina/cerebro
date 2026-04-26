@@ -50,14 +50,14 @@ echo ""
 echo "  [Discovery]"
 run "discover_repos returns >= 30 repos" -c "
 from cerebro.core.metrics_collector import MetricsCollector
-repos = MetricsCollector('/home/kernelcore/arch').discover_repos()
+repos = MetricsCollector(os.environ.get('CEREBRO_ARCH_PATH', str(Path.home() / 'master'))).discover_repos()
 assert len(repos) >= 30, f'only {len(repos)} repos'
 print(f'{len(repos)} repos discovered')
 "
 
 run "no duplicate repo names" -c "
 from cerebro.core.metrics_collector import MetricsCollector
-repos = MetricsCollector('/home/kernelcore/arch').discover_repos()
+repos = MetricsCollector(os.environ.get('CEREBRO_ARCH_PATH', str(Path.home() / 'master'))).discover_repos()
 names = [r.name for r in repos]
 dupes = [n for n in set(names) if names.count(n) > 1]
 assert not dupes, f'duplicates: {dupes}'
@@ -68,7 +68,7 @@ echo ""
 echo "  [Scan & Snapshot]"
 run "collect_all completes and saves snapshot" -c "
 from cerebro.core.metrics_collector import MetricsCollector
-mc = MetricsCollector('/home/kernelcore/arch')
+mc = MetricsCollector(os.environ.get('CEREBRO_ARCH_PATH', str(Path.home() / 'master')))
 results = mc.collect_all()
 assert len(results) >= 30, f'only {len(results)} results'
 print(f'{len(results)} repos scanned')
@@ -77,7 +77,7 @@ print(f'{len(results)} repos scanned')
 run "snapshot file is valid JSON" -c "
 import json
 from pathlib import Path
-p = Path('/home/kernelcore/arch/cerebro/data/metrics/metrics_snapshot.json')
+p = Path(os.environ.get('CEREBRO_DATA_DIR', './data') + '/metrics/metrics_snapshot.json')
 assert p.exists(), 'snapshot file missing'
 data = json.loads(p.read_text())
 assert 'repos' in data
@@ -90,7 +90,7 @@ echo "  [Shape / Contract]"
 run "top-level keys: generated_at, repo_count, repos" -c "
 import json
 from pathlib import Path
-data = json.loads(Path('/home/kernelcore/arch/cerebro/data/metrics/metrics_snapshot.json').read_text())
+data = json.loads(Path(os.environ.get('CEREBRO_DATA_DIR', './data') + '/metrics/metrics_snapshot.json').read_text())
 for k in ('generated_at', 'repo_count', 'repos'):
     assert k in data, f'missing top-level key: {k}'
 assert data['repo_count'] == len(data['repos'])
@@ -105,7 +105,7 @@ FIELDS = [
     'security_findings','security_score','has_tests','test_files',
     'has_ci','has_readme','has_docs','has_flake','health_score','status',
 ]
-data = json.loads(Path('/home/kernelcore/arch/cerebro/data/metrics/metrics_snapshot.json').read_text())
+data = json.loads(Path(os.environ.get('CEREBRO_DATA_DIR', './data') + '/metrics/metrics_snapshot.json').read_text())
 for repo in data['repos']:
     missing = [f for f in FIELDS if f not in repo]
     assert not missing, f'{repo.get(\"name\",\"?\")} missing: {missing}'
@@ -115,7 +115,7 @@ print(f'All {len(data[\"repos\"])} repos have complete field sets')
 run "languages map has files + lines per entry" -c "
 import json
 from pathlib import Path
-data = json.loads(Path('/home/kernelcore/arch/cerebro/data/metrics/metrics_snapshot.json').read_text())
+data = json.loads(Path(os.environ.get('CEREBRO_DATA_DIR', './data') + '/metrics/metrics_snapshot.json').read_text())
 for repo in data['repos']:
     for lang, stats in repo.get('languages', {}).items():
         assert 'files' in stats and 'lines' in stats, \
@@ -127,7 +127,7 @@ run "git object has expected keys (non-empty repos)" -c "
 import json
 from pathlib import Path
 GIT_KEYS = ['total_commits','commits_30d','commits_90d','contributors','branches','tags']
-data = json.loads(Path('/home/kernelcore/arch/cerebro/data/metrics/metrics_snapshot.json').read_text())
+data = json.loads(Path(os.environ.get('CEREBRO_DATA_DIR', './data') + '/metrics/metrics_snapshot.json').read_text())
 checked = 0
 for repo in data['repos']:
     if repo['status'] == 'empty':
@@ -143,7 +143,7 @@ echo ""
 echo "  [Watcher]"
 run "RepoWatcher instantiation + tracked_count" -c "
 from cerebro.core.watcher import RepoWatcher
-w = RepoWatcher(arch_path='/home/kernelcore/arch', poll_interval=10)
+w = RepoWatcher(arch_path=os.environ.get('CEREBRO_ARCH_PATH', str(Path.home() / 'master')), poll_interval=10)
 # not started — tracked_count is 0 until start()
 assert w.tracked_count == 0
 assert w.is_running is False
@@ -153,7 +153,7 @@ print('RepoWatcher constructed OK')
 
 run "get_head_hash returns 40-char SHA (non-empty repo)" -c "
 from cerebro.core.metrics_collector import MetricsCollector
-mc = MetricsCollector('/home/kernelcore/arch')
+mc = MetricsCollector(os.environ.get('CEREBRO_ARCH_PATH', str(Path.home() / 'master')))
 for repo in mc.discover_repos():
     h = mc.get_head_hash(repo)
     if h:

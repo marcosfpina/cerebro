@@ -36,6 +36,7 @@ dashboard/node_modules/
 data/
 cache/
 repos/
+arch/
 .uv-cache/
 PROJECT_SUMMARY.txt
 

@@ -2,7 +2,7 @@
 
 **Versão:** 1.0
 **Data:** 2025-12-29
-**Projeto:** gen-lang-client-0530325234
+**Projeto:** <your-gcp-project-id>
 **Créditos Totais:** R$ 10.079,11
 
 ---
@@ -287,7 +287,7 @@ burn-credits/
 
 ```bash
 # 1. Clone/navegue para o diretório
-cd /home/kernelcore/dev/Projects/burn-credits
+cd /path/to/your/project
 
 # 2. Entre no ambiente Nix
 nix develop
@@ -297,7 +297,7 @@ gcloud auth login
 gcloud auth application-default login
 
 # 4. Configure projeto
-gcloud config set project gen-lang-client-0530325234
+gcloud config set project <your-gcp-project-id>
 
 # 5. Habilite APIs necessárias
 gcloud services enable discoveryengine.googleapis.com
@@ -311,7 +311,7 @@ gcloud services enable bigquery.googleapis.com
 
 ```nix
 shellHook = ''
-  export GOOGLE_CLOUD_PROJECT_ID="gen-lang-client-0530325234"
+  export GOOGLE_CLOUD_PROJECT_ID="<your-gcp-project-id>"
   export GOOGLE_CLOUD_LOCATION="global"
   export DATA_STORE_ID="ds-app-v4-5e020c93"
 
@@ -329,7 +329,7 @@ shellHook = ''
 
 ```bash
 # .env
-export GOOGLE_CLOUD_PROJECT_ID="gen-lang-client-0530325234"
+export GOOGLE_CLOUD_PROJECT_ID="<your-gcp-project-id>"
 export DATA_STORE_ID="ds-app-v4-5e020c93"
 # ... outras vars
 
@@ -597,7 +597,7 @@ SELECT
 
   usage_start_time
 FROM
-  `gen-lang-client-0530325234.billing_export.gcp_billing_export_v1_*`,
+  `<your-gcp-project-id>.billing_export.gcp_billing_export_v1_*`,
   UNNEST(credits) AS credits
 WHERE
   (credits.name LIKE '%GenAI App Builder%' OR
@@ -667,7 +667,7 @@ python audit_credits_bigquery.py
 
 # Método 3: CLI
 gcloud billing accounts list
-gcloud billing projects describe gen-lang-client-0530325234
+gcloud billing projects describe <your-gcp-project-id>
 ```
 
 #### 7.3.2 Checklist de Validação
@@ -770,10 +770,10 @@ gcloud services enable discoveryengine.googleapis.com
 gcloud services enable dialogflow.googleapis.com
 
 # 2. Verificar permissões
-gcloud projects get-iam-policy gen-lang-client-0530325234
+gcloud projects get-iam-policy <your-gcp-project-id>
 
 # 3. Verificar billing
-gcloud billing projects describe gen-lang-client-0530325234
+gcloud billing projects describe <your-gcp-project-id>
 ```
 
 #### 8.1.5 "Quota exceeded"
@@ -1159,7 +1159,7 @@ bq query --use_legacy_sql=false 'SELECT * FROM ...'
 gcloud billing accounts list
 
 # Ver projeto billing info
-gcloud billing projects describe gen-lang-client-0530325234
+gcloud billing projects describe <your-gcp-project-id>
 
 # === Monitoring ===
 # Logs em tempo real

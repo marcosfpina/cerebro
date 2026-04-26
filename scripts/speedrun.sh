@@ -3,7 +3,7 @@
 
 set -e
 
-PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-gen-lang-client-0530325234}"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:?GCP_PROJECT_ID or GOOGLE_CLOUD_PROJECT must be set}"
 LOCATION="${GOOGLE_CLOUD_LOCATION:-global}"
 ENGINE_ID="${ENGINE_ID}"
 
@@ -57,7 +57,7 @@ Examples:
   ./speedrun.sh all
 
 Environment variables:
-  GOOGLE_CLOUD_PROJECT   GCP Project ID (default: gen-lang-client-0530325234)
+  GOOGLE_CLOUD_PROJECT   GCP Project ID (default: value of GOOGLE_CLOUD_PROJECT env var)
   GOOGLE_CLOUD_LOCATION  Location (default: global)
   ENGINE_ID              Discovery Engine ID
 EOF

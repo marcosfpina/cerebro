@@ -9,7 +9,7 @@
 ### Layer 1: Google Cloud Platform (Foundation)
 
 ```
-GCP Project (gen-lang-client-0530325234)
+GCP Project (<your-gcp-project-id>)
 └── APIs Enabled
     ├── Discovery Engine API (discoveryengine.googleapis.com)
     ├── Dialogflow CX API (dialogflow.googleapis.com)
@@ -82,7 +82,7 @@ phoenix-cloud-run/
 gcloud auth application-default login
 
 # 2. Set project
-gcloud config set project gen-lang-client-0530325234
+gcloud config set project <your-gcp-project-id>
 
 # 3. Enable APIs
 gcloud services enable discoveryengine.googleapis.com
@@ -138,7 +138,7 @@ engine = discoveryengine_v1.Engine(
     ),
 )
 
-parent = "projects/gen-lang-client-0530325234/locations/global/collections/default_collection"
+parent = "projects/<your-gcp-project-id>/locations/global/collections/default_collection"
 
 operation = client.create_engine(
     parent=parent,
@@ -174,7 +174,7 @@ source ~/.bashrc
 # Single query test
 nix develop --command python scripts/batch_burn.py \
   --file <(echo "test query") \
-  --project gen-lang-client-0530325234 \
+  --project <your-gcp-project-id> \
   --location global \
   --engine phoenix-search-engine \
   --workers 1
@@ -538,7 +538,7 @@ API not enabled OR billing not linked
 
 # Solution
 gcloud services enable discoveryengine.googleapis.com
-gcloud alpha billing projects link gen-lang-client-0530325234 \
+gcloud alpha billing projects link <your-gcp-project-id> \
   --billing-account=010A4F-F7F74E-D2E502
 ```
 
@@ -629,10 +629,10 @@ SELECT
   SUM(cost) as daily_cost,
   COUNT(*) as query_count,
   service.description as service
-FROM `gen-lang-client-0530325234.billing_export.gcp_billing_export_v1_*`
+FROM `<your-gcp-project-id>.billing_export.gcp_billing_export_v1_*`
 WHERE
   DATE(usage_start_time) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-  AND project.id = 'gen-lang-client-0530325234'
+  AND project.id = '<your-gcp-project-id>'
 GROUP BY day, service
 ORDER BY day DESC
 LIMIT 100;
@@ -642,8 +642,8 @@ SELECT
   sku.description,
   SUM(cost) as total_cost,
   COUNT(*) as usage_count
-FROM `gen-lang-client-0530325234.billing_export.gcp_billing_export_v1_*`
-WHERE project.id = 'gen-lang-client-0530325234'
+FROM `<your-gcp-project-id>.billing_export.gcp_billing_export_v1_*`
+WHERE project.id = '<your-gcp-project-id>'
 GROUP BY sku.description
 ORDER BY total_cost DESC
 LIMIT 20;

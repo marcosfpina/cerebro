@@ -8,6 +8,7 @@ Discovery Engine for searchable knowledge base.
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import List, Dict
 import hashlib
@@ -293,8 +294,8 @@ def main():
 
     parser.add_argument(
         "--project",
-        default="gen-lang-client-0530325234",
-        help="GCP Project ID"
+        default=os.environ.get("GCP_PROJECT_ID", ""),
+        help="GCP Project ID (or set GCP_PROJECT_ID env var)"
     )
 
     parser.add_argument(
@@ -305,7 +306,7 @@ def main():
 
     parser.add_argument(
         "--data-store",
-        default="ds-app-v4-5e020c93",
+        default=os.environ.get("DATA_STORE_ID", ""),
         help="Data Store ID"
     )
 
