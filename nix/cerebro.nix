@@ -87,9 +87,9 @@ buildPythonPackage rec {
 
   meta = {
     description = "Cerebro — Enterprise Knowledge Extraction Platform";
-    homepage = "https://github.com/voidnxlabs/cerebro";
+    homepage = "https://github.com/VoidNxSEC/cerebro";
     license = lib.licenses.mit;
     mainProgram = "cerebro";
-    maintainers = [ ];
+    maintainers = [ marcosfpina ];
   };
 }
